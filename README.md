@@ -11,7 +11,7 @@ Real time herbivory detection by raspberry pi camera footage with processing pow
 
 ![Synthetic spectra](snythetic_spectra_1f.jpg)
 
-Example spectra of binary toxin dose arrangements with different levels of autocorrelation. Generated using 1/f spectral synthesis method.
+Example binary toxin dose arrangements with different levels of autocorrelation. Generated using 1/f spectral synthesis method.
 
 
 
