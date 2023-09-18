@@ -1,4 +1,4 @@
-## 1/f Noise Herbivory Project at CSU
+# 1/f Noise Herbivory Project at CSU
 
 This repo hosts code for simulations and data analysis for an INTERN funded project, examining the consequences of spatial autocorrelation in fine scale plant toxin distribution. 
 
