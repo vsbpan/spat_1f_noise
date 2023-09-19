@@ -3,7 +3,7 @@ library(herbivar)
 
 
 
-img <- load.image("test_cropped.jpg")
+img <- load.image("misc_tests/test_cropped.jpg")
 
 
 
@@ -24,12 +24,12 @@ best_index <- "HUE"
 img_HUE <- color_index(img, "HUE", plot = FALSE)$HUE
 img_thresh <- threshold2(img_HUE)
 
-?spatstat.geom::plot.imlist
+
 
 
 
 imlist(img, img_HUE, img_thresh %>% as.cimg) %>% 
-  plot.imlist(main.panel = c("Raspberry pi image","HUE color index","Segmentation"), 
+  plot(main.panel = c("Raspberry pi image","HUE color index","Segmentation"), 
               interpolate = FALSE)
 
 
