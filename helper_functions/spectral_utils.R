@@ -1,3 +1,4 @@
+# Takes a matrix and threshold by the amplitude in the frequency domain
 fourier_thresh <- function(mat, quantile){
   r.mat <- c(Mod(mat))
   thresh <- quantile(r.mat, probs = quantile)
@@ -5,6 +6,7 @@ fourier_thresh <- function(mat, quantile){
   return(mat)
 } 
 
+# Takes a matrix and run a low or high pass filter through the spectrum
 fourier_pass <- function(mat, r, side = c("lower","higher", "between", "outside")){
   side <- match.arg(side)
   mat <- fftshift(mat)
@@ -34,7 +36,7 @@ fourier_pass <- function(mat, r, side = c("lower","higher", "between", "outside"
 }
 
 
-
+# Rearrange the matrix into the highest frequency starts in the middle of the matrix, not the top left of the matrix, as is the output of mvfft(). Setting inverse = TRUE turns it back. 
 fftshift <- function(input_matrix, dim = -1, inverse = FALSE) {
   rows <- dim(input_matrix)[1]    
   cols <- dim(input_matrix)[2]
@@ -77,7 +79,7 @@ fftshift <- function(input_matrix, dim = -1, inverse = FALSE) {
   return(input_matrix)
 }
 
-
+# Retrun fft transformed image back as a cimg object
 fft_img_inv <- function(x, as.cimg = TRUE){
   inverted.mat <- Re(fft(x,inverse = TRUE)) / length(x)
   inverted.mat[inverted.mat < 0] <- 0
@@ -87,6 +89,8 @@ fft_img_inv <- function(x, as.cimg = TRUE){
   return(inverted.mat)
 }
 
+
+# Plot the amplitude or phase of an image on the frequency domain
 fft_img_plot <- function(x, type = c("magnitude", "phase"), 
                          trans, 
                          shift = TRUE, plot = TRUE, as.cimg = FALSE){
@@ -136,7 +140,7 @@ fft_img_plot <- function(x, type = c("magnitude", "phase"),
 
 
 
-
+# Simulate image by drawing nfreq frequencies 
 sim_img <- function(dim = c(150,150), 
                     nfreq = 10, 
                     zr = 1 / (rgamma(nfreq, 2.7699452,0.5074743) / max(dim)),
@@ -163,7 +167,7 @@ sim_img <- function(dim = c(150,150),
 
 
 
-
+# Simulate image using spectral synthesis method
 syn_spec <- function(n = 100, beta = 1, plot = TRUE, threshold = TRUE, invert = TRUE,...){
   stopifnot(n%%2==0)
   epsilon <- rnorm((n^2))
@@ -196,6 +200,8 @@ syn_spec <- function(n = 100, beta = 1, plot = TRUE, threshold = TRUE, invert = 
   invisible(m)
 }
 
+
+# Computes center of mass (mean) under periodic boundary conditions
 com_periodic <- function(x, y){
   foo <- function(z,n){
     if(missing(n)){
@@ -213,7 +219,7 @@ com_periodic <- function(x, y){
   }
 }
 
-
+# Computes the variance under periodic boundary conditions
 var_periodic <- function(x,y){
   mu <- com_ref(x, y)
   n<-sqrt(length(x))
