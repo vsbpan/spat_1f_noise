@@ -89,10 +89,10 @@ q2q_map <- function(plist, qlist){
 #' Apply quad to quad transformation on an image using \code{q2q_map()}. Useful for perspective correction. For more details see \code{imager::imwarp()}. 
 #' @param img A cimg object
 #' @param dest_pts,init_pts list of lists of four coordinates (x,y) setting the location of initial and destination of the transformation. If \code{init_pts} is \code{NULL} (default), the four corners of the image will be selected. See examples. 
-#' @param direction Direction of algorithm. Default is \code{"backward"}. Seeting \code{"forward"} may create artifacts in the interpolation
-#' @param coordinates \code{"absolute"} or \code{"relative"} (default \code{"relative"})
+#' @param retain_size if \code{TRUE}, the returned image retains the same size. If \code{FALSE} (default), if the destination coordinates are outside of the original image, the image is enlarged. 
+#' @param coordinates \code{"absolute"} or \code{"relative"} (default \code{"absolute"})
 #' @param boundary boundary conditions: \code{"dirichlet", "neumann", "periodic"}. Default \code{"dirichlet"}.
-#' @param interpolation \code{"nearest", "linear", "cubic"} (default \code{"linear"})
+#' @param interpolation \code{"nearest", "linear", "cubic"} (default \code{"nearest"})
 #' @examples
 #' img <- image_example() 
 #' 
@@ -134,20 +134,26 @@ q2q_map <- function(plist, qlist){
 q2q_trans <- function(img,
                       dest_pts,
                       init_pts = NULL,
-                      direction = "backward", 
-                      coordinates = "absolute", 
-                      interpolation = "linear",
-                      boundary = "dirichlet"){
+                      retain_size = FALSE,
+                      coordinates = c("absolute","relative"), 
+                      interpolation = c("nearest", "linear", "cubic"),
+                      boundary = c("dirichlet", "neumann", "periodic")){
   
   if(missing(dest_pts) || is.null(dest_pts)){
     stop(paste0(add_quote("dest_pts"), " needs to be a list of lists"))
   }
   
+  direction <- match.arg(direction)
+  coordinates <- match.arg(coordinates)
+  interpolation <- match.arg(interpolation)
+  boundary <- match.arg(boundary)
+  
+  
+  
+  ny <- ncol(img)
+  nx <- nrow(img)
   
   if(is.null(init_pts)){
-    ny <- ncol(img)
-    nx <- nrow(img)
-    
     init_pts <- list(
       list(1,1),
       list(1, ny),
@@ -156,14 +162,45 @@ q2q_trans <- function(img,
     )
   }
   
+  if(!retain_size){
+    xmax <- max(do.call("c",purrr::map(dest_pts, 1)))
+    ymax <- max(do.call("c",purrr::map(dest_pts, 2)))
+    
+    if(xmax > nx || ymax > ny){
+      
+      grow_x <- pmax(xmax - nx, 0)
+      grow_y <- pmax(ymax - ny, 0)
+      nspec <- dim(img)[4]
+      
+      x_edge <- as.cimg(array(rep(0, grow_x * ny * nspec), 
+                              dim = c(grow_x, ny, 1, nspec)))
+      y_edge <- as.cimg(array(rep(0, (nx + grow_x) * grow_y * nspec), 
+                              dim = c((nx + grow_x), grow_y, 1, nspec)))
+      
+      
+      img <- imager::imappend(
+        list(
+          imager::imappend(list(img, x_edge), "x"),
+          y_edge), 
+        "y")
+      
+    } 
+  }
+  
   out <- imager::imwarp(img, 
-                        map = q2q_map(dest_pts, init_pts), 
-                        direction = direction, 
+                        map = q2q_map(dest_pts, init_pts), # Swap q2q_map direction with backward algorithm
+                        direction = "backward", 
                         coordinates = coordinates,
                         interpolation = interpolation, 
                         boundary = boundary)
   
   return(out)
 }
+
+
+
+
+
+
 
 

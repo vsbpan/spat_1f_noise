@@ -3,6 +3,20 @@ img <- image_example()
 
 dim(img)
 
+plot(img)
+
+q2q_trans(
+  img, 
+  dest_pts = list(
+    list(1,1),
+    list(1, 200*3),
+    list(400*2, 200*2),
+    list(400*2, 1)
+  )) %>% 
+    plot()
+
+
+
 q2q_trans(
   img, 
   dest_pts = list(
@@ -22,13 +36,16 @@ q2q_trans(
     ), 
     dest_pts = list(
       list(1,1),
-      list(1, 443),
-      list(810, 443),
-      list(810, 1)
+      list(1, 443*2),
+      list(810*2, 443*2),
+      list(810*2, 1)
     )
   ) %>% 
   plot()
 
 
 plot(img)
+
+
+
 
