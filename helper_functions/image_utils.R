@@ -149,7 +149,6 @@ q2q_trans <- function(img,
   boundary <- match.arg(boundary)
   
   
-  
   ny <- ncol(img)
   nx <- nrow(img)
   
@@ -199,7 +198,8 @@ q2q_trans <- function(img,
 
 
 
-
+### To Do ### 
+## Add corner detection for artificial diet raster
 
 
 
