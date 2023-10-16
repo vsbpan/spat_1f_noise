@@ -37,6 +37,8 @@ get_relative_time <- function(x, units = "secs"){
 export_time_lapse_img <- function(source_dir, dest_dir_root){
   repID <- paste0("rep",readline(prompt = "Enter replication ID:\t "))
   
+  cameraID <- paste0("cam",readline(prompt = "Enter camera ID:\t "))
+  
   init_dir(root_path = dest_dir_root, repID)
   dest_dir <- paste0(dest_dir_root, repID)
   
@@ -52,6 +54,8 @@ export_time_lapse_img <- function(source_dir, dest_dir_root){
     dest_dir, 
     "/",
     repID, 
+    "__", 
+    cameraID,
     "_s",
     rel_time,".jpg"
   )
