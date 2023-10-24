@@ -36,7 +36,7 @@ image_unflatten <- function(x){
 }
 
 # Generate mapping function for quad to quad transformation (useful for perspective correction)
-q2q_map <- function(plist, qlist){
+q2q_map <- function(plist, qlist, z = FALSE){
   p1x <- plist[[1]][[1]]
   p2x <- plist[[2]][[1]]
   p3x <- plist[[3]][[1]]
@@ -73,13 +73,22 @@ q2q_map <- function(plist, qlist){
   
   X <- solve(A, B)
   
-  map_fun <- function(x,y) {
-    list(
-      x = (X[1] * x + X[2] * y + X[3]) / (1 + X[7] * x + X[8] * y),
-      y = (X[4] * x + X[5] * y + X[6]) / (1 + X[7] * x + X[8] * y)
-    )
+  if(z){
+    map_fun <- function(x,y,z) {
+      list(
+        x = (X[1] * x + X[2] * y + X[3]) / (1 + X[7] * x + X[8] * y),
+        y = (X[4] * x + X[5] * y + X[6]) / (1 + X[7] * x + X[8] * y),
+        z = z
+      )
+    }
+  } else {
+    map_fun <- function(x,y) {
+      list(
+        x = (X[1] * x + X[2] * y + X[3]) / (1 + X[7] * x + X[8] * y),
+        y = (X[4] * x + X[5] * y + X[6]) / (1 + X[7] * x + X[8] * y)
+      )
+    }
   }
-  
   
   return(map_fun)
 }
@@ -88,7 +97,7 @@ q2q_map <- function(plist, qlist){
 #' @description
 #' Apply quad to quad transformation on an image using \code{q2q_map()}. Useful for perspective correction. For more details see \code{imager::imwarp()}. 
 #' @param img A cimg object
-#' @param dest_pts,init_pts list of lists of four coordinates (x,y) setting the location of initial and destination of the transformation. If \code{init_pts} is \code{NULL} (default), the four corners of the image will be selected. See examples. 
+#' @param dest_pts,init_pts list of lists of four coordinates (x,y) setting the location of initial and destination of the transformation. If \code{NULL} (default), the four corners of the image will be selected. See examples. 
 #' @param retain_size if \code{TRUE}, the returned image retains the same size. If \code{FALSE} (default), if the destination coordinates are outside of the original image, the image is enlarged. 
 #' @param coordinates \code{"absolute"} or \code{"relative"} (default \code{"absolute"})
 #' @param boundary boundary conditions: \code{"dirichlet", "neumann", "periodic"}. Default \code{"dirichlet"}.
@@ -132,18 +141,13 @@ q2q_map <- function(plist, qlist){
 #'   
 #' 
 q2q_trans <- function(img,
-                      dest_pts,
                       init_pts = NULL,
+                      dest_pts = NULL,
                       retain_size = FALSE,
                       coordinates = c("absolute","relative"), 
                       interpolation = c("nearest", "linear", "cubic"),
                       boundary = c("dirichlet", "neumann", "periodic")){
   
-  if(missing(dest_pts) || is.null(dest_pts)){
-    stop(paste0(add_quote("dest_pts"), " needs to be a list of lists"))
-  }
-  
-  direction <- match.arg(direction)
   coordinates <- match.arg(coordinates)
   interpolation <- match.arg(interpolation)
   boundary <- match.arg(boundary)
@@ -154,6 +158,15 @@ q2q_trans <- function(img,
   
   if(is.null(init_pts)){
     init_pts <- list(
+      list(1,1),
+      list(1, ny),
+      list(nx,ny),
+      list(nx, 1)
+    )
+  }
+  
+  if(is.null(dest_pts)){
+    dest_pts <- list(
       list(1,1),
       list(1, ny),
       list(nx,ny),
@@ -187,7 +200,7 @@ q2q_trans <- function(img,
   }
   
   out <- imager::imwarp(img, 
-                        map = q2q_map(dest_pts, init_pts), # Swap q2q_map direction with backward algorithm
+                        map = q2q_map(dest_pts, init_pts, z = dim(img)[3] > 1), # Swap q2q_map direction with backward algorithm
                         direction = "backward", 
                         coordinates = coordinates,
                         interpolation = interpolation, 
@@ -195,6 +208,100 @@ q2q_trans <- function(img,
   
   return(out)
 }
+
+
+# Corner detection engine
+detect_corners_engine <- function(img, list_of_list = TRUE){
+  pts <- image.CornerDetectionHarris:::detect_corners(img[,,1,1] * 255, 
+                                                      nx = nrow(img), 
+                                                      ny = ncol(img),
+                                                      Nselect = 4L, 
+                                                      strategy = 2L, 
+                                                      verbose = FALSE)
+  out <- data.frame("x" = pts$x, "y" = pts$y) %>% 
+    arrange(x,y)
+  
+  if(nrow(out) != 4L){
+    stop("Failed to detect 4 points")
+  }
+  
+  if(list_of_list){
+    out <- lapply(seq.int(4), function(i){
+      as.list(out[i,])
+    })
+    return(out)
+  } else {
+    return(out)
+  }
+}
+
+# Clean up photo before corner detection
+detect_corners <- function(img, qc_plot = FALSE, list_of_list = TRUE){
+  img2 <- color_index(img, index = "NG", plot = FALSE)$NG %>% 
+    threshold2(thr = 0.3, thr.exact = TRUE) %>%
+    imager::bucketfill(x = 1, y = 1, z = 1, "white") %>% 
+    suppressWarnings() %>% 
+    imager::medianblur(n = 10) 
+  
+  out <- detect_corners_engine(img2, list_of_list = list_of_list)
+  
+  if(qc_plot){
+    plot(img)
+    if(!is.data.frame(out)){
+      o <- do.call("rbind",out) %>% as.data.frame()
+    } else {
+      o <- out
+    }
+    o %$% points(x,y, col = c("green", "blue","blue","blue"), pch = 19, cex = 3)
+  }
+  return(out)
+}
+
+# Perform q2q transformation on raw image, using corner detection 
+# Can supply init_pts out side of function to reduce computation time
+reproject_grid <- function(img, init_pts = NULL, dest_size = NULL, qc_plot = FALSE){
+  if(is.null(init_pts)){
+    init_pts <- detect_corners(img, qc_plot = qc_plot)
+  }
+  
+  img_trans <- q2q_trans(
+    img = img, 
+    init_pts = init_pts,
+    retain_size = FALSE
+  ) 
+  
+  if(!is.null(dest_size)){
+    img_trans <- img_trans %>% 
+      imager::resize(size_x = dest_size,
+                     size_y = dest_size, 
+                     interpolation = 1)
+    
+    
+  } 
+  return(img_trans)
+}
+
+# Lighting correction for single source of light
+im_lighting_correction <- function(img){
+  d <- as.data.frame(img)
+  m <- sample_n(d,1e4) %>% lm(value ~ x*y,data=.) 
+  img-predict(m,d)
+}
+
+# Detect lester dust and apply shadow correction. Returns color inverted image
+detect_lester <- function(img, shadow_weight = 0.5){
+  lester_mask <- color_index(img, 
+                             index = c("HUE"), 
+                             plot = FALSE)[[1]] %>% 
+    imager::renorm(max = 1)
+  wt_mask <- color_index(img, index = "CI", plot = FALSE)[[1]] %>% 
+    renorm(min = 0.5, max = 1)
+  wt_mask <- shadow_weight / wt_mask
+  lester_mask_c <- imager::renorm(lester_mask + wt_mask, min = 0, max = 1)
+  invert(lester_mask_c)
+}
+
+
 
 
 
