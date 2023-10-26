@@ -18,6 +18,10 @@ names(ufl_trt_iml) <- paste0("rep_id", trt_design_data$rep_id)
 #################################################################################
 
 
+  points(x,y, cex = 2, pch = 19, col = "red")
+
+
+
 
 
 
@@ -27,6 +31,8 @@ img <- load.image("misc_tests/prototype3.jpg")
 plot(img)
 
 pts <- detect_corners(img, qc_plot = TRUE)
+
+
 
 # plot(img)
 # pts[[2]] <- list(x = 260, y = 1120)
@@ -40,17 +46,22 @@ img2
 plot(img2)
 
 
-img2 %>% 
-  immask(
-    ufl_trt_iml[[1]] %>% 
-      imager::resize(size_x = 1000, size_y = 1000, interpolation = 1) %>% 
-      as.pixset(), 
-    background = NA
-  ) %>% 
-  thin(3) %>% 
-  detect_lester() %>%
-  threshold2(thr = 0.65, thr.exact = TRUE) %>% 
-  herbivar::plot.pixset(col.na = "green")
+# img2 %>% 
+#   immask(
+#     ufl_trt_iml[[1]] %>% 
+#       imager::resize(size_x = 1000, size_y = 1000, interpolation = 1) %>% 
+#       as.pixset(), 
+#     background = NA
+#   ) %>% 
+#   thin(3) %>% 
+#   detect_lester() %>%
+#   threshold2(thr = 0.65, thr.exact = TRUE) %>% 
+#   herbivar::plot.pixset(col.na = "green")
+
+plot(img2)
+detect_lester(img2, shadow_weight = 0.7) %>%
+  threshold2(thr = 0.55, thr.exact = TRUE) %>% 
+  plot()
 
 img3 <- detect_lester(img2) %>%
   threshold2(thr = 0.65, thr.exact = TRUE)
@@ -59,6 +70,8 @@ img3 <- detect_lester(img2) %>%
 mask1 <- ufl_trt_iml[[1]] %>% 
   imager::resize(size_x = 1000, size_y = 1000, interpolation = 1) %>% 
   as.pixset()
+
+
 
 
 imlist(
@@ -78,6 +91,12 @@ imlist(
 
 
 
+
+
+
+
+
+fast_load_image("misc_tests/prototype3.jpg")
 
 
 

@@ -238,12 +238,24 @@ detect_corners_engine <- function(img, list_of_list = TRUE){
 # Clean up photo before corner detection
 detect_corners <- function(img, qc_plot = FALSE, list_of_list = TRUE){
   img2 <- color_index(img, index = "NG", plot = FALSE)$NG %>% 
+    na_replace(0) %>% 
     threshold2(thr = 0.3, thr.exact = TRUE) %>%
-    imager::bucketfill(x = 1, y = 1, z = 1, "white") %>% 
+    imager::bucketfill(x = 1, y = 1, z = 1, color = 1) %>% 
     suppressWarnings() %>% 
     imager::medianblur(n = 10) 
   
-  out <- detect_corners_engine(img2, list_of_list = list_of_list)
+  
+  split_list <- img2 %>% 
+    invert() %>% 
+    threshold2(thr = 0, thr.exact = TRUE) %>% 
+    split_connected()
+    
+  max_index <- lapply(split_list, function(x) {
+    sum(x)
+  }) %>% which.max()
+    
+  
+  out <- detect_corners_engine(split_list[[max_index]], list_of_list = list_of_list)
   
   if(qc_plot){
     plot(img)
@@ -293,17 +305,52 @@ detect_lester <- function(img, shadow_weight = 0.5){
   lester_mask <- color_index(img, 
                              index = c("HUE"), 
                              plot = FALSE)[[1]] %>% 
-    imager::renorm(max = 1)
+    imager::renorm(max = 1) %>% 
+    na_replace(0)
   wt_mask <- color_index(img, index = "CI", plot = FALSE)[[1]] %>% 
-    renorm(min = 0.5, max = 1)
-  wt_mask <- shadow_weight / wt_mask
+    renorm(min = 0.5, max = 1) %>% 
+    na_replace(1) # NAs classified as no shadows
+  wt_mask <- (shadow_weight / wt_mask) 
   lester_mask_c <- imager::renorm(lester_mask + wt_mask, min = 0, max = 1)
   invert(lester_mask_c)
 }
 
+# Replace NA values with val
+na_replace <- function(img, val){
+  img[is.na(img)] <- val
+  img
+}
+
+fast_load_image <- function(path){
+  bmp <- jpeg::readJPEG(path) %>% aperm(c(2, 1, 3))
+  dim(bmp) <- c(dim(bmp)[1:2], 1, dim(bmp)[3])
+  class(bmp) <- c("cimg", "imager_array", "numeric")
+  bmp 
+}
 
 
-
+detect_jostle <- function(vid, res = 10000, delta_thresh = 0.15, prop_px = 0.1){
+  if(!is.null(res) || !is.na(res)){
+    if(prod(dim(vid)[1:2]) > res)
+      side_len <- floor(sqrt(10000))
+    vid <- imager::resize(vid, size_x = side_len, size_y = side_len) 
+  }
+  
+  if(imager::spectrum(vid) > 1){
+    vid <- grayscale(vid)
+  }
+  
+  del <- get_gradient(vid, axes = "z", scheme = -1)[[1]] %>% 
+    imsplit(axis = "z")
+  
+  indices <- lapply(del, function(x){
+    mean(abs(c(x)) > delta_thresh) > prop_px
+  }) %>% 
+    do.call("c",.) %>% 
+    unname() %>% 
+    which()
+  return(indices)
+}
 
 ### To Do ### 
 ## Add corner detection for artificial diet raster
