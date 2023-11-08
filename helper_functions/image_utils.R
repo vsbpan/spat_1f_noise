@@ -211,14 +211,15 @@ q2q_trans <- function(img,
 
 
 # Corner detection engine
-detect_corners_engine <- function(img, list_of_list = TRUE){
+detect_corners_engine <- function(img, list_of_list = TRUE, scale = 1){
   pts <- image.CornerDetectionHarris:::detect_corners(img[,,1,1] * 255, 
                                                       nx = nrow(img), 
                                                       ny = ncol(img),
                                                       Nselect = 4L, 
                                                       strategy = 2L, 
                                                       verbose = FALSE)
-  out <- data.frame("x" = pts$x, "y" = pts$y) %>% 
+  out <- data.frame("x" = as.numeric(pts$x) * scale, 
+                    "y" = as.numeric(pts$y) * scale) %>% 
     arrange(x,y)
   
   if(nrow(out) != 4L){
@@ -235,32 +236,68 @@ detect_corners_engine <- function(img, list_of_list = TRUE){
   }
 }
 
-# Clean up photo before corner detection
-detect_corners <- function(img, qc_plot = FALSE, list_of_list = TRUE){
-  img2 <- color_index(img, index = "NG", plot = FALSE)$NG %>% 
-    na_replace(0) %>% 
-    threshold2(thr = 0.3, thr.exact = TRUE) %>%
-    imager::bucketfill(x = 1, y = 1, z = 1, color = 1) %>% 
-    suppressWarnings() %>% 
-    imager::medianblur(n = 10) 
-  
-  
-  split_list <- img2 %>% 
-    invert() %>% 
-    threshold2(thr = 0, thr.exact = TRUE) %>% 
-    split_connected()
-    
-  max_index <- lapply(split_list, function(x) {
+
+pt_list2df<- function(x){
+  data.frame("x" = do.call("c",map(x, 1)),
+             "y" = do.call("c",map(x, 2)))
+}
+
+
+split_max <- function(img){
+  l <- split_connected(img)
+  max_index <- lapply(l, function(x) {
     sum(x)
   }) %>% which.max()
-    
   
-  out <- detect_corners_engine(split_list[[max_index]], list_of_list = list_of_list)
+  l[[max_index]]
+}
+
+
+# Clean up photo before corner detection
+detect_corners <- function(img, qc_plot = FALSE, list_of_list = TRUE, 
+                           scale = 5, lambda = 0.001, sat = 0.1, adjust = 1){
+  # img2 <- color_index(img, index = "NG", plot = FALSE)$NG %>% 
+  #   na_replace(0) %>% 
+  #   threshold2(thr = 0.3, thr.exact = TRUE) %>%
+  #   imager::bucketfill(x = 1, y = 1, z = 1, color = 1) %>% 
+  #   suppressWarnings() %>% 
+  #   imager::medianblur(n = 10) 
+  img2 <- color_index(img, index = "NG", plot = FALSE)$NG %>% 
+    na_replace(0) %>% 
+    imagerExtra::SPE(lamda = lambda, s = sat, range = c(0,1)) %>% 
+    threshold2(adjust = adjust) %>%
+    thin(scale) %>% 
+    medianblur(10) %>% 
+    clean(10/scale^2) %>% 
+    invert() %>% 
+    fill(30/(scale * 2)) %>% 
+    invert()
+  
+  
+  # split_list <- img2 %>% 
+  #   invert() %>% 
+  #   threshold2(thr = 0, thr.exact = TRUE) %>% 
+  #   split_connected()
+  spl_max <- img2 %>% 
+    threshold2() %>% 
+    split_max()
+
+  
+  spl_max2 <- spl_max %>% 
+    imager::bucketfill(x = 1, y = 1, z = 1, color = 1) %>% 
+    suppressWarnings() %>% 
+    invert() %>% 
+    split_max()
+  
+  
+  out <- detect_corners_engine(spl_max2, 
+                               list_of_list = list_of_list, 
+                               scale = scale)
   
   if(qc_plot){
     plot(img)
     if(!is.data.frame(out)){
-      o <- do.call("rbind",out) %>% as.data.frame()
+      o <- pt_list2df(out)
     } else {
       o <- out
     }
@@ -300,9 +337,9 @@ im_lighting_correction <- function(img){
   img-predict(m,d)
 }
 
-# Detect lester dust and apply shadow correction. Returns color inverted image
-detect_lester <- function(img, shadow_weight = 0.5){
-  lester_mask <- color_index(img, 
+# Detect luster dust and apply shadow correction. Returns color inverted image
+detect_luster <- function(img, shadow_weight = 0.5){
+  luster_mask <- color_index(img, 
                              index = c("HUE"), 
                              plot = FALSE)[[1]] %>% 
     imager::renorm(max = 1) %>% 
@@ -311,8 +348,8 @@ detect_lester <- function(img, shadow_weight = 0.5){
     renorm(min = 0.5, max = 1) %>% 
     na_replace(1) # NAs classified as no shadows
   wt_mask <- (shadow_weight / wt_mask) 
-  lester_mask_c <- imager::renorm(lester_mask + wt_mask, min = 0, max = 1)
-  invert(lester_mask_c)
+  luster_mask_c <- imager::renorm(luster_mask + wt_mask, min = 0, max = 1)
+  invert(luster_mask_c)
 }
 
 # Replace NA values with val
@@ -321,8 +358,12 @@ na_replace <- function(img, val){
   img
 }
 
-fast_load_image <- function(path){
-  bmp <- jpeg::readJPEG(path) %>% aperm(c(2, 1, 3))
+fast_load_image <- function(path, transform = TRUE){
+  if(transform){
+    bmp <- jpeg::readJPEG(path) %>% aperm(c(2, 1, 3))
+  } else {
+    bmp <- jpeg::readJPEG(path)
+  }
   dim(bmp) <- c(dim(bmp)[1:2], 1, dim(bmp)[3])
   class(bmp) <- c("cimg", "imager_array", "numeric")
   bmp 
@@ -350,6 +391,185 @@ detect_jostle <- function(vid, res = 10000, delta_thresh = 0.15, prop_px = 0.1){
     unname() %>% 
     which()
   return(indices)
+}
+
+
+
+make_video <- function(src_dir, file, fps = 10, extn = ".mp4"){
+  f <- list.files(src_dir, full.names = TRUE)
+  f2 <- paste(src_dir, gsub(".*_rank","image-",f), sep = "/")
+  
+  invisible(file.rename(
+    f, 
+    f2
+  ))
+  
+  imager::make.video(fps = fps, 
+                     pattern = "image-%d.jpg", 
+                     dname = abs_path(src_dir), 
+                     fname = abs_path(paste0(file,extn)), 
+                     verbose = TRUE)
+  
+  invisible(file.rename(
+    f2, 
+    f
+  ))
+}
+
+
+crop_raw_img <- function(
+    indices = seq_along(get("files_full_name")),
+    .pts = get("pts"),
+    .files_full_name = get("files_full_name"), 
+    .files = get("files"), 
+    .dest_dir = get("dest_dir"), 
+    cores = parallel::detectCores(logical = FALSE) - 2
+){
+  
+  start_time <- Sys.time()
+  
+  message("\nInitializing parallel workers. . .")
+  cl <- makeCluster(cores, outfile = "")
+  registerDoSNOW(cl)
+  
+  foreach(i = indices, 
+          .export = ls(globalenv()),
+          .combine = c, 
+          .verbose = FALSE, 
+          .final = invisible,
+          .inorder = FALSE,
+          .options.snow = list(
+            progress = function(n) {
+              cat(sprintf("\r Processing %d out of %d", n, length(indices)))
+            }
+          ),
+          .packages = c("tidyverse", "herbivar")) %dopar% {
+            
+            img2 <- reproject_grid(fast_load_image(.files_full_name[i]), 
+                                   init_pts = .pts, 
+                                   dest_size = 1000, 
+                                   qc_plot = FALSE)
+            dim(img2) <- dim(img2)[-3]
+            jpeg::writeJPEG(img2,
+                            paste(.dest_dir, paste0("processed_", .files[i]), sep = "/"), 
+                            quality = 1)
+            #cat("\r Cropping", i, "of", length(.files))
+          } 
+  attach_order_file_name(.dest_dir)
+  stopCluster(cl)
+  
+  hms_runtime(as.numeric(Sys.time() - start_time, units = "secs"))
+  message("\nDone!")
+}
+
+
+
+
+hms_runtime <- function(x){
+  h <- floor(x / 3600)
+  m <- floor((x - h * 3600) / 60)
+  s <- floor(x - h * 3600 - m * 60)
+  cat(sprintf("\nRuntime %02d:%02d:%02d\n", h,m,s))
+}
+
+
+frame_time <- function(x, fps){
+  x <- x / fps # convert to seconds
+  h <- floor(x / 3600)
+  m <- floor((x - h * 3600) / 60)
+  s <- floor(x - h * 3600 - m * 60)
+  as.character(invisible(sprintf("%02d:%02d::%02d", h,m,s)))
+}
+
+
+
+pb_par_lapply <- function(x, FUN, cores = 1, ...){
+  if(is.list(x)){
+    indf <- function(x,i){
+      x[[i]]
+    } 
+  } else {
+    indf <- function(x,i) {
+      x[i]
+    }
+  }
+  if(cores <= 1){
+    out <- lapply(seq_along(x), FUN = function(i){
+      cat(sprintf("\rProcessing loop %d",i))
+      FUN(indf(x, i), ...)
+    })
+  } else {
+    dots <- match.call(expand.dots = FALSE)$`...`
+    env <- environment()
+    lapply(seq_along(dots), function(i){
+      assign(x = names(dots)[i], value = eval(dots[[i]]), pos = env)
+    })
+    
+    message("\nInitializing parallel workers. . .")
+    cl <- makeCluster(cores, outfile = "")
+    registerDoSNOW(cl)
+    
+    indices <- seq_along(x)
+    
+    environment(FUN) <- environment()
+    
+    out <- foreach(
+      i = indices, 
+      .export = ls(globalenv()),
+      .combine = c, 
+      .verbose = FALSE, 
+      .final = invisible,
+      .options.snow = list(
+        progress = function(n) {
+          cat(sprintf("\r Processing %d out of %d", n, length(indices)))
+        }
+      ),
+      .packages = .packages()
+    ) %dopar% {
+      list(FUN(indf(x, i), ...))
+    }
+    
+    message("\nClosing parallel workers. . .")
+    stopCluster(cl)
+  }
+  
+  return(out)
+}
+
+
+
+detect_cat <- function(img, w = c(5,1), lambda = 0.1, sat = 0.1,  cores = 1){
+  start_time <- Sys.time()
+  if(depth(img) > 1){
+    out <- img %>% 
+      color_index(index = c("BI","NG"), plot = FALSE) %>% 
+      iml_prod(w) %>% 
+      renorm(min = 0, max = 1) %>% 
+      imsplit(axis = "z") %>% 
+      pb_par_lapply(function(x){
+        imagerExtra::SPE(x, lambda, s = sat, range = c(0,1)) %>% 
+          threshold2(thr = 0.6, thr.exact = TRUE) %>% 
+          split_max()
+      }, cores = cores) %>% 
+      as.imlist() %>% 
+      imappend("z")
+  } else {
+    out <- img %>% 
+      color_index(index = c("BI","NG"), plot = FALSE) %>% 
+      iml_prod(w) %>% 
+      renorm(min = 0, max = 1) %>% 
+      imagerExtra::SPE(lambda, s = sat, range = c(0,1)) %>%
+      threshold2(thr = 0.7, thr.exact = TRUE) %>% 
+      split_max() 
+  }
+  hms_runtime(as.numeric(Sys.time() - start_time, units = "secs"))
+  return(out)
+}
+
+
+
+iml_prod <- function(x, w = c(1,1)){
+  x[[1]] * w[1] + x[[2]] * w[2]
 }
 
 ### To Do ### 

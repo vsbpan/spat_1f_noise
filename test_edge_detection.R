@@ -1,5 +1,7 @@
 library(tidyverse)
 library(herbivar)
+library(foreach)
+library(doSNOW)
 source("helper_functions/image_utils.R")
 
 
@@ -16,10 +18,6 @@ ufl_trt_iml <- lapply(seq_len(nrow(trt_design_data)), function(i){
 names(ufl_trt_iml) <- paste0("rep_id", trt_design_data$rep_id)
 
 #################################################################################
-
-
-  points(x,y, cex = 2, pch = 19, col = "red")
-
 
 
 
@@ -54,16 +52,16 @@ plot(img2)
 #     background = NA
 #   ) %>% 
 #   thin(3) %>% 
-#   detect_lester() %>%
+#   detect_luster() %>%
 #   threshold2(thr = 0.65, thr.exact = TRUE) %>% 
 #   herbivar::plot.pixset(col.na = "green")
 
 plot(img2)
-detect_lester(img2, shadow_weight = 0.7) %>%
+detect_luster(img2, shadow_weight = 0.7) %>%
   threshold2(thr = 0.55, thr.exact = TRUE) %>% 
   plot()
 
-img3 <- detect_lester(img2) %>%
+img3 <- detect_luster(img2) %>%
   threshold2(thr = 0.65, thr.exact = TRUE)
 
 
@@ -95,8 +93,43 @@ imlist(
 
 
 
-
 fast_load_image("misc_tests/prototype3.jpg")
+
+
+plot(img2)
+
+detect_luster(img2, shadow_weight = 0) %>% 
+  imagerExtra::SPE(0.005) %>% 
+  medianblur(n = 10) %>% 
+  renorm(max = 1) %>% 
+  threshold2(thr = 0.66, thr.exact = TRUE) %>% 
+  plot()
+  
+  plot()
+  threshold2(thr = 0.6, thr.exact = TRUE) %>% 
+  plot()
+
+  imagerExtra::ThresholdAdaptive(k = 0.01,range = c(0,1), windowsize = 101) %>% 
+  plot()
+?imagerExtra::ThresholdAdaptive
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+when_ago <- function(x, t_final, now = Sys.time()){
+  now - (t_final - x)
+}
+  
+when_ago(32434, 230276, as.POSIXct("2023-10-30 10:02:40"))
 
 
 
