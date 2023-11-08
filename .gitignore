@@ -1,10 +1,10 @@
 .Rproj.user
 .Rhistory
-.RData
-.Ruserdata
+*.RData
+*.Ruserdata
 /graphs
 /invisible
 /time_lapse_feed
-.mp4
-.avi
+*.mp4
+*.avi
 /processed_feed
