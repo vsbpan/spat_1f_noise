@@ -4,6 +4,7 @@ library(foreach)
 library(doSNOW)
 source("helper_functions/file_mgmt.R")
 source("helper_functions/image_utils.R")
+source("helper_functions/utils.R")
 herbivar::pre_cmp_fun()
 
 src_root <- "time_lapse_feed"

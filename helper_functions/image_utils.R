@@ -465,102 +465,31 @@ crop_raw_img <- function(
 
 
 
-hms_runtime <- function(x){
-  h <- floor(x / 3600)
-  m <- floor((x - h * 3600) / 60)
-  s <- floor(x - h * 3600 - m * 60)
-  cat(sprintf("\nRuntime %02d:%02d:%02d\n", h,m,s))
-}
 
 
-frame_time <- function(x, fps){
-  x <- x / fps # convert to seconds
-  h <- floor(x / 3600)
-  m <- floor((x - h * 3600) / 60)
-  s <- floor(x - h * 3600 - m * 60)
-  as.character(invisible(sprintf("%02d:%02d::%02d", h,m,s)))
-}
-
-
-
-pb_par_lapply <- function(x, FUN, cores = 1, ...){
-  if(is.list(x)){
-    indf <- function(x,i){
-      x[[i]]
-    } 
-  } else {
-    indf <- function(x,i) {
-      x[i]
-    }
-  }
-  if(cores <= 1){
-    out <- lapply(seq_along(x), FUN = function(i){
-      cat(sprintf("\rProcessing loop %d",i))
-      FUN(indf(x, i), ...)
-    })
-  } else {
-    dots <- match.call(expand.dots = FALSE)$`...`
-    env <- environment()
-    lapply(seq_along(dots), function(i){
-      assign(x = names(dots)[i], value = eval(dots[[i]]), pos = env)
-    })
-    
-    message("\nInitializing parallel workers. . .")
-    cl <- makeCluster(cores, outfile = "")
-    registerDoSNOW(cl)
-    
-    indices <- seq_along(x)
-    
-    environment(FUN) <- environment()
-    
-    out <- foreach(
-      i = indices, 
-      .export = ls(globalenv()),
-      .combine = c, 
-      .verbose = FALSE, 
-      .final = invisible,
-      .options.snow = list(
-        progress = function(n) {
-          cat(sprintf("\r Processing %d out of %d", n, length(indices)))
-        }
-      ),
-      .packages = .packages()
-    ) %dopar% {
-      list(FUN(indf(x, i), ...))
-    }
-    
-    message("\nClosing parallel workers. . .")
-    stopCluster(cl)
-  }
-  
-  return(out)
-}
-
-
-
-detect_cat <- function(img, w = c(5,1), lambda = 0.1, sat = 0.1,  cores = 1){
+detect_cat <- function(img, w = c(5,1), thr = "kmeans", adjust = 1.3, clean = 3,
+                       lambda = 0.1, sat = 0.1,  cores = 1){
   start_time <- Sys.time()
-  if(depth(img) > 1){
+  if(TRUE){
     out <- img %>% 
       color_index(index = c("BI","NG"), plot = FALSE) %>% 
       iml_prod(w) %>% 
       renorm(min = 0, max = 1) %>% 
       imsplit(axis = "z") %>% 
-      pb_par_lapply(function(x){
+      pb_par_lapply(function(x, lambda, sat, thr, adjust, clean){
         imagerExtra::SPE(x, lambda, s = sat, range = c(0,1)) %>% 
-          threshold2(thr = 0.6, thr.exact = TRUE) %>% 
+          threshold2(thr = thr, adjust = adjust) %>% 
+          clean(clean) %>% 
           split_max()
-      }, cores = cores) %>% 
+      }, 
+      clean = clean,
+      adjust = adjust,
+      thr = thr,
+      lambda = lambda, 
+      sat = sat,
+      cores = cores) %>% 
       as.imlist() %>% 
       imappend("z")
-  } else {
-    out <- img %>% 
-      color_index(index = c("BI","NG"), plot = FALSE) %>% 
-      iml_prod(w) %>% 
-      renorm(min = 0, max = 1) %>% 
-      imagerExtra::SPE(lambda, s = sat, range = c(0,1)) %>%
-      threshold2(thr = 0.7, thr.exact = TRUE) %>% 
-      split_max() 
   }
   hms_runtime(as.numeric(Sys.time() - start_time, units = "secs"))
   return(out)
@@ -569,8 +498,44 @@ detect_cat <- function(img, w = c(5,1), lambda = 0.1, sat = 0.1,  cores = 1){
 
 
 iml_prod <- function(x, w = c(1,1)){
-  x[[1]] * w[1] + x[[2]] * w[2]
+  for(i in seq_along(w)){
+    if(i == 1){
+      if(w[i] > 0){
+        z <- x[[i]] * w[i]
+      } else {
+        z <- 1 / x[[i]] * w[i]
+      }
+      
+    } else {
+      if(w[i] > 0){
+        z <- z + x[[i]] * w[i]
+      } else {
+        z <- z + 1 / x[[i]] * w[i]
+        }
+      
+    }
+  }
+  z
 }
+
+
+load_video <- function(file_paths, thin.val = 5, cores = 6){
+  start_time <- Sys.time()
+  
+  out <- pb_par_lapply(file_paths, function(x, thin.val){
+    herbivar::thin(fast_load_image(x, transform = FALSE), thin.val)
+  }, cores = cores, 
+  thin.val = thin.val,
+  loop_text = "Loading image", 
+  inorder = FALSE) %>% 
+    imappend(axis = "z")
+  
+  hms_runtime(as.numeric(Sys.time() - start_time, units = "secs"))
+  return(out)
+}
+
+
+
 
 ### To Do ### 
 ## Add corner detection for artificial diet raster
