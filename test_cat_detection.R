@@ -13,7 +13,7 @@ src_dir <- paste(src_root, trialID, sep = "/")
 files <- list.files(src_dir, pattern = ".jpg") %>% files_reorder()
 files_full_name <- paste(src_dir, files, sep = "/") %>% files_reorder()
 
-
+vid <- load_video(files_full_name, cores = 6)
 
 
 vid_cat_mask %>% 
