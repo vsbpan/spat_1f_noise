@@ -1,6 +1,12 @@
 
 # Overlays grid cell labels on the treatment raster image
-plot_image_guide <- function(img, col = "red", cex = 0.8, main = NULL){
+plot_image_guide <- function(img, col = "red", cex = 0.8, main = NULL, mar = NULL, axes = TRUE, ...){
+  
+  if(!is.null(mar)){
+    temp_mar <- par()$mar
+    par(mar = mar)
+  }
+  
   ny <- nrow(img)
   nx <- ncol(img)
   
@@ -16,8 +22,12 @@ plot_image_guide <- function(img, col = "red", cex = 0.8, main = NULL){
       x = x/nx*(nx-1) + 0.5
     )
   
-  plot(img, main = main)
+  plot.cimg(img, main = main, axes = axes, ...)
   text(x = d$x, y = d$y, col = col, label = d$label, cex = cex)
+  
+  if(!is.null(mar)){
+    par(mar = temp_mar)
+  }
 }
 
 # Turns image into a single vector
@@ -445,10 +455,11 @@ crop_raw_img <- function(
           ),
           .packages = c("tidyverse", "herbivar")) %dopar% {
             
-            img2 <- reproject_grid(fast_load_image(.files_full_name[i]), 
+            img2 <- reproject_grid(fast_load_image(.files_full_name[i], transform = FALSE), 
                                    init_pts = .pts, 
                                    dest_size = 1000, 
-                                   qc_plot = FALSE)
+                                   qc_plot = FALSE) %>% 
+              mirror("x")
             dim(img2) <- dim(img2)[-3]
             jpeg::writeJPEG(img2,
                             paste(.dest_dir, paste0("processed_", .files[i]), sep = "/"), 
@@ -534,11 +545,37 @@ load_video <- function(file_paths, thin.val = 5, cores = 6){
   return(out)
 }
 
+anchor_reorder <- function(x){
+  is_ll <- (!inherits(x, "data.frame")) & is.list(x)
+  if(is_ll){
+    x <- pt_list2df(x)
+  }
+  o <- c(NA, NA, NA, NA)
+  rs <- rowSums(x)
+  min_o <- which.min(rs)
+  max_o <- which.max(rs)
+  o[1] <- min_o
+  o[3] <- max_o
+  
+  o4_candidate <- which(x$x > x$y)
+  o4_candidate <- o4_candidate[!o4_candidate %in% c(min_o, max_o)]
+  o[4] <- o4_candidate
+  o[2] <- c(1,2,3,4)[!c(1,2,3,4) %in% o]
+  x <- x[o,]
+  
+  if(is_ll){
+    x <- lapply(seq.int(4), function(i){
+      as.list(x[i,])
+    })
+  }
+  return(x)
+}
 
+as.bmp <- function(x){
+  dim(x) <- dim(x)[-3]
+  x
+}
 
-
-### To Do ### 
-## Add corner detection for artificial diet raster
 
 
 

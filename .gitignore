@@ -8,3 +8,5 @@
 *.mp4
 *.avi
 /processed_feed
+/annotations
+/videos

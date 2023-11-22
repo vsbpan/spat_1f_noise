@@ -132,3 +132,25 @@ files_reorder <- function(x){
   x[o]
 }
 
+
+rename_start_time <- function(x){
+  time <- gsub(".*_s|.jpg|_rank[0-9].*","",x) %>% 
+    as.numeric()
+  
+  
+  file.rename(x,gsub_element_wise(time, time - min(time), x)) %>% invisible()
+}
+
+gsub_element_wise <- function(pattern, replacement, x, 
+                              ignore.case = FALSE, perl = FALSE, 
+                              fixed = FALSE, useBytes = FALSE){
+  lapply(seq_along(x), function(i){
+    gsub(pattern[i], replacement[i], x[i])
+  }) %>% 
+    do.call("c",.)
+}
+
+
+paste_path <- function(x){
+  gsub(("\\\\"),"/",readLines("clipboard"))
+}
