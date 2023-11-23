@@ -14,7 +14,7 @@ herbivar::pre_cmp_fun()
 grid_nl <- 12
 
 # Number of reps per trt
-n <- 25
+n <- 8
 
 beta_0_iml <- lapply(1:n,function(x){
   z <- syn_spec(n = grid_nl, beta = 0, plot = FALSE)
@@ -24,17 +24,17 @@ names(beta_0_iml) <- paste0("beta",0,"_id",1:n)
 
 
 beta_n5_iml <- lapply(1:n,function(x){
-  syn_spec(n = grid_nl, beta = -4, plot = FALSE)
+  syn_spec(n = grid_nl, beta = -5, plot = FALSE)
 }) %>% 
   as.imlist()
-names(beta_n5_iml) <- paste0("beta",-4,"_id",1:n)
+names(beta_n5_iml) <- paste0("beta",-5,"_id",1:n)
 
 
 beta_5_iml <- lapply(1:n,function(x){
-  syn_spec(n = grid_nl, beta = 4, plot = FALSE)
+  syn_spec(n = grid_nl, beta = 5, plot = FALSE)
 }) %>% 
   as.imlist()
-names(beta_5_iml) <- paste0("beta",4,"_id",1:n)
+names(beta_5_iml) <- paste0("beta",5,"_id",1:n)
 
 
 #### Merge and shuffle spectra as rep order ####
@@ -83,7 +83,7 @@ trt_design_data <- lapply(beta_list, function(x){
 
 trt_design_data
 
-# write_csv(trt_design_data, "raw_data/example_trt_spectra_meta.csv")
+#write_csv(trt_design_data, "raw_data/Nov_20_week1_trt_spectra_meta.csv")
 
 
 
@@ -91,7 +91,7 @@ trt_design_data
 #### Read generated spectra and plot helper image guide ####
 
 
-trt_design_data <- read_csv("raw_data/example_trt_spectra_meta.csv")
+trt_design_data <- read_csv("raw_data/Nov_20_week1_trt_spectra_meta.csv")
 
 ufl_trt_iml <- lapply(seq_len(nrow(trt_design_data)), function(i){
   x <- trt_design_data[i,]
@@ -112,12 +112,13 @@ for(i in seq_along(ufl_trt_iml)){
 }
 
 
-
-
-
-
-
-
+# for (i in seq_along(ufl_trt_iml)){
+#   fn <- names(ufl_trt_iml)[i]
+#   jpeg(paste0("templates_for_print/", fn, ".jpg"), width = 12, height = 14, units = "cm", res = 600)
+#   ufl_trt_iml[[i]] %>% 
+#     plot_image_guide(mar = c(0,0,1,0), axes = FALSE, main = fn)
+#   dev.off()
+# }
 
 
 # Misc tests
