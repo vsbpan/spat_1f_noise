@@ -144,6 +144,7 @@ rename_start_time <- function(x){
 gsub_element_wise <- function(pattern, replacement, x, 
                               ignore.case = FALSE, perl = FALSE, 
                               fixed = FALSE, useBytes = FALSE){
+<<<<<<< HEAD
   
   n <- length(x)
   if(n > 1){
@@ -155,6 +156,8 @@ gsub_element_wise <- function(pattern, replacement, x,
     }
   }
   
+=======
+>>>>>>> 048faae9d25ed30be9902648bf29e5ecfcebbe79
   lapply(seq_along(x), function(i){
     gsub(pattern[i], replacement[i], x[i])
   }) %>% 
@@ -165,6 +168,7 @@ gsub_element_wise <- function(pattern, replacement, x,
 paste_path <- function(x){
   gsub(("\\\\"),"/",readLines("clipboard"))
 }
+<<<<<<< HEAD
 
 
 file_base_name <- function(x){
@@ -176,3 +180,5 @@ file_root <- function(x){
   gsub_element_wise(file_base_name(x), "", x)
 }
 
+=======
+>>>>>>> 048faae9d25ed30be9902648bf29e5ecfcebbe79
