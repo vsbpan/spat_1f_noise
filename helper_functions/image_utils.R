@@ -382,9 +382,10 @@ fast_load_image <- function(path, transform = TRUE){
 
 detect_jostle <- function(vid, res = 10000, delta_thresh = 0.15, prop_px = 0.1){
   if(!is.null(res) || !is.na(res)){
-    if(prod(dim(vid)[1:2]) > res)
+    if(prod(dim(vid)[1:2]) > res){
       side_len <- floor(sqrt(10000))
-    vid <- imager::resize(vid, size_x = side_len, size_y = side_len) 
+      vid <- imager::resize(vid, size_x = side_len, size_y = side_len)  
+    }
   }
   
   if(imager::spectrum(vid) > 1){
@@ -427,9 +428,19 @@ make_video <- function(src_dir, file, fps = 10, extn = ".mp4"){
 }
 
 
+choose_pts <- function(pts_list, index){
+  i <- lapply(pts_list, function(x, index){
+    index %in% attr(x, "indices")
+  }, index = index) %>% 
+    do.call("c",.) %>% 
+    which()
+  return(pts_list[[i]])
+}
+
+
 crop_raw_img <- function(
-    indices = seq_along(get("files_full_name")),
-    .pts = get("pts"),
+    indices = do.call("c", lapply(pts_list, function(x){attr(x, "indices")})),
+    .pts_list = get("pts_list"),
     .files_full_name = get("files_full_name"), 
     .files = get("files"), 
     .dest_dir = get("dest_dir"), 
@@ -437,6 +448,11 @@ crop_raw_img <- function(
 ){
   
   start_time <- Sys.time()
+  
+  
+  if(is.null(indices)){
+    indices <- seq_along(.files_full_name)
+  }
   
   message("\nInitializing parallel workers. . .")
   cl <- makeCluster(cores, outfile = "")
@@ -456,7 +472,7 @@ crop_raw_img <- function(
           .packages = c("tidyverse", "herbivar")) %dopar% {
             
             img2 <- reproject_grid(fast_load_image(.files_full_name[i], transform = FALSE), 
-                                   init_pts = .pts, 
+                                   init_pts = choose_pts(pts_list, i), 
                                    dest_size = 1000, 
                                    qc_plot = FALSE) %>% 
               mirror("x")

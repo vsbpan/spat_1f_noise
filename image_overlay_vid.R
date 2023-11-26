@@ -1,4 +1,4 @@
-trt_design_data <- read_csv("raw_data/Nov_20_week1_trt_spectra_meta.csv")
+trt_design_data <- read_csv("raw_data/trt_spectra_meta/Nov_20_week1_trt_spectra_meta.csv")
 
 ufl_trt_iml <- lapply(seq_len(nrow(trt_design_data)), function(i){
   x <- trt_design_data[i,]
@@ -17,7 +17,7 @@ files <- list.files(dest_dir, full.names = TRUE)
 
 img <- fast_load_image(files[1], FALSE)
 
-img_mask <- ufl_trt_iml$rep_id19 %>% 
+img_mask <- ufl_trt_iml$rep_id21 %>% 
   resize(size_x = dim(img)[1], size_y = dim(img)[2])
 img_mask <- imappend(imlist(img_mask, img_mask, img_mask), axis = "c")
 
@@ -45,8 +45,6 @@ pb_par_lapply(
 
 make_video(src_dir = "invisible/test_video_overlay", 
            file = paste0(trialID,"_overlay2")) 
-
-
 
 
 

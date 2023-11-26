@@ -127,8 +127,16 @@ attach_order_file_name <- function(src_dir){
 
 
 files_reorder <- function(x){
-  stopifnot(all(grepl("_rank",x)))
-  o <- order(as.numeric(gsub(".*_rank|.jpg","",x)))
+  no_rank_present <- !any(grepl("_rank",x))
+  stopifnot(all(grepl("_rank",x)) | no_rank_present)
+  if(no_rank_present){
+    o <- gsub(".*_s|.jpg","",x) %>% 
+             as.numeric() %>% 
+             order()
+  } else{
+    o <- order(as.numeric(gsub(".*_rank|.jpg","",x)))
+  } 
+  
   x[o]
 }
 
@@ -173,5 +181,18 @@ file_base_name <- function(x){
 
 file_root <- function(x){
   gsub_element_wise(file_base_name(x), "", x)
+}
+
+
+save_anchors <- function(trialID){
+  dest <- paste0("raw_data/picked_anchors/",trialID,".rds")
+  if(file.exists(dest)){
+    choice <- menu(c("Yes", "No"), title = sprintf("'%s' already exists. Overwrite?", trialID))
+    if(choice == 2){
+      message("Exiting.")
+    }
+  }
+  saveRDS(pts_list, file = dest)
+  message(sprintf("'%s' anchors list saved!", trialID))
 }
 

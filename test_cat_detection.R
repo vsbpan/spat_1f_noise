@@ -8,12 +8,12 @@ source("helper_functions/utils.R")
 herbivar::pre_cmp_fun()
 
 src_root <- "processed_feed"
-trialID <- "reptrial_4" # Set id
+trialID <- "rep21" # Set id
 src_dir <- paste(src_root, trialID, sep = "/")
 files <- list.files(src_dir, pattern = ".jpg") %>% files_reorder()
 files_full_name <- paste(src_dir, files, sep = "/") %>% files_reorder()
 
-vid <- load_video(files_full_name, cores = 6)
+vid <- load_video(files_full_name, cores = 6, thin.val = 10)
 
 
 vid_cat_mask %>% 

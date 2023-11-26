@@ -13,19 +13,25 @@ dest_root <- "processed_feed"
 trialID <- "rep21" # Set id
 src_dir <- paste(src_root, trialID, sep = "/")
 dest_dir <- paste(dest_root, trialID, sep = "/")
-files <- list.files(src_dir, pattern = ".jpg")
-files_full_name <- paste(src_dir, files, sep = "/")
+files <- list.files(src_dir, pattern = ".jpg") %>% files_reorder()
+files_full_name <- paste(src_dir, files, sep = "/") %>% files_reorder()
 
 # Initialize directory
 init_dir(root_path = dest_root, dir_name = trialID)
 
-# Read in test image and etect corners
+# Read in test image and detect corners
 img <- fast_load_image(files_full_name[1], transform = FALSE) 
 
 pts <- anchor_picker_app(files_full_name[1], thin = 2, anchor_size = 5)
-#undebug(detect_corners)
+attr(pts, "indices") <- 1:190
+pts_list <- list(pts)
 
-#pts <- detect_corners(img, qc_plot = TRUE, scale = 3, adjust = 1, list_of_list = TRUE)
+
+# pts2 <- anchor_picker_app(files_full_name[191], thin = 2, anchor_size = 5)
+# attr(pts2, "indices") <- 191:length(files_full_name)
+# pts_list <- c(pts_list,list(pts2)
+
+
 
 plot(img)
 pts %>% 
@@ -34,16 +40,28 @@ pts %>%
 
 
 
+
+
+
 # Check reprojection quality
-img2 <- reproject_grid(fast_load_image(files_full_name[1], transform = FALSE), 
-                       init_pts = pts, 
-                       dest_size = 1000, 
-                       qc_plot = FALSE)
-plot(img2)
+# img2 <- reproject_grid(fast_load_image(files_full_name[1], transform = FALSE), 
+#                        init_pts = pts, 
+#                        dest_size = 1000, 
+#                        qc_plot = FALSE)
+# plot(img2)
 
 # If all is well, reproject for all images
 # NOTE: The cropped image is mirrored by the x axis (looks correct with plot.cimg though bc the y-axis is flipped)
 crop_raw_img()
+save_anchors(trialID)
+
+
+
+
+
+
+
+
 
 dest_root <- "processed_feed"
 list.dirs(dest_root, full.names = FALSE, recursive = FALSE)
