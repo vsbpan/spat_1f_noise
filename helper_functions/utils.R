@@ -40,7 +40,7 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
   } else {
     
     if(!has_clust){
-      message("\nInitializing parallel workers. . .")
+      message(sprintf("\nInitializing %s parallel workers. . .", cores))
       cl <- makeCluster(cores, outfile = "")
       doSNOW::registerDoSNOW(cl)
     }

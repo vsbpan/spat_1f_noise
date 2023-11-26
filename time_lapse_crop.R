@@ -10,7 +10,7 @@ herbivar::pre_cmp_fun()
 
 src_root <- "time_lapse_feed"
 dest_root <- "processed_feed"
-trialID <- "rep21" # Set id
+trialID <- "rep14" # Set id
 src_dir <- paste(src_root, trialID, sep = "/")
 dest_dir <- paste(dest_root, trialID, sep = "/")
 files <- list.files(src_dir, pattern = ".jpg") %>% files_reorder()
@@ -23,7 +23,7 @@ init_dir(root_path = dest_root, dir_name = trialID)
 img <- fast_load_image(files_full_name[1], transform = FALSE) 
 
 pts <- anchor_picker_app(files_full_name[1], thin = 2, anchor_size = 5)
-attr(pts, "indices") <- 1:190
+attr(pts, "indices") <- seq_along(files_full_name)
 pts_list <- list(pts)
 
 

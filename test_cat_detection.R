@@ -8,7 +8,7 @@ source("helper_functions/utils.R")
 herbivar::pre_cmp_fun()
 
 src_root <- "processed_feed"
-trialID <- "rep21" # Set id
+trialID <- "rep14" # Set id
 src_dir <- paste(src_root, trialID, sep = "/")
 files <- list.files(src_dir, pattern = ".jpg") %>% files_reorder()
 files_full_name <- paste(src_dir, files, sep = "/") %>% files_reorder()
