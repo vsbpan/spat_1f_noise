@@ -27,9 +27,9 @@ attr(pts, "indices") <- 1:190
 pts_list <- list(pts)
 
 
-# pts2 <- anchor_picker_app(files_full_name[191], thin = 2, anchor_size = 5)
-# attr(pts2, "indices") <- 191:length(files_full_name)
-# pts_list <- c(pts_list,list(pts2)
+pts2 <- anchor_picker_app(files_full_name[191], thin = 2, anchor_size = 5)
+attr(pts2, "indices") <- 191:length(files_full_name)
+pts_list <- c(pts_list,list(pts2))
 
 
 
@@ -54,7 +54,6 @@ pts %>%
 # NOTE: The cropped image is mirrored by the x axis (looks correct with plot.cimg though bc the y-axis is flipped)
 crop_raw_img()
 save_anchors(trialID)
-
 
 
 

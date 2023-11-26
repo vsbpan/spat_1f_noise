@@ -40,7 +40,7 @@ pb_par_lapply(
     )
   }, 
   cores = 8
-)
+) %>% invisible()
 
 
 make_video(src_dir = "invisible/test_video_overlay", 
