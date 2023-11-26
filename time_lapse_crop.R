@@ -10,7 +10,7 @@ herbivar::pre_cmp_fun()
 
 src_root <- "time_lapse_feed"
 dest_root <- "processed_feed"
-trialID <- "rep14" # Set id
+trialID <- "rep21" # Set id
 src_dir <- paste(src_root, trialID, sep = "/")
 dest_dir <- paste(dest_root, trialID, sep = "/")
 files <- list.files(src_dir, pattern = ".jpg")
@@ -47,7 +47,7 @@ crop_raw_img()
 
 dest_root <- "processed_feed"
 list.dirs(dest_root, full.names = FALSE, recursive = FALSE)
-trialID <- "rep14"
+trialID <- "rep3"
 dest_dir <- paste(dest_root, trialID, sep = "/")
 
 make_video(src_dir = dest_dir, file = trialID) # Make video

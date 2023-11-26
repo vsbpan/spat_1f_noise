@@ -87,3 +87,7 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
 }
 
 
+read_table <- function(x){
+  read.table("clipboard",sep = "\t", header = TRUE)
+}
+

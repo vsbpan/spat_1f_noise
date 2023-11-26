@@ -122,6 +122,13 @@ anchor_picker_app <- function(img_path,
                              init_pts = pts, 
                              dest_size = 800, 
                              qc_plot = FALSE)
+      
+      img_mask <- resize(as.cimg(matrix(rep(c(rep(c(1,0), 6),rep(c(0,1), 6)), 6), nrow = 12, ncol = 12)),
+                         size_x = dim(z)[1], 
+                         size_y = dim(z)[2])
+      
+      img_mask <- imappend(imlist(img_mask, img_mask, img_mask), axis = "c")
+      z <- imager::imdraw(z, img_mask, opacity = 0.05)
       dim(z) <- dim(z)[-3]
       tempimg_path <- tempfile(fileext = ".jpg")
       jpeg::writeJPEG(z, tempimg_path)
