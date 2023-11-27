@@ -147,7 +147,10 @@ anchor_picker_app <- function(img_path,
         out <- anchor_reorder(pts)
         attr(out, "source") <- img_path
         print(pt_list2df(out))
-        assign("anchor_coord_foooooooooooooodnosdnvodnvonv", value = out, envir = globalenv())
+        assign("anchor_coord_foooooooooooooodnosdnvodnvonv", 
+               value = out, 
+               envir = globalenv())
+        
         stopApp()
       }
     })
@@ -255,7 +258,20 @@ anchor_picker_app <- function(img_path,
              envir = globalenv())
     }
   }
-  z <- get("anchor_coord_foooooooooooooodnosdnvodnvonv", envir = globalenv())
-  rm("anchor_coord_foooooooooooooodnosdnvodnvonv", envir = globalenv())
+  z <- tryCatch(
+    get("anchor_coord_foooooooooooooodnosdnvodnvonv", envir = globalenv()), 
+    error = function(e){
+      message("\nAnchor picking unsuccessful")
+      return(NULL)
+    }
+  )
+  
+  tryCatch(
+    rm("anchor_coord_foooooooooooooodnosdnvodnvonv", envir = globalenv()),
+    warning = function(w){
+      
+    }
+  )
+  
   invisible(z)
 }

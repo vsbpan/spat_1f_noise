@@ -454,6 +454,12 @@ crop_raw_img <- function(
     indices <- seq_along(.files_full_name)
   }
   
+  new_file_names <- paste(.dest_dir, paste0("processed_", .files), sep = "/")
+  file_conflicts <- sum(file.exists(new_file_names))
+  if(file_conflicts > 0){
+    stop(sprintf("%s files already exist.", file_conflicts))
+  }
+  
   message("\nInitializing parallel workers. . .")
   cl <- makeCluster(cores, outfile = "")
   registerDoSNOW(cl)

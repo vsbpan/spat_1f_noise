@@ -15,9 +15,9 @@ names(ufl_trt_iml) <- paste0("rep_id", trt_design_data$rep_id)
 
 files <- list.files(dest_dir, full.names = TRUE)
 
-img <- fast_load_image(files[1], FALSE)
+img <- fast_load_image(files[1000], FALSE)
 
-img_mask <- ufl_trt_iml$rep_id21 %>% 
+img_mask <- ufl_trt_iml$rep_id16 %>% 
   resize(size_x = dim(img)[1], size_y = dim(img)[2])
 img_mask <- imappend(imlist(img_mask, img_mask, img_mask), axis = "c")
 

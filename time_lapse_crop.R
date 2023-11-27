@@ -10,7 +10,7 @@ herbivar::pre_cmp_fun()
 
 src_root <- "time_lapse_feed"
 dest_root <- "processed_feed"
-trialID <- "rep14" # Set id
+trialID <- "rep16" # Set id
 src_dir <- paste(src_root, trialID, sep = "/")
 dest_dir <- paste(dest_root, trialID, sep = "/")
 files <- list.files(src_dir, pattern = ".jpg") %>% files_reorder()
@@ -22,14 +22,31 @@ init_dir(root_path = dest_root, dir_name = trialID)
 # Read in test image and detect corners
 img <- fast_load_image(files_full_name[1], transform = FALSE) 
 
-pts <- anchor_picker_app(files_full_name[1], thin = 2, anchor_size = 5)
+pts <- anchor_picker_app(files_full_name[1], thin = 1, anchor_size = 5)
 attr(pts, "indices") <- seq_along(files_full_name)
 pts_list <- list(pts)
 
 
-pts2 <- anchor_picker_app(files_full_name[191], thin = 2, anchor_size = 5)
-attr(pts2, "indices") <- 191:length(files_full_name)
-pts_list <- c(pts_list,list(pts2))
+# pts2 <- anchor_picker_app(files_full_name[max(attr(pts, "indices"))+1], 
+#                           thin = 1, anchor_size = 5)
+# attr(pts2, "indices") <- (max(attr(pts, "indices"))+1):188
+# pts_list <- c(pts_list,list(pts2))
+# 
+# 
+# pts3 <- anchor_picker_app(files_full_name[max(attr(pts2, "indices"))+1], 
+#                           thin = 1, anchor_size = 5)
+# attr(pts3, "indices") <- (max(attr(pts2, "indices"))+1):922
+# pts_list <- c(pts_list,list(pts3))
+# 
+# pts4 <- anchor_picker_app(files_full_name[max(attr(pts3, "indices"))+1], 
+#                           thin = 1, anchor_size = 5)
+# attr(pts4, "indices") <- (max(attr(pts3, "indices"))+1):923
+# pts_list <- c(pts_list,list(pts4))
+# 
+# pts5 <- anchor_picker_app(files_full_name[max(attr(pts4, "indices"))+1], 
+#                           thin = 1, anchor_size = 5)
+# attr(pts5, "indices") <- (max(attr(pts4, "indices"))+1):length(files_full_name)
+# pts_list <- c(pts_list,list(pts5))
 
 
 
@@ -64,7 +81,7 @@ save_anchors(trialID)
 
 dest_root <- "processed_feed"
 list.dirs(dest_root, full.names = FALSE, recursive = FALSE)
-trialID <- "rep3"
+trialID <- "rep29"
 dest_dir <- paste(dest_root, trialID, sep = "/")
 
 make_video(src_dir = dest_dir, file = trialID) # Make video
