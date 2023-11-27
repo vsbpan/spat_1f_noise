@@ -196,3 +196,28 @@ save_anchors <- function(trialID){
   message(sprintf("'%s' anchors list saved!", trialID))
 }
 
+
+
+report_missing_photos <- function(root_dir){
+  stopifnot(dir.exists(root_dir))
+  dirs <- list.dirs(root_dir, recursive = FALSE)
+  for (i in seq_along(dirs)){
+    fs <- list.files(dirs[i])
+    
+    if(length(fs) < 2){
+      next
+    }
+    v <- fs %>% 
+      gsub(".*_s|.jpg|_rank.*","",.) %>% 
+      as.numeric() %>% 
+      sort() %>% 
+      diff() %>% 
+      sapply(function(x){
+        z <- (x /360)
+        !((z < 1.2) & (z > 0.8))
+      }) %>% 
+      sum()
+    message(sprintf("%s has %s missing photos", dirs[i], v))
+  }
+}
+
