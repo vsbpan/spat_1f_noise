@@ -17,8 +17,8 @@ grid_nl <- 12
 n <- 8
 
 # Start ID
-n_0 <- 16
-n_reps0 <- 61
+n_0 <- 24
+n_reps0 <- 91
 
 
 beta_0_iml <- lapply(1:n,function(x){
@@ -90,9 +90,9 @@ trt_design_data <- lapply(beta_list, function(x){
     var_trt = sample(rep(c("low_var","high_var"), 4), replace = FALSE)
   ) 
 
-trt_design_data
+trt_design_data 
 
-#write_csv(trt_design_data, "raw_data/trt_spectra_meta/Dec_4_week3_trt_spectra_meta.csv")
+#write_csv(trt_design_data, "raw_data/trt_spectra_meta/Dec_11_week4_trt_spectra_meta.csv")
 
 
 
@@ -100,7 +100,7 @@ trt_design_data
 #### Read generated spectra and plot helper image guide ####
 
 
-trt_design_data <- read_csv("raw_data/trt_spectra_meta/Dec_4_week3_trt_spectra_meta.csv")
+trt_design_data <- read_csv("raw_data/trt_spectra_meta/Dec_11_week4_trt_spectra_meta.csv")
 
 ufl_trt_iml <- lapply(seq_len(nrow(trt_design_data)), function(i){
   x <- trt_design_data[i,]
@@ -122,7 +122,7 @@ for(i in seq_along(ufl_trt_iml)){
 
 
 
-# folder <- "week3_dec_04"
+# folder <- "week4_dec_11"
 # for (i in seq_along(ufl_trt_iml)){
 #   fn <- names(ufl_trt_iml)[i]
 #   jpeg(paste0("C:/Users/vin92/Desktop/1f noise project/templates_for_print/",folder,"/", fn, ".jpg"), width = 12, height = 14, units = "cm", res = 600)
