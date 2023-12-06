@@ -65,7 +65,7 @@ anchor_picker_app <- function(img_path,
       click_data$x[counter$clicknum] <- input$image_dblclick$coords_img$y
       click_data$y[counter$clicknum] <- input$image_dblclick$coords_img$x
       
-      img_meta$img <- add_point(
+      img_meta$img <- add_point_bmp(
         img_meta$img,
         r = anchor_size_val,
         x = input$image_dblclick$coords_img$y,
@@ -171,7 +171,7 @@ anchor_picker_app <- function(img_path,
   stopifnot(file.exists(img_path))
   
   global_env_variables <- c("img_path", "thin_val", "anchor_size_val",
-                            "thin2","interpolate_pts","add_point")
+                            "thin2","interpolate_pts","add_point_bmp")
   global_env_variables_exists <- sapply(global_env_variables,
                                         exists)
   has_conflicts <- any(global_env_variables_exists)
@@ -215,7 +215,7 @@ anchor_picker_app <- function(img_path,
   }
   
   
-  add_point <<- function(img, r, x, y, color){
+  add_point_bmp <<- function(img, r, x, y, color){
     color <- col2rgb(color)/255
     
     xmax <- pmin(x + r, nrow(img))

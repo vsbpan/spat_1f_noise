@@ -1,3 +1,4 @@
+# Format seconds into nice H:S:M format
 hms_runtime <- function(x){
   h <- floor(x / 3600)
   m <- floor((x - h * 3600) / 60)
@@ -6,7 +7,7 @@ hms_runtime <- function(x){
 }
 
 
-
+# Find the frame time
 frame_time <- function(x, fps){
   x <- x / fps # convert to seconds
   h <- floor(x / 3600)
@@ -15,7 +16,7 @@ frame_time <- function(x, fps){
   as.character(invisible(sprintf("%02d:%02d::%02d", h,m,s)))
 }
 
-
+# lapply() with progressbar and parellel support. 
 pb_par_lapply <- function(x, FUN, cores = 1, ..., 
                           loop_text = "Processing",
                           inorder = FALSE, export_fun_only = TRUE){
@@ -51,11 +52,13 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
     environment(FUN) <- environment()
     
     if(export_fun_only){
+      # Export only functions in the global environment (faster)
       export <- do.call("c",lapply(ls(globalenv()), 
                                    function(x){
                                      switch(is.function(get(x)), x, NULL)
                                     }))
     } else {
+      # Otherwise export other global variables as well
       export <- ls(globalenv())
     }
     

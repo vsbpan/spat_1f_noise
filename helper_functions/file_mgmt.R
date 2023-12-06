@@ -1,4 +1,6 @@
 library(herbivar)
+
+# Create directory if it doesn't exit
 init_dir <- function(root_path, dir_name){
   stopifnot(length(dir_name) == 1)
   stopifnot(length(root_path) == 1)
@@ -17,6 +19,7 @@ init_dir <- function(root_path, dir_name){
   }
 }
 
+# Read time lapse formated time
 read_time <- function(x){
   date <- gsub("_.*", "", x)
   time <- gsub(".*_", "", x) %>% gsub("\\.", ":", .)
@@ -26,14 +29,14 @@ read_time <- function(x){
   return(time_formated)
 }
 
-
+# Find relative time
 get_relative_time <- function(x, units = "secs"){
   stopifnot(all(is.finite.POSIXlt(x)))
   
   as.numeric(difftime(x, min(x), units = units))
 }
 
-
+# Export and rename photos in thumbdrive to local drive
 export_time_lapse_img <- function(source_dir, dest_dir_root){
   repID <- paste0("rep",readline(prompt = "Enter replication ID:\t "))
   
@@ -71,7 +74,7 @@ export_time_lapse_img <- function(source_dir, dest_dir_root){
 
 
 
-
+# Move files with file.rename() with a progress bar
 move_files_pb <- function (from_dir, to_dir, file_names, pb = FALSE){
   n <- length(file_names)
   for (i in seq_len(n)) {
@@ -83,12 +86,12 @@ move_files_pb <- function (from_dir, to_dir, file_names, pb = FALSE){
   }
 }
 
-
+# Append working directory to the path
 abs_path <- function(x){
   paste(getwd(),x, sep = "/")
 }
 
-
+# Remove rank from file name
 unrank_files <- function(src_dir){
   f <- list.files(src_dir, full.names = TRUE)
   f2 <- gsub("_rank[0-9].*\\.jpg",".jpg",f)
@@ -98,7 +101,7 @@ unrank_files <- function(src_dir){
   ))
 }
 
-
+# Append a rank extension to file name based on time taken
 attach_order_file_name <- function(src_dir){
   f <- list.files(src_dir, full.names = TRUE)
   
@@ -125,7 +128,7 @@ attach_order_file_name <- function(src_dir){
 }
 
 
-
+# Reorder a vecotr of file paths based on rank or time
 files_reorder <- function(x){
   no_rank_present <- !any(grepl("_rank",x))
   stopifnot(all(grepl("_rank",x)) | no_rank_present)
@@ -140,7 +143,7 @@ files_reorder <- function(x){
   x[o]
 }
 
-
+# Rename files using the minimum detected time as the start time
 rename_start_time <- function(x){
   time <- gsub(".*_s|.jpg|_rank[0-9].*","",x) %>% 
     as.numeric()
@@ -149,6 +152,7 @@ rename_start_time <- function(x){
   file.rename(x,gsub_element_wise(time, time - min(time), x)) %>% invisible()
 }
 
+# Perform gsub() by element
 gsub_element_wise <- function(pattern, replacement, x, 
                               ignore.case = FALSE, perl = FALSE, 
                               fixed = FALSE, useBytes = FALSE){
@@ -168,22 +172,22 @@ gsub_element_wise <- function(pattern, replacement, x,
     do.call("c",.)
 }
 
-
+# Read path copied from windows and convert backslash to forward slash
 paste_path <- function(x){
   gsub(("\\\\"),"/",readLines("clipboard"))
 }
 
-
+# The file name
 file_base_name <- function(x){
   gsub(".*/","",x)
 }
 
-
+# The name of the root directory
 file_root <- function(x){
   gsub_element_wise(file_base_name(x), "", x)
 }
 
-
+# Write an RDS file of the anchor list based on trialID
 save_anchors <- function(trialID){
   dest <- paste0("raw_data/picked_anchors/",trialID,".rds")
   if(file.exists(dest)){
@@ -196,8 +200,12 @@ save_anchors <- function(trialID){
   message(sprintf("'%s' anchors list saved!", trialID))
 }
 
+# Parse time from file name
+file_time <- function(x){
+  as.numeric(gsub(".*_s|_rank.*|.jpg", "", x))
+}
 
-
+# Find if a sequence of photos in the sub-directories of a directory has a gap or duplication (deviation from 6 minutes)
 report_missing_photos <- function(root_dir){
   stopifnot(dir.exists(root_dir))
   dirs <- list.dirs(root_dir, recursive = FALSE)
@@ -208,8 +216,7 @@ report_missing_photos <- function(root_dir){
       next
     }
     v <- fs %>% 
-      gsub(".*_s|.jpg|_rank.*","",.) %>% 
-      as.numeric() %>% 
+      file_time() %>% 
       sort() %>% 
       diff() %>% 
       sapply(function(x){

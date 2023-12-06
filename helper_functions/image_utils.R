@@ -368,6 +368,7 @@ na_replace <- function(img, val){
   img
 }
 
+# Load image with JPEG 
 fast_load_image <- function(path, transform = TRUE){
   if(transform){
     bmp <- jpeg::readJPEG(path) %>% aperm(c(2, 1, 3))
@@ -379,7 +380,7 @@ fast_load_image <- function(path, transform = TRUE){
   bmp 
 }
 
-
+# Detect if a video has significant shift in pixel values
 detect_jostle <- function(vid, res = 10000, delta_thresh = 0.15, prop_px = 0.1){
   if(!is.null(res) || !is.na(res)){
     if(prod(dim(vid)[1:2]) > res){
@@ -405,7 +406,7 @@ detect_jostle <- function(vid, res = 10000, delta_thresh = 0.15, prop_px = 0.1){
 }
 
 
-
+# Make video form a stack of images in a directory
 make_video <- function(src_dir, file, fps = 10, extn = ".mp4"){
   f <- list.files(src_dir, full.names = TRUE)
   f2 <- paste(src_dir, gsub(".*_rank","image-",f), sep = "/")
@@ -427,7 +428,7 @@ make_video <- function(src_dir, file, fps = 10, extn = ".mp4"){
   ))
 }
 
-
+# Index the reproject points from specified index
 choose_pts <- function(pts_list, index){
   i <- lapply(pts_list, function(x, index){
     index %in% attr(x, "indices")
@@ -437,7 +438,7 @@ choose_pts <- function(pts_list, index){
   return(pts_list[[i]])
 }
 
-
+# Crop and reproject raw image as processed image
 crop_raw_img <- function(
     indices = do.call("c", lapply(pts_list, function(x){attr(x, "indices")})),
     .pts_list = get("pts_list"),
@@ -499,7 +500,7 @@ crop_raw_img <- function(
 
 
 
-
+# Detect caterpillar from a colored image using thresholding 
 detect_cat <- function(img, w = c(5,1), thr = "kmeans", adjust = 1.3, clean = 3,
                        lambda = 0.1, sat = 0.1,  cores = 1){
   start_time <- Sys.time()
@@ -529,7 +530,7 @@ detect_cat <- function(img, w = c(5,1), thr = "kmeans", adjust = 1.3, clean = 3,
 }
 
 
-
+# Take two matrices and do element-wise multiplication with some weight
 iml_prod <- function(x, w = c(1,1)){
   for(i in seq_along(w)){
     if(i == 1){
@@ -551,7 +552,7 @@ iml_prod <- function(x, w = c(1,1)){
   z
 }
 
-
+# Load a stack of images in a directory as video using parallelization. 
 load_video <- function(file_paths, thin.val = 5, cores = 6){
   start_time <- Sys.time()
   
@@ -567,6 +568,7 @@ load_video <- function(file_paths, thin.val = 5, cores = 6){
   return(out)
 }
 
+# Reorder anchors for projection (top left, top right, bottom right, bottom left)
 anchor_reorder <- function(x){
   is_ll <- (!inherits(x, "data.frame")) & is.list(x)
   if(is_ll){
@@ -593,12 +595,37 @@ anchor_reorder <- function(x){
   return(x)
 }
 
+
+# Reformat cimg as bitmap format for interface with jpeg package
 as.bmp <- function(x){
   dim(x) <- dim(x)[-3]
   x
 }
 
-
-
-
-
+# Add a point to an image
+add_point <- function(img, x, y, r = ceiling(min(dim(img)[1:2])/80), color = "red"){
+  if(imager::is.pixset(img) || imager::spectrum(img) < 3){
+    img <- as.cimg_color(img)
+  }
+  
+  y <- as.numeric(round(y))
+  x <- as.numeric(round(x))
+  
+  color <- col2rgb(color)/255
+  
+  xmax <- as.numeric(pmin(x + r, nrow(img)))
+  xmin <- as.numeric(pmax(x - r, 1))
+  ymax <- as.numeric(pmin(y + r, ncol(img)))
+  ymin <- as.numeric(pmax(y - r, 1))
+  
+  ptd <- expand.grid("xi" = seq(xmin, xmax, by = 1), "yi" = seq(ymin, ymax, by = 1))
+  v <- sqrt((ptd$xi - x)^2 + (ptd$yi - y)^2) < r
+  ptd <- ptd[v,]
+  v <- (ptd$xi) + nrow(img) * (ptd$yi - 1) 
+  
+  img[,,,1][v] <- color[1,1]
+  img[,,,2][v] <- color[2,1]
+  img[,,,3][v] <- color[3,1]
+  
+  return(img)
+}
