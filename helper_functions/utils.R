@@ -5,6 +5,13 @@ hms_runtime <- function(x){
   cat(sprintf("\nRuntime %02d:%02d:%02d\n", h,m,s))
 }
 
+hms_format <- function(x){
+  h <- floor(x / 3600)
+  m <- floor((x - h * 3600) / 60)
+  s <- floor(x - h * 3600 - m * 60)
+  return(sprintf("%02d:%02d:%02d", h,m,s))
+}
+
 
 
 frame_time <- function(x, fps){
@@ -41,6 +48,9 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
     
     if(!has_clust){
       message(sprintf("\nInitializing %s parallel workers. . .", cores))
+      
+      check_CPU_request(cores, condition = "delay")
+      
       cl <- makeCluster(cores, outfile = "")
       doSNOW::registerDoSNOW(cl)
     }
@@ -91,3 +101,69 @@ read_table <- function(x){
   read.table("clipboard",sep = "\t", header = TRUE)
 }
 
+
+cpu_report <- function(x){
+  system2('powershell', 
+          c('-Command', 
+            'Get-WmiObject -Query \'select Name, PercentProcessorTime from Win32_PerfFormattedData_PerfOS_Processor\' | foreach-object { write-host "$($_.Name): $($_.PercentProcessorTime)" }; '), 
+          stdout = TRUE) %>% 
+    strsplit(split = " : ") %>% 
+    do.call("rbind",.) %>% 
+    as.data.frame() %>% 
+    rename(
+      "core" = V1, 
+      "CPU_usage" = V2
+    ) %>% 
+    filter(core != "_Total") %>% 
+    mutate_all(as.numeric) %>% 
+    arrange(core) %>% 
+    mutate(core = core + 1)
+}
+
+
+check_CPU_request <- function(cores, 
+                              condition = c("stop", "warning", "delay")){
+  
+  av_cores_check <- function(food){
+    cpu_report() %>% 
+      filter(CPU_usage < 50) %>% 
+      nrow()
+  }
+  
+  av_cores <- av_cores_check()
+  if(av_cores >= cores){
+    return(invisible(NULL))
+  } else {
+    condition <- match.arg(condition)
+    
+    if(condition == "stop"){
+      stop("Not enough available cores.")
+    } else {
+      if(condition == "warning"){
+        warning("Not enough available cores.")
+      } else {
+        if(condition == "delay"){
+          for (i in 1:100){ # timeout after 1500 seconds
+            cat(
+              sprintf("%s  Not eough cores at the moment. %s of %s requested cores fulfilled. Waiting . . . \r",
+                      hms_format((i-1) * 15),
+                      av_cores, 
+                      cores)
+              )
+            Sys.sleep(15) # Recheck every 15 seconds
+            av_cores <- av_cores_check()
+            if(av_cores >= cores){
+              break
+            }
+          }
+          if(av_cores >= cores){
+            return(invisible(NULL))
+          } else {
+            stop("Not enough available cores. Function timed out.")
+          }
+        }
+      }
+    }
+    
+  }
+}
