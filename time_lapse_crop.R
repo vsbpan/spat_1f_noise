@@ -2,6 +2,7 @@ library(tidyverse)
 library(herbivar)
 library(foreach)
 library(doSNOW)
+rm(list = ls())
 source("helper_functions/file_mgmt.R")
 source("helper_functions/image_utils.R")
 source("helper_functions/utils.R")
@@ -10,7 +11,11 @@ herbivar::pre_cmp_fun()
 
 src_root <- "time_lapse_feed"
 dest_root <- "processed_feed"
-trialID <- "rep16" # Set id
+
+trialID <- list.dirs(src_root, full.names = FALSE, recursive = FALSE) %>% 
+  .[!. %in% gsub(".rds","",list.files("raw_data/picked_anchors/"))] %>% 
+  sample(., 1)
+#trialID <- "rep16" # Set id
 src_dir <- paste(src_root, trialID, sep = "/")
 dest_dir <- paste(dest_root, trialID, sep = "/")
 files <- list.files(src_dir, pattern = ".jpg") %>% files_reorder()
@@ -25,22 +30,21 @@ img <- fast_load_image(files_full_name[1], transform = FALSE)
 pts <- anchor_picker_app(files_full_name[1], thin = 1, anchor_size = 5)
 attr(pts, "indices") <- seq_along(files_full_name)
 pts_list <- list(pts)
-
-
-# pts2 <- anchor_picker_app(files_full_name[max(attr(pts, "indices"))+1], 
+# 
+# pts2 <- anchor_picker_app(files_full_name[max(attr(pts, "indices"))+1],
 #                           thin = 1, anchor_size = 5)
-# attr(pts2, "indices") <- (max(attr(pts, "indices"))+1):188
+# attr(pts2, "indices") <- (max(attr(pts, "indices"))+1):245 #length(files_full_name)
 # pts_list <- c(pts_list,list(pts2))
+# # 
 # 
-# 
-# pts3 <- anchor_picker_app(files_full_name[max(attr(pts2, "indices"))+1], 
+# pts3 <- anchor_picker_app(files_full_name[max(attr(pts2, "indices"))+1],
 #                           thin = 1, anchor_size = 5)
-# attr(pts3, "indices") <- (max(attr(pts2, "indices"))+1):922
+# attr(pts3, "indices") <- (max(attr(pts2, "indices"))+1):267 #length(files_full_name)
 # pts_list <- c(pts_list,list(pts3))
 # 
-# pts4 <- anchor_picker_app(files_full_name[max(attr(pts3, "indices"))+1], 
+# pts4 <- anchor_picker_app(files_full_name[max(attr(pts3, "indices"))+1],
 #                           thin = 1, anchor_size = 5)
-# attr(pts4, "indices") <- (max(attr(pts3, "indices"))+1):923
+# attr(pts4, "indices") <- (max(attr(pts3, "indices"))+1):length(files_full_name)
 # pts_list <- c(pts_list,list(pts4))
 # 
 # pts5 <- anchor_picker_app(files_full_name[max(attr(pts4, "indices"))+1], 
@@ -50,8 +54,12 @@ pts_list <- list(pts)
 
 
 
-plot(img)
+plot(fast_load_image(files_full_name[500], transform = FALSE))
 pts %>% 
+  pt_list2df() %$% 
+  points(x,y, col = c("green", "blue","blue","blue"), pch = 19, cex = 2)
+
+pts4 %>% 
   pt_list2df() %$% 
   points(x,y, col = c("green", "blue","blue","blue"), pch = 19, cex = 2)
 
@@ -77,15 +85,16 @@ save_anchors(trialID)
 
 
 
-
-
-dest_root <- "processed_feed"
-list.dirs(dest_root, full.names = FALSE, recursive = FALSE)
-trialID <- "rep29"
-dest_dir <- paste(dest_root, trialID, sep = "/")
-
-make_video(src_dir = dest_dir, file = trialID) # Make video
-
+# 
+# 
+# 
+# dest_root <- "processed_feed"
+# list.dirs(dest_root, full.names = FALSE, recursive = FALSE)
+# trialID <- "rep29"
+# dest_dir <- paste(dest_root, trialID, sep = "/")
+# 
+# make_video(src_dir = dest_dir, file = trialID) # Make video
+# 
 
 
 

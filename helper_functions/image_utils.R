@@ -456,7 +456,9 @@ crop_raw_img <- function(
   }
   
   new_file_names <- paste(.dest_dir, paste0("processed_", .files), sep = "/")
-  file_conflicts <- sum(file.exists(new_file_names))
+  file_exits <- gsub("_rank.*",".jpg",list.files(.dest_dir, full.names = TRUE))
+  
+  file_conflicts <- sum(new_file_names %in% file_exits)
   if(file_conflicts > 0){
     stop(sprintf("%s files already exist.", file_conflicts))
   }
