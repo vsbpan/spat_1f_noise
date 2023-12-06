@@ -229,3 +229,8 @@ report_missing_photos <- function(root_dir){
   }
 }
 
+
+which_time <- function(x, time){
+  f_time <- file_time(files_reorder(x))
+  which(f_time == time)
+}

@@ -33,7 +33,7 @@ pts_list <- list(pts)
 # 
 # pts2 <- anchor_picker_app(files_full_name[max(attr(pts, "indices"))+1],
 #                           thin = 1, anchor_size = 5)
-# attr(pts2, "indices") <- (max(attr(pts, "indices"))+1):245 #length(files_full_name)
+# attr(pts2, "indices") <- (max(attr(pts, "indices"))+1):length(files_full_name)
 # pts_list <- c(pts_list,list(pts2))
 # # 
 # 
@@ -52,14 +52,14 @@ pts_list <- list(pts)
 # attr(pts5, "indices") <- (max(attr(pts4, "indices"))+1):length(files_full_name)
 # pts_list <- c(pts_list,list(pts5))
 
-
+which_time(files_full_name, 68120)
 
 plot(fast_load_image(files_full_name[500], transform = FALSE))
 pts %>% 
   pt_list2df() %$% 
   points(x,y, col = c("green", "blue","blue","blue"), pch = 19, cex = 2)
 
-pts4 %>% 
+pts2 %>% 
   pt_list2df() %$% 
   points(x,y, col = c("green", "blue","blue","blue"), pch = 19, cex = 2)
 
