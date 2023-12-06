@@ -194,6 +194,7 @@ save_anchors <- function(trialID){
     choice <- menu(c("Yes", "No"), title = sprintf("'%s' already exists. Overwrite?", trialID))
     if(choice == 2){
       message("Exiting.")
+      return(invisible(NULL))
     }
   }
   saveRDS(pts_list, file = dest)
