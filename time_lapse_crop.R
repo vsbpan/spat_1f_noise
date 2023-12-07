@@ -52,7 +52,7 @@ pts_list <- list(pts)
 # attr(pts5, "indices") <- (max(attr(pts4, "indices"))+1):length(files_full_name)
 # pts_list <- c(pts_list,list(pts5))
 
-which_time(files_full_name, 68120)
+which_time(files_full_name, 68121)
 
 plot(fast_load_image(files_full_name[500], transform = FALSE))
 pts %>% 
