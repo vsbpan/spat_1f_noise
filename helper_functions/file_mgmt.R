@@ -128,7 +128,7 @@ attach_order_file_name <- function(src_dir){
 }
 
 
-# Reorder a vecotr of file paths based on rank or time
+# Reorder a vector of file paths based on rank or time
 files_reorder <- function(x){
   no_rank_present <- !any(grepl("_rank",x))
   stopifnot(all(grepl("_rank",x)) | no_rank_present)
@@ -177,15 +177,49 @@ paste_path <- function(x){
   gsub(("\\\\"),"/",readLines("clipboard"))
 }
 
-# The file name
-file_base_name <- function(x){
-  gsub(".*/","",x)
-}
 
 # The name of the root directory
 file_root <- function(x){
-  gsub_element_wise(file_base_name(x), "", x)
+  gsub_element_wise(basename(x), "", x)
 }
+
+# Parse time from file name
+file_time <- function(x){
+  as.numeric(gsub(".*_s|_rank.*|.jpg", "", x))
+}
+
+# Output the repid of the supplied file name
+file_repid <- function(x){
+  gsub("processed_|__.*","",basename(x))
+}
+
+# Output the rank of the supplied file name
+file_rank <- function(x){
+  x <- basename(x)
+  no_rank <- grepl("_rank", x)
+  r <- gsub(".*_rank|.jpg","", x)
+  r[!no_rank] <- "no_rank"
+  r
+}
+
+# Output the repid of the supplied file name
+file_camid <- function(x){
+  gsub(".*__|_s.*","",basename(x))
+}
+
+# Get meta data from file paths 
+file_meta <- function(x){
+  data.frame(
+    "file_path" = x, 
+    "file_base" = basename(x),
+    "file_exists" = file.exists(x),
+    "repID" = file_repid(x),
+    "camID" = file_camid(x),
+    "time" = file_time(x),
+    "rank" = file_rank(x)
+  )
+}
+
 
 # Write an RDS file of the anchor list based on trialID
 save_anchors <- function(trialID){
@@ -199,11 +233,6 @@ save_anchors <- function(trialID){
   }
   saveRDS(pts_list, file = dest)
   message(sprintf("'%s' anchors list saved!", trialID))
-}
-
-# Parse time from file name
-file_time <- function(x){
-  as.numeric(gsub(".*_s|_rank.*|.jpg", "", x))
 }
 
 # Find if a sequence of photos in the sub-directories of a directory has a gap or duplication (deviation from 6 minutes)
