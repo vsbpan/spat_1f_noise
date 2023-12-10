@@ -2,6 +2,7 @@ library(tidyverse)
 library(herbivar)
 library(foreach)
 library(doSNOW)
+library(sjPlot)
 source("helper_functions/file_mgmt.R")
 source("helper_functions/image_utils.R")
 source("helper_functions/utils.R")
@@ -36,7 +37,7 @@ d<-d %>%
 
 d %>% 
   filter(
-    session_id == 2 
+    #session_id == 2 
   ) %>% 
   ggplot(aes(x = beta, y = RGR)) + 
   geom_point(position = position_jitter(height = 0, width = 0.2)) + 
@@ -56,20 +57,27 @@ d %>%
   geom_pointrange(stat = "summary")
   
 
-glmmTMB(
+rgr_m <- glmmTMB(
   RGR ~ 
-    log(cat_pre_wt) + as.factor(beta) + var_trt + (1|session_id), 
+    log(cat_pre_wt) * (as.factor(beta) * var_trt) + pupated_cam_end + (1|session_id), 
   family = gaussian(), 
-  data = d 
-) %>% summary()
+  data = d %>% 
+    filter(!is.na(cat_pre_wt))
+); summary(rgr_m)
+
+plot_model(rgr_m, type = "pred", terms = c("cat_pre_wt[all]", "beta", "var_trt"))
+plot_model(rgr_m, type = "pred", terms = c("cat_pre_wt[all]", "var_trt"))
 
 
-glmmTMB(
+death_m <- glmmTMB(
   cat_dead_cam_end ~ 
     log(cat_pre_wt) + var_trt + as.factor(beta) + (1|session_id), 
   family = binomial(), 
-  data = d
-) %>% summary()
+  data = d %>% 
+    filter(!is.na(cat_pre_wt))
+); summary(death_m)
+
+plot_model(death_m, type = "pred", terms = c("beta"))
 
 
 

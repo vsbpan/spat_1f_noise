@@ -29,7 +29,7 @@ mask_info <- function(vid){
 }
 
 
-# Read value at specified coordinates from reference image
+# Read value at specified coordinates from reference image. Scales the x,y input with side_dim of the target image so that it matches relatively to the ref_img
 read_value <- function(x, y, side_dim, ref_img){
   
   stopifnot(
@@ -48,13 +48,12 @@ read_value <- function(x, y, side_dim, ref_img){
 }
 
 
-
+# Apply mask_info() to all the files in src_dir
 mask_summary <- function(src_dir, thin.val = 3, cores = 6){
   start_time <- Sys.time()
   
   f <- list.files(src_dir, pattern = ".jpg",full.names = TRUE, recursive = FALSE) %>% 
-    files_reorder() %>% 
-    .[1:100]
+    files_reorder()
   
   out <- pb_par_lapply(
     f, 
@@ -75,11 +74,13 @@ mask_summary <- function(src_dir, thin.val = 3, cores = 6){
   return(out)
 }
 
+# Generate a dummy spectrum for testing
 dummy_spec <- function(x){
   rbinom(144, 1, 0.5) %>% 
     image_unflatten()
 }
 
+# Generate a dummy binary mask for testing
 dummy_mask <-function(z = 100, cores = 6){
   imager::imfill(x =1000, y = 1000, z = z) %>% 
     imsplit("z") %>% 
