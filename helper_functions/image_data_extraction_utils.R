@@ -1,9 +1,14 @@
 # Find the centroid and size of a mask
 mask_info <- function(vid){
+  if(imager::spectrum(vid) > 1){
+    vid <- vid[,,,1]
+  }
+  
+  vid <- as.pixset(vid)
+  
   if(imager::depth(vid) > 1){
     vid %>% 
       as.data.frame() %>% 
-      dplyr::select(-cc) %>% 
       group_by(z) %>% 
       summarise(
         centroid_x = mean(x),
@@ -16,7 +21,6 @@ mask_info <- function(vid){
   } else {
     vid %>% 
       as.data.frame() %>% 
-      dplyr::select(-cc) %>% 
       summarise(
         centroid_x = mean(x),
         centroid_y = mean(y),
@@ -90,5 +94,41 @@ dummy_mask <-function(z = 100, cores = 6){
       add_point(img, x, y, color = "white")
     }, cores = cores, inorder = FALSE) %>% 
     imappend("z")
+}
+
+
+# Parse coco annotation format segmentation coordinates
+parse_polygon_string <- function(X){
+  x <- X[(seq_along(X) %% 2 == 1)]
+  y <- X[(seq_along(X) %% 2 == 0)]
+  return(cbind(x,y))
+}
+
+# Turn polygon into a binary mask
+polygon2mask <- function(x,y = NULL, dim_xy = c(1000, 1000)){
+  if(is.null(y)){
+    y <- x[,2]
+    x <- x[,1]
+  }
+  
+  x <- round(x)
+  y <- round(y)
+  
+  mask <-spatstat.geom::convexhull.xy(x,y) %>% 
+    spatstat.geom::as.mask(dimyx = c(diff(range(x)), diff(range(y))), 
+                           xy = list(x = seq_len(dim_xy[1]), y = seq_len(dim_xy[2]))) %>% 
+    spatstat.geom::as.array.im()
+  
+  dim(mask) <- c(dim(mask)[1:2], 1, dim(mask)[3])
+  return(as.cimg(mask))
+}
+
+# Turn a binary mask into a polygon
+mask2polygon <- function(mask){
+  l <- spatstat.geom::owin(mask = as.pixset(mask)[,,1,1]) %>% 
+    spatstat.geom::as.polygonal() %>% 
+    .$bdry %>% 
+    .[[1]]
+  return(do.call("cbind",l))
 }
 

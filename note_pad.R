@@ -46,9 +46,9 @@ d %>%
 d %>% 
   #filter(var_trt = "constant") %>% 
   filter(mean_trt == "1 mg/g") %>% 
-  ggplot(aes(x = var_trt, y = RGR)) + 
-  geom_point(position = position_jitter(height = 0, width = 0.2)) + 
-  geom_pointrange(stat = "summary")
+  ggplot(aes(x = var_trt, y = RGR, color = as.factor(beta))) + 
+  geom_point(position = position_jitterdodge(jitter.height = 0, jitter.width = 0.2, dodge.width = 0.5)) + 
+  geom_pointrange(stat = "summary", position = position_dodge(width = 0.5))
 
 
 d %>% 
@@ -65,7 +65,7 @@ rgr_m <- glmmTMB(
     filter(!is.na(cat_pre_wt))
 ); summary(rgr_m)
 
-plot_model(rgr_m, type = "pred", terms = c("cat_pre_wt[all]", "beta", "var_trt"))
+plot_model(rgr_m, type = "pred", terms = c("cat_pre_wt[all]","var_trt", "beta"))
 plot_model(rgr_m, type = "pred", terms = c("cat_pre_wt[all]", "var_trt"))
 
 
