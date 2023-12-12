@@ -77,8 +77,7 @@ pts2 %>%
 
 # If all is well, reproject for all images
 # NOTE: The cropped image is mirrored by the x axis (looks correct with plot.cimg though bc the y-axis is flipped)
-crop_raw_img()
-save_anchors(trialID)
+crop_raw_img(); save_anchors(trialID)
 
 
 
