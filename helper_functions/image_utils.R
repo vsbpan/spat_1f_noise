@@ -443,7 +443,6 @@ crop_raw_img <- function(
     indices = do.call("c", lapply(pts_list, function(x){attr(x, "indices")})),
     .pts_list = get("pts_list"),
     .files_full_name = get("files_full_name"), 
-    .files = get("files"), 
     .dest_dir = get("dest_dir"), 
     cores = parallel::detectCores(logical = FALSE) - 2
 ){
@@ -455,7 +454,7 @@ crop_raw_img <- function(
     indices <- seq_along(.files_full_name)
   }
   
-  new_file_names <- paste(.dest_dir, paste0("processed_", .files), sep = "/")
+  new_file_names <- paste(.dest_dir, paste0("processed_", basename(.files_full_name)), sep = "/")
   file_exits <- gsub("_rank.*",".jpg",list.files(.dest_dir, full.names = TRUE))
   
   file_conflicts <- sum(new_file_names %in% file_exits)
@@ -463,36 +462,59 @@ crop_raw_img <- function(
     stop(sprintf("%s files already exist.", file_conflicts))
   }
   
-  message("\nInitializing parallel workers. . .")
-  cl <- makeCluster(cores, outfile = "")
-  registerDoSNOW(cl)
+  pb_par_lapply(indices, function(i, .pts_list, .files_full_name, .dest_dir){
+    
+    img2 <- reproject_grid(fast_load_image(.files_full_name[i], transform = FALSE), 
+                           init_pts = choose_pts(pts_list, i), 
+                           dest_size = 1000, 
+                           qc_plot = FALSE) %>% 
+      mirror("x")
+    dim(img2) <- dim(img2)[-3]
+    jpeg::writeJPEG(img2,
+                    paste(.dest_dir, paste0("processed_", 
+                                            basename(.files_full_name)[i]), 
+                          sep = "/"), 
+                    quality = 1)
+    
+  }, 
+  .pts_list = .pts_list,
+  .files_full_name = .files_full_name, 
+  .dest_dir = .dest_dir,
+  cores = cores, 
+  inorder = FALSE, 
+  export_fun_only = TRUE) %>% 
+    invisible()
   
-  foreach(i = indices, 
-          .export = ls(globalenv()),
-          .combine = c, 
-          .verbose = FALSE, 
-          .final = invisible,
-          .inorder = FALSE,
-          .options.snow = list(
-            progress = function(n) {
-              cat(sprintf("\r Processing %d out of %d", n, length(indices)))
-            }
-          ),
-          .packages = c("tidyverse", "herbivar")) %dopar% {
-            
-            img2 <- reproject_grid(fast_load_image(.files_full_name[i], transform = FALSE), 
-                                   init_pts = choose_pts(pts_list, i), 
-                                   dest_size = 1000, 
-                                   qc_plot = FALSE) %>% 
-              mirror("x")
-            dim(img2) <- dim(img2)[-3]
-            jpeg::writeJPEG(img2,
-                            paste(.dest_dir, paste0("processed_", .files[i]), sep = "/"), 
-                            quality = 1)
-            #cat("\r Cropping", i, "of", length(.files))
-          } 
+  #message("\nInitializing parallel workers. . .")
+  #cl <- makeCluster(cores, outfile = "")
+  #registerDoSNOW(cl)
+  
+  # foreach(i = indices, 
+  #         .export = ls(globalenv()),
+  #         .combine = c, 
+  #         .verbose = FALSE, 
+  #         .final = invisible,
+  #         .inorder = FALSE,
+  #         .options.snow = list(
+  #           progress = function(n) {
+  #             cat(sprintf("\r Processing %d out of %d", n, length(indices)))
+  #           }
+  #         ),
+  #         .packages = c("tidyverse", "herbivar")) %dopar% {
+  #           
+  #           img2 <- reproject_grid(fast_load_image(.files_full_name[i], transform = FALSE), 
+  #                                  init_pts = choose_pts(pts_list, i), 
+  #                                  dest_size = 1000, 
+  #                                  qc_plot = FALSE) %>% 
+  #             mirror("x")
+  #           dim(img2) <- dim(img2)[-3]
+  #           jpeg::writeJPEG(img2,
+  #                           paste(.dest_dir, paste0("processed_", .files[i]), sep = "/"), 
+  #                           quality = 1)
+  #           #cat("\r Cropping", i, "of", length(.files))
+  #         } 
   attach_order_file_name(.dest_dir)
-  stopCluster(cl)
+  #stopCluster(cl)
   
   hms_runtime(as.numeric(Sys.time() - start_time, units = "secs"))
   message("\nDone!")
