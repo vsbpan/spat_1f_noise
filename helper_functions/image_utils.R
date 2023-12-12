@@ -246,13 +246,13 @@ detect_corners_engine <- function(img, list_of_list = TRUE, scale = 1){
   }
 }
 
-
+# Convert point list into a data.frame
 pt_list2df<- function(x){
   data.frame("x" = do.call("c",map(x, 1)),
              "y" = do.call("c",map(x, 2)))
 }
 
-
+# Split image into different regions and returns the largest patch
 split_max <- function(img){
   l <- split_connected(img)
   max_index <- lapply(l, function(x) {
@@ -626,7 +626,7 @@ as.bmp <- function(x){
   x
 }
 
-# Add a point to an image
+# Add a point to an image by writing into the data array.
 add_point <- function(img, x, y, r = ceiling(min(dim(img)[1:2])/80), color = "red"){
   if(imager::is.pixset(img) || imager::spectrum(img) < 3){
     img <- as.cimg_color(img)

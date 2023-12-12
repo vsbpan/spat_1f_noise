@@ -6,6 +6,7 @@ hms_runtime <- function(x){
   cat(sprintf("\nRuntime %02d:%02d:%02d\n", h,m,s))
 }
 
+# Format seconds into nice H:S:M format 
 hms_format <- function(x){
   h <- floor(x / 3600)
   m <- floor((x - h * 3600) / 60)
@@ -99,12 +100,12 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
   return(out)
 }
 
-
+# read in data table from clipboard
 read_table <- function(x){
   read.table("clipboard",sep = "\t", header = TRUE)
 }
 
-
+# Return a data.frame of CPU usage
 cpu_report <- function(x){
   system2('powershell', 
           c('-Command', 
@@ -123,7 +124,7 @@ cpu_report <- function(x){
     mutate(core = core + 1)
 }
 
-
+# Check CPU resource usage and if the requested number of cores has usage above 50%, apply error condition. 
 check_CPU_request <- function(cores, 
                               condition = c("stop", "warning", "delay")){
   

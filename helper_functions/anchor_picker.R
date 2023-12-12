@@ -1,6 +1,8 @@
 library(shiny)
 library(tidyverse)
 
+# Shiny APP that records anchors used for quad to quad transformation. 
+
 anchor_picker_app <- function(img_path, 
                             thin = 3,
                             anchor_size = 3){
@@ -171,7 +173,7 @@ anchor_picker_app <- function(img_path,
   stopifnot(file.exists(img_path))
   
   global_env_variables <- c("img_path", "thin_val", "anchor_size_val",
-                            "thin2","interpolate_pts","add_point_bmp")
+                            "thin2","add_point_bmp")
   global_env_variables_exists <- sapply(global_env_variables,
                                         exists)
   has_conflicts <- any(global_env_variables_exists)
@@ -196,23 +198,23 @@ anchor_picker_app <- function(img_path,
   
   
   
-  interpolate_pts <<- function(x,y){
-    unique(
-      do.call(
-        "rbind",
-        lapply(seq_len(length(x)-1), function(i, x, y){
-          dx <- x[i+1] - x[i]
-          dy <- y[i+1] - y[i]
-          z <- seq(0, sqrt((dx)^2 + (dy)^2))
-          theta <- atan2(dy,dx)
-          
-          xi <- z * cos(theta) + x[i]
-          yi <- z * sin(theta) + (c(y[i]))
-          return(cbind(round(xi),round(yi)))
-        }, x = x, y = y)
-      )
-    )
-  }
+  # interpolate_pts <<- function(x,y){
+  #   unique(
+  #     do.call(
+  #       "rbind",
+  #       lapply(seq_len(length(x)-1), function(i, x, y){
+  #         dx <- x[i+1] - x[i]
+  #         dy <- y[i+1] - y[i]
+  #         z <- seq(0, sqrt((dx)^2 + (dy)^2))
+  #         theta <- atan2(dy,dx)
+  #         
+  #         xi <- z * cos(theta) + x[i]
+  #         yi <- z * sin(theta) + (c(y[i]))
+  #         return(cbind(round(xi),round(yi)))
+  #       }, x = x, y = y)
+  #     )
+  #   )
+  # }
   
   
   add_point_bmp <<- function(img, r, x, y, color){
