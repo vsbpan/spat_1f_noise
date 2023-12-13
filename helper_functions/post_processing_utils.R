@@ -9,14 +9,94 @@ move_seq <- function(x,y){
     c("r" = r, "theta_abs" = theta_abs)
   }) %>% bind_vec()
   out$theta_rel <- c(NA, (out$theta_abs - c(out$theta_abs[-1],NA))[-(length(x)-1)])
+  out$step_id <- seq_len(nrow(out))
   out
 }
 
 
+fetch_trt_meta <- function(path = "raw_data/trt_spectra_meta/master_trt_meta.csv"){
+  suppressMessages(read_csv(path))
+}
 
-fetch_trt_spec <- function(rep_ID, ref_data, trt_meta_iml){
-  sny_id <- ref_data[which(ref_data$rep_id == gsub("rep","",rep_ID)), "syn_id"]
-  trt_meta_iml[[which(names(trt_meta_iml) == paste0("syn_id__",sny_id))]]
+fetch_trt_spec <- function(repID, .ref_data = get("ref_data"), trt_meta_iml = NULL){
+  
+  repID <- repID_clean(repID) # Cleaning
+  
+  syn_id_matched <- as.vector(unlist(.ref_data[which(.ref_data$rep_id == repID), "syn_id"]))
+  if(is.na(syn_id_matched)){
+    warning(sprintf("Can't find syn_ID that maps to repID = %s", repID))
+    return(NULL)
+  }
+  
+  if(is.null(trt_meta_iml)){
+    trt_meta_iml <- fetch_trt_meta() %>% 
+      filter(syn_id == syn_id_matched) %>% 
+      trt_meta_as_list()
+  }
+  cat(sprintf("Fetached synID '%s' for 'rep%s'\n", syn_id_matched, repID))
+  trt_meta_iml[[which(names(trt_meta_iml) == paste0("syn_id__",syn_id_matched))]]
+}
+
+# Convert treatment metadata from data.frame to image list
+trt_meta_as_list <- function(df){
+  ufl_trt_iml <- lapply(seq_len(nrow(df)), function(i){
+    x <- df[i,]
+    unlist(x[,grepl("spec_", names(x))]) 
+  }) %>% 
+    lapply(
+      image_unflatten
+    )
+  
+  names(ufl_trt_iml) <- paste0("syn_id__", df$syn_id)
+  ufl_trt_iml
+}
+
+fetch_anchors <- function(repID, src_dir = "raw_data/picked_anchors/"){
+  repID <- repID_clean(repID)
+  path <- paste0(src_dir, "/rep",repID,".rds")
+  
+  if(file.exists(path)){
+    return(readRDS(path))
+  } else {
+    warning(
+      sprintf("repID: %s not found in %s", repID, src_dir)
+    )
+    return(NULL)
+  }
+}
+
+fetch_events <- function(repID, src_dir = "cleaned_data/events/"){
+  repID <- repID_clean(repID)
+  path <- paste0(src_dir, "/rep",repID,".csv")
+  
+  if(file.exists(path)){
+    return(suppressMessages(read_csv(path)))
+  } else {
+    warning(
+      sprintf("repID: %s not found in %s", repID, src_dir)
+    )
+    return(NULL)
+  }
+}
+
+fetch_data_dict <- function(repID, src_dir = "cleaned_data/data_dicts/"){
+  repID <- repID_clean(repID)
+  path <- paste0(src_dir, "/rep",repID,".rds")
+  
+  if(file.exists(path)){
+    return(readRDS(path))
+  } else {
+    warning(
+      sprintf("repID: %s not found in %s", repID, src_dir)
+    )
+    return(NULL)
+  }
+}
+
+
+fetch_repID <- function(has = c("inference")){
+  list.files("raw_data/inferences") %>% 
+    gsub("rep|_inference.csv","",.)
 }
 
 
@@ -48,4 +128,26 @@ insert_gaps <- function(df, expected_gap = 360){
   return(out)
 }
 
+repID_clean <- function(x){
+  gsub("rep", "", x)
+}
+
+detection_report <- function(repIDs){
+  repIDs <- repID_clean(repIDs)
+  valid_ids <- fetch_repID()
+  repIDs <- repIDs[repIDs %in% valid_ids]
+  
+  repIDs %>% 
+    lapply(
+      function(x){
+        summary(fetch_data_dict(x))
+      }
+    ) %>% 
+    do.call("rbind",.) %>% 
+    mutate(
+      mask = count_report(n_mask , frames),
+      keypoints = count_report(n_keypoints, frames),
+      bbox = count_report(n_bbox, frames)
+    )
+}
 

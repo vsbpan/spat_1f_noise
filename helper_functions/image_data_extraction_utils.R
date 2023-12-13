@@ -148,6 +148,7 @@ parse_bbox_vec <- function(x){
 # Parse coco annotation format segmentation coordinates
 parse_polygon_vec <- function(x){
   out <- split_n_steps(x, n = 2, name = c("x","y"))
+  out <- unique(out)
   if(is.null(out)|| nrow(out) < 3){
     out <- NULL
   }
@@ -169,7 +170,14 @@ polygon2mask <- function(x,y = NULL, dim_xy = c(1000, 1000)){
   x <- round(x)
   y <- round(y)
   
-  mask <-spatstat.geom::convexhull.xy(x,y) %>% 
+  hull <- spatstat.geom::convexhull.xy(x,y)
+  
+  if(is.null(hull)){
+    mask <- imager::imfill(x = dim_xy[1], y = dim_xy[2], val = 0)
+    return(mask)
+  }
+  
+  mask <- hull %>% 
     spatstat.geom::as.mask(dimyx = c(diff(range(x)), diff(range(y))), 
                            xy = list(x = seq_len(dim_xy[1]), y = seq_len(dim_xy[2]))) %>% 
     spatstat.geom::as.array.im()
@@ -318,9 +326,15 @@ print.data_dict <- function(x, ...){
   )
 }
 
+
+summary.data_dict <- function(x, ...){
+  m <- attr(x, "summary")
+  return(m)
+}
+
 registerS3method(genname = "summary", 
                  class = "data_dict", 
-                 method = print.data_dict, 
+                 method = summary.data_dict, 
                  envir = asNamespace("herbivar"))
 
 
@@ -413,6 +427,12 @@ get_repID <- function(x){
   attr(x,"summary")$repID
 }
 
+# Method to get camID
+get_camID <- function(x){
+  stopifnot(inherits(x, "data_dict"))
+  attr(x,"summary")$camID
+}
+
 # Wrapper function for various get_* methods. Joins the output as a single data.frame
 get_data <- function(x, type = c("file_meta", "score", "keypoints", "mask_summary")){
   for (i in seq_along(type)){
@@ -429,22 +449,4 @@ get_data <- function(x, type = c("file_meta", "score", "keypoints", "mask_summar
   }
   return(out)
 }
-
-# Convert treatment metadata from data.frame to image list
-trt_meta_as_list <- function(df){
-  ufl_trt_iml <- lapply(seq_len(nrow(df)), function(i){
-    x <- df[i,]
-    unlist(x[,grepl("spec_", names(x))]) 
-  }) %>% 
-    lapply(
-      image_unflatten
-    )
-  
-  names(ufl_trt_iml) <- paste0("syn_id__", df$syn_id)
-  ufl_trt_iml
-}
-
-
-
-
 

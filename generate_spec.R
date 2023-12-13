@@ -120,6 +120,21 @@ for(i in seq_along(ufl_trt_iml)){
   Sys.sleep(1)
 }
 
+# 
+# Write a master file that binds all the trt_spectra from each week
+# 
+# trt_meta <- list.files("raw_data/trt_spectra_meta/", full.names = TRUE) %>% 
+#   .[!grepl("master_trt_meta.csv",.)] %>% 
+#   lapply(function(x){
+#     suppressMessages(read_csv(x))
+#   }) %>% 
+#   do.call("rbind",.)
+# 
+# trt_meta <- trt_meta %>% 
+#   dplyr::select(syn_id, syn_date, contains("spec_"))
+# write_csv(trt_meta, "raw_data/trt_spectra_meta/master_trt_meta.csv")
+
+
 
 
 # folder <- "week4_dec_11"
