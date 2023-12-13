@@ -653,3 +653,13 @@ add_point <- function(img, x, y, r = ceiling(min(dim(img)[1:2])/80), color = "re
   
   return(img)
 }
+
+# Draw bounding box
+draw_bbox <- function(coord, dimxy = c(1000, 1000)){
+  imager::draw_rect(
+    im = imager::imfill(dimxy[1],dimxy[2], val = FALSE), 
+    x0 = coord[1,1], y0 = coord[1,2], x1 = coord[2,1], y1 = coord[2,2], 
+    filled = TRUE, 
+    color = TRUE
+  ) %>% highlight(col = "red")
+}

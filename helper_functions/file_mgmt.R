@@ -235,6 +235,14 @@ save_anchors <- function(trialID){
   message(sprintf("'%s' anchors list saved!", trialID))
 }
 
+# Count file_time gaps
+count_time_gaps <- function(x, expected_gap = 360){
+  ((diff(sort(x)) - expected_gap) / expected_gap) %>% 
+    round() %>% 
+    sum()
+}
+
+
 # Find if a sequence of photos in the sub-directories of a directory has a gap or duplication (deviation from 6 minutes)
 report_missing_photos <- function(root_dir){
   stopifnot(dir.exists(root_dir))
@@ -247,13 +255,7 @@ report_missing_photos <- function(root_dir){
     }
     v <- fs %>% 
       file_time() %>% 
-      sort() %>% 
-      diff() %>% 
-      sapply(function(x){
-        z <- (x /360)
-        !((z < 1.2) & (z > 0.8))
-      }) %>% 
-      sum()
+      count_time_gaps()
     message(sprintf("%s has %s missing photos", dirs[i], v))
   }
 }

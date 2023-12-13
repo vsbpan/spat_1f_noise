@@ -96,12 +96,57 @@ dummy_mask <-function(z = 100, cores = 6){
     imappend("z")
 }
 
+# Vectorized function that parse lists from python
+parse_pylist <- function(x, coerce = as.numeric, simplify = TRUE){
+  out <- gsub("\\[|\\]","",x) %>% 
+    str_split(",") %>% 
+    lapply(function(x){
+      coerce(x)
+    })
+  
+  if(simplify){
+    out <- do.call("rbind",out)
+    
+    if(nrow(out) == 1){
+      out <- as.vector(out)
+    } 
+  }
+  
+  return(out)
+}
+
+# Parse vector into n columns by looping through column index. Undo ravel() in python
+split_n_steps <- function(x, n, name = paste0("x", seq_len(n))){
+  if(all(is.na(x)) & length(x) == 1 || is.null(x)){
+    #x <- rep(x, n)
+    return(NULL)
+  }
+  
+  index <- seq_along(x)
+  
+  out <- lapply(c(seq_len(n-1),0), function(ni){
+    x[(index %% n == ni)]
+  }) %>% 
+    do.call("cbind",.)
+  colnames(out) <- name
+  
+  return(out)
+}
+
+parse_keypoints_vec <- function(x){
+  split_n_steps(x, 3, name = c("x","y","score"))
+}
+
+
+parse_bbox_vec <- function(x){
+  # First row is the top left corner
+  # Second row is the bottom right corner
+  split_n_steps(x,2, name = c("x","y"))
+}
 
 # Parse coco annotation format segmentation coordinates
-parse_polygon_string <- function(X){
-  x <- X[(seq_along(X) %% 2 == 1)]
-  y <- X[(seq_along(X) %% 2 == 0)]
-  return(cbind(x,y))
+parse_polygon_vec <- function(x){
+  return(split_n_steps(x, n = 2, name = c("x","y")))
 }
 
 # Turn polygon into a binary mask
@@ -130,5 +175,110 @@ mask2polygon <- function(mask){
     .$bdry %>% 
     .[[1]]
   return(do.call("cbind",l))
+}
+
+
+
+
+# S3 print and summary methods for data_dict objects
+print.data_dict <- function(x, ...){
+  fm <- do.call("rbind",map(x, "file_meta"))
+  n <- length(x)
+  n_bbox <- n - (map(x, "bbox") %>% lapply(is.null) %>% do.call("c",.) %>% sum())
+  n_kp <- n - (map(x, "keypoints") %>% lapply(is.null) %>% do.call("c",.) %>% sum())
+  n_mask <- n - (map(x, "polygon") %>% lapply(is.null) %>% do.call("c",.) %>% sum())
+  n_missing <- count_time_gaps(fm$time)
+  run_time <- hms_format(diff(range(fm$time)))
+  thing_class <- paste0(na.omit(do.call("c",unique(map(x, "thing_class")))), collapse = ",")
+  dim_formated <- paste0("(",paste0(x[[1]]$dim, collapse = ","),")")
+  repID <- gsub("rep","",unique(fm$repID))
+  camID <- gsub("cam","", unique(fm$camID))
+
+  cat(sprintf("rep_ID: %s\n\ncam_ID: %s\n", 
+        repID, 
+        camID
+        ))
+  cat(sprintf("frames: %s\tmissing: %s\t duration: %s\n", 
+        n,
+        n_missing,
+        run_time
+        ))
+  cat(sprintf("dim: %s\n\nthing_class: %s\t bbox: %s\t keypoints: %s\t polygon: %s\t\n", 
+              dim_formated,
+              thing_class,
+              count_report(n_bbox, n), 
+              count_report(n_kp, n),
+              count_report(n_mask, n)
+              ))
+  
+  return(
+    invisible(
+      data.frame("repID" = repID, 
+        "camID" = camID, 
+        "frames" = n, 
+        "missing" = n_missing,
+        "duration" = run_time,
+        "dim" = dim_formated,
+        "thing_class" = thing_class,
+        "n_bbox" = n_bbox,
+        "n_kepoints" = n_kp,
+        "n_mask" = n_mask
+        )
+    )
+  )
+}
+
+registerS3method(genname = "summary", 
+                 class = "data_dict", 
+                 method = print.data_dict, 
+                 envir = asNamespace("herbivar"))
+
+
+registerS3method(genname = "print", 
+                 class = "data_dict", 
+                 method = print.data_dict, 
+                 envir = asNamespace("herbivar"))
+
+
+# Take formatted detectron2 predictions from python and parse into 'data_dict' object 
+parse_inference <- function(df){
+  df <- df[order(file_time(df$file_name)),]
+  
+  master_list <- list(
+    "dim" = parse_pylist(df$image_size, simplify = FALSE),
+    "file_meta" = df$file_name %>% 
+      file_meta() %>% 
+      lapply(seq_len(nrow(.)), function(i, df){
+        df[i,]
+      }, df = .),
+    "bbox" = parse_pylist(df$bbox, simplify = FALSE) %>% 
+      lapply(function(x){
+        parse_bbox_vec(x)
+      }),
+    "score" = df$score %>% 
+      lapply(function(x) {
+        x
+      }),
+    "thing_class" = df$thing_class %>% 
+      lapply(function(x) {
+        x
+      }),
+    "keypoints" = parse_pylist(df$keypoints, simplify = FALSE) %>% 
+      lapply(function(x){
+        parse_keypoints_vec(x)
+      }),
+    "polygon" = parse_pylist(df$polygon, simplify = FALSE) %>% 
+      lapply(function(x){
+        parse_polygon_vec(x)
+      })
+  )
+  
+  out_list <- lapply(seq_len(nrow(df)), function(i){
+    map(master_list, i)
+  })
+  names(out_list) <- gsub(".jpg", "",basename(df$file_name))
+  
+  class(out_list) <- c("data_dict", "list")
+  return(out_list)
 }
 

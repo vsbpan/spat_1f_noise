@@ -14,6 +14,11 @@ hms_format <- function(x){
   return(sprintf("%02d:%02d:%02d", h,m,s))
 }
 
+# Format counts in a nice way
+count_report <- function(x,n){
+  sprintf("%s (%s%s)", x, signif(x/n*100, digits = 2),"%")
+}
+
 
 # Find the frame time
 frame_time <- function(x, fps){
