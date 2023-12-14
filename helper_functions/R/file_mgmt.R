@@ -237,6 +237,15 @@ save_anchors <- function(trialID){
 count_time_gaps <- function(x, expected_gap = 360){
   ((diff(sort(x)) - expected_gap) / expected_gap) %>% 
     round() %>% 
+    pmax(0) %>% 
+    sum()
+}
+
+# Count file_time dups
+count_time_dups <- function(x, expected_gap = 360){
+  ((diff(sort(x)) - expected_gap) / expected_gap) %>% 
+    round() %>% 
+    pmin(0) %>% 
     sum()
 }
 

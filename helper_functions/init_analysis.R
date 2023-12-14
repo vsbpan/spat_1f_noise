@@ -3,7 +3,7 @@ library(sjPlot)
 library(performance)
 library(tidybayes)
 library(glmmTMB)
-source("helper_functions/init.R")
+#source("helper_functions/init.R")
 
 
 
@@ -69,7 +69,7 @@ ref_data <- ref_data %>%
     beta = as.factor(beta), 
     rep_id = as.character(rep_id),
     session_id = as.character(session_id),
-    repID = rep_id
+    repID = paste0("rep",rep_id)
   )
 
 

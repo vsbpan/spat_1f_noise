@@ -188,3 +188,12 @@ append_name <- function(x, name){
   names(x) <- name
   x
 }
+
+null_to_NA <- function(x, len = 1){
+  if(is.null(x)){
+    return(rep(NA, len))
+  } else {
+    x
+  }
+}
+

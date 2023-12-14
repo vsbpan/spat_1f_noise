@@ -255,8 +255,9 @@ parse_inference <- function(df){
   n_kp <- n - (map(out_list, "keypoints") %>% lapply(is.null) %>% do.call("c",.) %>% sum())
   n_mask <- n - (map(out_list, "polygon") %>% lapply(is.null) %>% do.call("c",.) %>% sum())
   n_missing <- count_time_gaps(fm$time)
+  n_dups <- count_time_dups(fm$time)
   run_time <- hms_format(diff(range(fm$time)))
-  n_steps <- ceiling(diff(range(fm$time))/ 360)
+  n_steps <- round(diff(range(fm$time))/ 360)
   thing_class <- paste0(na.omit(do.call("c",unique(map(out_list, "thing_class")))), collapse = ",")
   
   if(all(do.call("rbind", map(out_list, "dim")) %>% 
@@ -278,6 +279,7 @@ parse_inference <- function(df){
                                            "camID" = camID, 
                                            "frames" = n, 
                                            "missing" = n_missing,
+                                           "duplicate" = n_dups,
                                            "time_steps" = n_steps,
                                            "duration" = run_time,
                                            "dim" = dim_formated,
@@ -295,26 +297,28 @@ parse_inference <- function(df){
 print.data_dict <- function(x, ...){
   m <- attr(x, "summary")
   
-  n <- m$frames
-  n_bbox <- m$n_bbox
-  n_kp <- m$n_keypoints
-  n_mask <- m$n_mask
-  n_missing <- m$missing
-  n_steps <- m$time_steps
-  duration <- m$duration
-  thing_class <- m$thing_class
-  dim_formated <- m$dim
-  repID <- m$repID
-  camID <- m$camID
+  n <- null_to_NA(m$frames)
+  n_bbox <- null_to_NA(m$n_bbox)
+  n_kp <- null_to_NA(m$n_keypoints)
+  n_mask <- null_to_NA(m$n_mask)
+  n_missing <- null_to_NA(m$missing)
+  n_dups <- null_to_NA(m$duplicate)
+  n_steps <- null_to_NA(m$time_steps)
+  duration <- null_to_NA(m$duration)
+  thing_class <- null_to_NA(m$thing_class)
+  dim_formated <- null_to_NA(m$dim)
+  repID <- null_to_NA(m$repID)
+  camID <- null_to_NA(m$camID)
   
   cat(sprintf("rep_ID: %s\n\ncam_ID: %s\tdim: %s\n", 
               repID, 
               camID,
               dim_formated
   ))
-  cat(sprintf("frames: %s\tmissing: %s\t time_steps: %s \tduration: %s\n", 
+  cat(sprintf("frames: %s\tmissing: %s\t duplicate: %s\t time_steps: %s \tduration: %s\n", 
               n,
               n_missing,
+              n_dups,
               n_steps,
               duration
   ))

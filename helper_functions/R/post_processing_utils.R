@@ -140,7 +140,7 @@ insert_gaps <- function(df, expected_gap = 360){
   df <- df[o,]
   g <- ((diff(time[o]) - expected_gap) / expected_gap) %>% 
     round()
-  g <- c(g, 0)
+  g <- pmax(c(g, 0), 0)
   
   
   
@@ -149,12 +149,14 @@ insert_gaps <- function(df, expected_gap = 360){
                                     dimnames = list(NULL, names(df))))
   
   out <- lapply(seq_along(g), function(i, g){
-    rbind(d2[i,], empty_row[rep(TRUE, g[i]),])
+    rbind(df[i,], empty_row[rep(TRUE, g[i]),])
   }, g = g) %>% 
     do.call("rbind",.)
   
   rownames(out) <- NULL
-  out[is.na(out$frame_id),"frame_id"] <- paste0("gap", seq_len(sum(g)), "__s", time_grid[is.na(out$frame_id)])
+  out[is.na(out$frame_id),"frame_id"] <- paste0("gap", 
+                                                seq_len(sum(g)), 
+                                                "__s", time_grid[is.na(out$frame_id)])
   return(out)
 }
 

@@ -1,68 +1,48 @@
+source("helper_functions/init.R")
 source("helper_functions/init_analysis.R")
 
 IDs <- fetch_repID()
 
+# event_list <- IDs %>% 
+#   pb_par_lapply(
+#     function(x){
+#       out <- fetch_events(x)
+#       l <- fetch_data_dict(x)
+#       trt_spec <- fetch_trt_spec(x, .ref_data = get("ref_data", parent.frame()))
+#       out$head_high_trt <- read_value(
+#         x = out$head_x, 
+#         y = out$head_y, 
+#         dim_xy = get_dim(l), 
+#         ref_img = trt_spec)
+#       out$head_high_trt <- read_value(
+#         x = out$centroid_x, 
+#         y = out$centroid_y, 
+#         dim_xy = get_dim(l), 
+#         ref_img = trt_spec)
+#       out <- spat1f::insert_gaps(out)
+#       return(out)
+#     }, cores = 8, 
+#     export_fun_only = FALSE
+#   ) %>% 
+#   append_name(paste0("rep",IDs))
+# saveRDS(event_list, "cleaned_data/events_list.rds")
+event_list <- readRDS("cleaned_data/events_list.rds") %>% 
+  lapply(function(x) left_join(x, ref_data, by = "repID"))
+
+move_list <- event_list %>% 
+  lapply(function(d){
+    cbind(
+      spat1f::move_seq(x = d$head_x, y = d$head_y), # t to t + 1 r and theta
+      d[-nrow(d),], # Use the meta data at t
+      append_name(d[-1, "head_high_trt"], "head_high_trt_t1") # head_high_trt at t+1
+      ) 
+  })
 
 
-event_list <- IDs %>% 
-  pb_par_lapply(
-    function(x){
-      out <- fetch_events(x)
-      l <- fetch_data_dict(x)
-      trt_spec <- fetch_trt_spec(x, .ref_data = get("ref_data", parent.frame()))
-      out$head_high_trt <- read_value(
-        x = out$head_x, 
-        y = out$head_y, 
-        dim_xy = get_dim(l), 
-        ref_img = trt_spec)
-      out$head_high_trt <- read_value(
-        x = out$centroid_x, 
-        y = out$centroid_y, 
-        dim_xy = get_dim(l), 
-        ref_img = trt_spec)
-      return(out)
-    }, cores = 8, 
-    export_fun_only = FALSE
-  ) %>% 
-  append_name(IDs)
+move_list[[1]]
 
-
-
-
-
-fetch_trt_spec(44)
-
-
-
-
-fetch_events(36, append_detection_summary = F)
-
-
-
-
-o2 <- lapply(z, function(x){
-  d <- read_csv(sprintf("C:/R_Projects/spat_1f_noise/cleaned_data/events/rep%s.csv",x)) %>% suppressMessages()
-  d 
-})
-
-names(o2) <- paste0("rep", z)
-d_event <- lapply(seq_along(o2), function(x){
-  cbind(o2[[x]], "rep_id" = gsub("rep","",names(o2)[x]))
-}) %>% 
-  do.call("rbind",.) %>%
-  left_join(ref_dat %>% mutate(rep_id = as.character(rep_id)), by = "rep_id")
-
-
-
-d_move<- lapply(seq_along(o), function(x){
-  cbind(o[[x]], "rep_id" = gsub("rep","",names(o)[x]))
-}) %>% 
-  do.call("rbind",.) %>% 
-  left_join(ref_dat %>% mutate(rep_id = as.character(rep_id)), by = "rep_id")
-
-
-
-d_move %>% 
+move_list %>% 
+  do.call("rbind", .) %>% 
   filter(!is.na(theta_rel)) %>% 
   mutate(
     theta_rel = nearest_bin(theta_rel, seq(-2 * pi, 2 * pi, by = 1))
