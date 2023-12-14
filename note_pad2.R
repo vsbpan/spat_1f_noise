@@ -1,5 +1,12 @@
 source("helper_functions/init_analysis.R")
 
+anchor_picker_app("misc_tests/prototype2.jpg")
+
+
+
+
+
+
 IDs <- fetch_repID()
 
 event_list <- IDs %>% 
@@ -24,6 +31,10 @@ event_list <- IDs %>%
   append_name(IDs)
 
 
+
+
+
+
 fetch_trt_spec(44)
 
 
@@ -45,12 +56,6 @@ d_event <- lapply(seq_along(o2), function(x){
 }) %>% 
   do.call("rbind",.) %>%
   left_join(ref_dat %>% mutate(rep_id = as.character(rep_id)), by = "rep_id")
-
-
-
-
-
-
 
 
 

@@ -1,11 +1,9 @@
-library(shiny)
-library(tidyverse)
-
 # Shiny APP that records anchors used for quad to quad transformation. 
 
 anchor_picker_app <- function(img_path, 
                             thin = 3,
                             anchor_size = 3){
+  require("shiny")
   
   ui_anchor_picker <- fluidPage(
     shiny::titlePanel(

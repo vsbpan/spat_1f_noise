@@ -340,14 +340,12 @@ summary.data_dict <- function(x, ...){
 
 registerS3method(genname = "summary", 
                  class = "data_dict", 
-                 method = summary.data_dict, 
-                 envir = asNamespace("herbivar"))
+                 method = summary.data_dict)
 
 
 registerS3method(genname = "print", 
                  class = "data_dict", 
-                 method = print.data_dict, 
-                 envir = asNamespace("herbivar"))
+                 method = print.data_dict)
 
 # Method to get formatted key points from 'data_dict' objects
 get_keypoints <- function(x){

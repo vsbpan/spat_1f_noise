@@ -1,7 +1,3 @@
-library(tidyverse)
-library(herbivar)
-library(foreach)
-library(doSNOW)
 library(ggpubr)
 library(sjPlot)
 library(performance)

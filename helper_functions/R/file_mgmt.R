@@ -1,5 +1,3 @@
-library(herbivar)
-
 # Create directory if it doesn't exit
 init_dir <- function(root_path, dir_name){
   stopifnot(length(dir_name) == 1)

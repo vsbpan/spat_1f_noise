@@ -1,15 +1,5 @@
-library(tidyverse)
-library(herbivar)
 library(foreach)
 library(doSNOW)
-source("helper_functions/file_mgmt.R")
-source("helper_functions/image_utils.R")
-source("helper_functions/utils.R")
-source("helper_functions/anchor_picker.R")
-source("helper_functions/image_data_extraction_utils.R")
-source("helper_functions/post_processing_utils.R")
-herbivar::pre_cmp_fun()
 
-
-
-
+# Some custom functions in "./helper_functions/R/*.R" are loaded as 'spat1f' package
+devtools::load_all(path = "helper_functions", export_all = TRUE, quiet = TRUE)
