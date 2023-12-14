@@ -18,7 +18,7 @@ fetch_trt_meta <- function(path = "raw_data/trt_spectra_meta/master_trt_meta.csv
   suppressMessages(read_csv(path))
 }
 
-fetch_trt_spec <- function(repID, .ref_data = get("ref_data"), trt_meta_iml = NULL){
+fetch_trt_spec <- function(repID, .ref_data = get("ref_data", envir = globalenv()), trt_meta_iml = NULL){
   
   repID <- repID_clean(repID) # Cleaning
   

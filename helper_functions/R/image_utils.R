@@ -545,7 +545,8 @@ detect_cat <- function(img, w = c(5,1), thr = "kmeans", adjust = 1.3, clean = 3,
       thr = thr,
       lambda = lambda, 
       sat = sat,
-      cores = cores) %>% 
+      cores = cores, 
+      inorder = TRUE) %>% 
       as.imlist() %>% 
       imappend("z")
   }

@@ -1,20 +1,15 @@
 source("helper_functions/init_analysis.R")
 
-anchor_picker_app("misc_tests/prototype2.jpg")
-
-
-
-
-
-
 IDs <- fetch_repID()
 
+
+
 event_list <- IDs %>% 
-  lapply(
+  pb_par_lapply(
     function(x){
       out <- fetch_events(x)
       l <- fetch_data_dict(x)
-      trt_spec <- fetch_trt_spec(x)
+      trt_spec <- fetch_trt_spec(x, .ref_data = get("ref_data", parent.frame()))
       out$head_high_trt <- read_value(
         x = out$head_x, 
         y = out$head_y, 
@@ -26,10 +21,10 @@ event_list <- IDs %>%
         dim_xy = get_dim(l), 
         ref_img = trt_spec)
       return(out)
-    }
+    }, cores = 8, 
+    export_fun_only = FALSE
   ) %>% 
   append_name(IDs)
-
 
 
 

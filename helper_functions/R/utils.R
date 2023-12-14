@@ -29,10 +29,10 @@ frame_time <- function(x, fps){
   as.character(invisible(sprintf("%02d:%02d::%02d", h,m,s)))
 }
 
-# lapply() with progressbar and parellel support. 
+# lapply() with progress bar and parallel support. 
 pb_par_lapply <- function(x, FUN, cores = 1, ..., 
                           loop_text = "Processing",
-                          inorder = FALSE, export_fun_only = TRUE){
+                          inorder = TRUE, export_fun_only = TRUE){
   if(is.list(x)){
     indf <- function(x,i){
       x[[i]]
@@ -78,9 +78,13 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
       export <- ls(globalenv())
     }
     
+    # Remove spat1f package from list. foreach::`%dopar%` calls library(package) as some point, which would give an error
+    pkg <- .packages()
+    pkg <- pkg[pkg != "spat1f"]
+    
     out <- foreach(
       i = indices, 
-      .export = ls(globalenv()),
+      .export = export,
       .combine = c, 
       .verbose = FALSE,
       .inorder = inorder, 
@@ -90,8 +94,11 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
           cat(sprintf("\r%s %d of %d",loop_text, n, length(indices)))
         }
       ),
-      .packages = .packages()
+      .packages = 
     ) %dopar% {
+      devtools::load_all(path = "helper_functions", 
+                         export_all = TRUE, quiet = TRUE) # Load spat1f package
+      
       list(FUN(indf(x, i), ...))
     }
     
