@@ -2,92 +2,36 @@ source("helper_functions/init_analysis.R")
 
 IDs <- fetch_repID()
 
+event_list <- IDs %>% 
+  lapply(
+    function(x){
+      out <- fetch_events(x)
+      l <- fetch_data_dict(x)
+      trt_spec <- fetch_trt_spec(x)
+      out$head_high_trt <- read_value(
+        x = out$head_x, 
+        y = out$head_y, 
+        dim_xy = get_dim(l), 
+        ref_img = trt_spec)
+      out$head_high_trt <- read_value(
+        x = out$centroid_x, 
+        y = out$centroid_y, 
+        dim_xy = get_dim(l), 
+        ref_img = trt_spec)
+      return(out)
+    }
+  ) %>% 
+  append_name(IDs)
+
+
+fetch_trt_spec(44)
 
 
 
 
-
-d2 %>% 
-  ggplot(aes(x = head_x, y = head_y)) + 
-  geom_point()
+fetch_events(36, append_detection_summary = F)
 
 
-
-
-
-
-trt_meta_iml <- trt_meta %>% 
-  trt_meta_as_list()
-
-trt_meta_iml$`syn_id__beta-5_id15` %>% 
-  resize(size_x = get_dim(l)[1], size_y = get_dim(l)[2]) %>% 
-  plot()
-
-points(d2$head_x, d2$head_y, col = "red")
-
-plot_image_guide(trt_meta_iml$`syn_id__beta-5_id15`)
-
-
-ref_dat <- read_table()
-d2$head_high_trt <- read_value(
-  x = d2$head_x, 
-  d2$head_y, 
-  dim_xy = get_dim(l), 
-  ref_img = fetch_trt_spec(get_repID(l), 
-                           ref_data = ref_dat, 
-                           trt_meta_iml = trt_meta_iml))
-
-names(d2)
-
-d2$file_path
-
-
-d2 %>% 
-  filter(size_px > 500) %>% 
-  ggplot(aes(x = time, y = log(size_px))) + 
-  geom_point()
-
-
-d2 %>% 
-  filter(size_px > 500) %>% 
-  ggplot(aes(x = time, y = head_high_trt)) + 
-  geom_point() + 
-  geom_smooth()
-
-
-d2 %>% 
-  filter(size_px > 500) %>% 
-  ggplot(aes(x = time, y = head_high_trt)) + 
-  geom_point() + 
-  geom_smooth()
-
-d2 %>% 
-  filter(!is.na(head_x))
-
-
-
-fn <- list.files("cleaned_data/events", full.names = TRUE)
-d2 <- read_csv(fn[80])
-d2 <- d2 %>% insert_gaps()
-
-b <- move_seq(d2$head_x, d2$head_y) 
-
-ref_dat %>% 
-  filter(session_id %in% c(2,3)) %>% 
-  filter(var_trt != "constant") %>% 
-  select(rep_id) %>% 
-  unlist() -> z
-
-z <- z[!z==76]
-z <- z[!z==43]
-
-o <- lapply(z, function(x){
-  d <- read_csv(sprintf("C:/R_Projects/spat_1f_noise/cleaned_data/events/rep%s.csv",x)) %>% suppressMessages()
-  d %>% with(.,move_seq(head_x, head_y)) 
-})
-
-
-names(o) <- paste0("rep", z)
 
 
 o2 <- lapply(z, function(x){

@@ -35,6 +35,12 @@ mask_info <- function(vid){
 
 # Read value at specified coordinates from reference image. Scales the x,y input with dim_xy of the target image so that it matches relatively to the ref_img
 read_value <- function(x, y, dim_xy, ref_img){
+  nx <- length(x)
+  stopifnot(nx == length(y))
+  
+  if(is.null(ref_img)){
+    return(rep(NA, nx))
+  }
   
   stopifnot(
     imager::spectrum(ref_img) == 1 & imager::depth(ref_img) == 1

@@ -33,8 +33,20 @@ fetch_trt_spec <- function(repID, .ref_data = get("ref_data"), trt_meta_iml = NU
       filter(syn_id == syn_id_matched) %>% 
       trt_meta_as_list()
   }
+  
   cat(sprintf("Fetached synID '%s' for 'rep%s'\n", syn_id_matched, repID))
-  trt_meta_iml[[which(names(trt_meta_iml) == paste0("syn_id__",syn_id_matched))]]
+  index <- which(names(trt_meta_iml) == paste0("syn_id__",syn_id_matched))
+  
+  if(length(index) != 1){
+    stop(
+      sprintf(
+        "Expected 1 matched spectrum, but %s found.", 
+        length(index)
+      )
+    )
+  }
+  
+  trt_meta_iml[[index]]
 }
 
 # Convert treatment metadata from data.frame to image list
@@ -65,12 +77,30 @@ fetch_anchors <- function(repID, src_dir = "raw_data/picked_anchors/"){
   }
 }
 
-fetch_events <- function(repID, src_dir = "cleaned_data/events/"){
+fetch_events <- function(repID, append_detection_summary = TRUE, src_dir = "cleaned_data/events/"){
   repID <- repID_clean(repID)
   path <- paste0(src_dir, "/rep",repID,".csv")
   
   if(file.exists(path)){
-    return(suppressMessages(read_csv(path)))
+    out <- suppressMessages(read_csv(path))
+    if(append_detection_summary){
+      s <- summary(
+        fetch_data_dict(repID)) %>% 
+        mutate(
+          repID = paste0("rep", repID)
+        ) %>% 
+        dplyr::select(-camID)
+      
+      if(nrow(s) > 1){
+        stop(sprintf("Expects 1 row, but got %s rows of data_dict summary"), nrow(s))
+      }
+      
+      out <- out %>% 
+        left_join(
+          s, 
+          by = "repID")
+    }
+    return(out)
   } else {
     warning(
       sprintf("repID: %s not found in %s", repID, src_dir)
@@ -150,4 +180,6 @@ detection_report <- function(repIDs){
       bbox = count_report(n_bbox, frames)
     )
 }
+
+
 

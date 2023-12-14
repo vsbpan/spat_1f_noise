@@ -176,3 +176,8 @@ check_CPU_request <- function(cores,
     
   }
 }
+
+append_name <- function(x, name){
+  names(x) <- name
+  x
+}
