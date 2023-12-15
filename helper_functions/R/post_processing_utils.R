@@ -1,5 +1,29 @@
+turn_angle_calc <- function(theta){
+  # theta in absolute angle in order of timesteps
+  where_NA <- is.na(theta)
+  theta <- theta[!is.na(theta)]
+  
+  theta_rel <- c(0, (theta - c(theta[-1],NA))[-length(theta)])
+  theta_rel <- theta_rel %% (2 * pi)
+  theta_rel <-  ifelse(theta_rel < pi, 
+                           theta_rel, 
+                           (theta_rel %% pi) - pi)
+  out <- rep(NA, length(where_NA))
+  
+  
+  out[!where_NA] <- theta_rel
+  i <- (c(0,which(where_NA)) + 1)
+  i <- i[i<length(where_NA)]
+  out[i] <- NA
+  out
+}
 
-move_seq <- function(x,y){
+rad2degree <- function(theta){
+  theta / pi * 180
+}
+
+# Calculate step length and turn angle. step lengths smaller than r_thresh are considered none movement, causing the turn angle of that step to be NA
+move_seq <- function(x,y, r_thresh = 1){ 
   stopifnot(length(x) == length(y))
   out <- lapply(seq_len(length(x) - 1), function(i){
     delta_x <- x[i] - x[i+1]
@@ -8,7 +32,11 @@ move_seq <- function(x,y){
     theta_abs <- atan2(delta_y, delta_x)
     c("r" = r, "theta_abs" = theta_abs)
   }) %>% bind_vec()
-  out$theta_rel <- c(NA, (out$theta_abs - c(out$theta_abs[-1],NA))[-(length(x)-1)])
+  
+  out$theta_abs[out$r < r_thresh] <- NA
+  
+  #out$theta_rel <- out$theta_rel %% (2 * pi)
+  out$theta_rel <-  turn_angle_calc(out$theta_abs)
   out$step_id <- seq_len(nrow(out))
   out
 }
@@ -157,6 +185,7 @@ insert_gaps <- function(df, expected_gap = 360){
   out[is.na(out$frame_id),"frame_id"] <- paste0("gap", 
                                                 seq_len(sum(g)), 
                                                 "__s", time_grid[is.na(out$frame_id)])
+  out$is_gap <- grepl(out$frame_id,"gap")
   return(out)
 }
 
