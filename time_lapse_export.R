@@ -1,5 +1,5 @@
 library(herbivar)
-source("helper_functions/file_mgmt.R")
+source("helper_functions/init.R")
 
 
 source_dir <- "D:/time_lapse_export"
