@@ -1,23 +1,25 @@
+# Calculate turn angle with a sequence of absolute angles
 turn_angle_calc <- function(theta){
-  # theta in absolute angle in order of timesteps
+  # theta in absolute angle in order of time steps
   where_NA <- is.na(theta)
   theta <- theta[!is.na(theta)]
   
   theta_rel <- c(0, (theta - c(theta[-1],NA))[-length(theta)])
   theta_rel <- theta_rel %% (2 * pi)
   theta_rel <-  ifelse(theta_rel < pi, 
-                           theta_rel, 
-                           (theta_rel %% pi) - pi)
+                           theta_rel, # Right turns
+                           (theta_rel %% pi) - pi) # Convert left turns into negative angle
   out <- rep(NA, length(where_NA))
   
   
-  out[!where_NA] <- theta_rel
-  i <- (c(0,which(where_NA)) + 1)
-  i <- i[i<length(where_NA)]
+  out[!where_NA] <- theta_rel # Insert calculate theta_rel back in place, assuming those with NA stay at the same place
+  i <- (c(0,which(where_NA)) + 1) # Set the first turn angle of an uninterrupted sequence of movement vectors as NA 
+  i <- i[i<length(where_NA)] # Remove if i is longer than the length of the target vector
   out[i] <- NA
   out
 }
 
+# Convert radians into degrees
 rad2degree <- function(theta){
   theta / pi * 180
 }
@@ -29,23 +31,24 @@ move_seq <- function(x,y, r_thresh = 1){
     delta_x <- x[i] - x[i+1]
     delta_y <- y[i] - y[i+1]
     r <- sqrt((delta_x)^2 + (delta_y)^2)
-    theta_abs <- atan2(delta_y, delta_x)
+    theta_abs <- atan2(delta_y, delta_x) # Angle with respect to the xy coordinate.
     c("r" = r, "theta_abs" = theta_abs)
   }) %>% bind_vec()
   
-  out$theta_abs[out$r < r_thresh] <- NA
+  out$theta_abs[out$r < r_thresh] <- NA # Treat those with very small steps as stand still
   
-  #out$theta_rel <- out$theta_rel %% (2 * pi)
-  out$theta_rel <-  turn_angle_calc(out$theta_abs)
+  out$theta_rel <-  turn_angle_calc(out$theta_abs) # Get turn angle with vector at t-1 as 0 degree reference
   out$step_id <- seq_len(nrow(out))
   out
 }
 
-
+# Fetch treatment spectra meta data stored on computer
 fetch_trt_meta <- function(path = "raw_data/trt_spectra_meta/master_trt_meta.csv"){
   suppressMessages(read_csv(path))
 }
 
+# Fetch treatment spectra using repID. 
+# For use in pb_par_lapply() or foreach(), set get("ref_data", envir = parent.frame())
 fetch_trt_spec <- function(repID, .ref_data = get("ref_data", envir = globalenv()), trt_meta_iml = NULL){
   
   repID <- repID_clean(repID) # Cleaning
@@ -91,6 +94,7 @@ trt_meta_as_list <- function(df){
   ufl_trt_iml
 }
 
+# Fetch store anchor list stored on computer using repID
 fetch_anchors <- function(repID, src_dir = "raw_data/picked_anchors/"){
   repID <- repID_clean(repID)
   path <- paste0(src_dir, "/rep",repID,".rds")
@@ -105,6 +109,7 @@ fetch_anchors <- function(repID, src_dir = "raw_data/picked_anchors/"){
   }
 }
 
+# Fetch frame by frame data stored on computer using repID. Processed with get_data() on 'data_dict' object
 fetch_events <- function(repID, append_detection_summary = TRUE, src_dir = "cleaned_data/events/"){
   repID <- repID_clean(repID)
   path <- paste0(src_dir, "/rep",repID,".csv")
@@ -137,6 +142,7 @@ fetch_events <- function(repID, append_detection_summary = TRUE, src_dir = "clea
   }
 }
 
+# Fetch 'data_dict' objects (parsed form of RCNN inference data.frame) using repID
 fetch_data_dict <- function(repID, src_dir = "cleaned_data/data_dicts/"){
   repID <- repID_clean(repID)
   path <- paste0(src_dir, "/rep",repID,".rds")
@@ -152,6 +158,7 @@ fetch_data_dict <- function(repID, src_dir = "cleaned_data/data_dicts/"){
 }
 
 
+# Fetch all the repIDs with inference on the computer
 fetch_repID <- function(has = c("inference")){
   list.files("raw_data/inferences") %>% 
     gsub("rep|_inference.csv","",.)
@@ -189,10 +196,12 @@ insert_gaps <- function(df, expected_gap = 360){
   return(out)
 }
 
+# Remove 'rep' from repID string for comparability reasons
 repID_clean <- function(x){
   gsub("rep", "", x)
 }
 
+# Loop through each data_dict objects using the supplied repIDs vector and report detection rate
 detection_report <- function(repIDs){
   repIDs <- repID_clean(repIDs)
   valid_ids <- fetch_repID()

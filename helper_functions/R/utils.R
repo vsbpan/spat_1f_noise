@@ -184,11 +184,14 @@ check_CPU_request <- function(cores,
   }
 }
 
+
+# Returns the same object with supplied names as attribute
 append_name <- function(x, name){
   names(x) <- name
   x
 }
 
+# Convert NULL value to NA vector of length 'len'
 null_to_NA <- function(x, len = 1){
   if(is.null(x)){
     return(rep(NA, len))

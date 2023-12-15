@@ -293,7 +293,7 @@ parse_inference <- function(df){
 
 
 
-# S3 print and summary methods for data_dict objects
+# S3 print method for data_dict objects
 print.data_dict <- function(x, ...){
   m <- attr(x, "summary")
   
@@ -336,12 +336,13 @@ print.data_dict <- function(x, ...){
   )
 }
 
-
+# S3 print summary for data_dict objects. Fetches the 'summary' attribute
 summary.data_dict <- function(x, ...){
   m <- attr(x, "summary")
   return(m)
 }
 
+# S3 methods registration
 registerS3method(genname = "summary", 
                  class = "data_dict", 
                  method = summary.data_dict)

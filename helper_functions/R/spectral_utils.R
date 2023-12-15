@@ -171,19 +171,20 @@ sim_img <- function(dim = c(150,150),
 syn_spec <- function(n = 100, beta = 1, plot = TRUE, threshold = TRUE, invert = TRUE,...){
   stopifnot(n%%2==0)
   epsilon <- rnorm((n^2))
-  expand.grid("x" = seq.int(n)-floor(n/2), "y" = seq.int(n)-floor(n/2)) %>% 
+  
+  m <- expand.grid("x" = seq.int(n)-floor(n/2), "y" = seq.int(n)-floor(n/2)) %>% 
     mutate("r" = sqrt((x)^2 + (y)^2), "epsilon" = epsilon) %>% 
     mutate(A = 1/(r)^(beta/2) * epsilon, phi = runif(n^2, 0, 2*pi)) %>% 
-    mutate(A = ifelse(r == 0, 0, A)) %>% 
+    mutate(A = ifelse(r == 0, 0, A)) %>% # Fix numeric issue
     mutate(z = A * exp((0+1i) * phi)) %>% 
     with(., matrix(data = z, ncol = n, nrow = n)) %>% 
-    fftshift(inverse = TRUE) -> m
+    fftshift(inverse = TRUE)
   
   if(invert){
     m <- fft_img_inv(m)
     if(threshold){
       
-      m <- as.cimg(m[] + rnorm(prod(dim(m)), 0, 0.00001))
+      m <- as.cimg(m[] + rnorm(prod(dim(m)), 0, 0.00001)) # Add a very small value to avoid having the same value repeated
       
       m <- m %>% imeval(~. > median(c(.)))
     }
