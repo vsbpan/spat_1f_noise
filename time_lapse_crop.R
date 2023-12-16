@@ -3,10 +3,7 @@ library(herbivar)
 library(foreach)
 library(doSNOW)
 rm(list = ls())
-source("helper_functions/file_mgmt.R")
-source("helper_functions/image_utils.R")
-source("helper_functions/utils.R")
-source("helper_functions/anchor_picker.R")
+source("helper_functions/init.R")
 herbivar::pre_cmp_fun()
 
 src_root <- "time_lapse_feed"
