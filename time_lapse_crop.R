@@ -1,10 +1,6 @@
-library(tidyverse)
-library(herbivar)
-library(foreach)
-library(doSNOW)
 rm(list = ls())
 source("helper_functions/init.R")
-herbivar::pre_cmp_fun()
+
 
 src_root <- "time_lapse_feed"
 dest_root <- "processed_feed"

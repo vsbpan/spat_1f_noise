@@ -465,7 +465,7 @@ crop_raw_img <- function(
   pb_par_lapply(indices, function(i, .pts_list, .files_full_name, .dest_dir){
     
     img2 <- reproject_grid(fast_load_image(.files_full_name[i], transform = FALSE), 
-                           init_pts = choose_pts(pts_list, i), 
+                           init_pts = choose_pts(.pts_list, i), 
                            dest_size = 1000, 
                            qc_plot = FALSE) %>% 
       mirror("x")
