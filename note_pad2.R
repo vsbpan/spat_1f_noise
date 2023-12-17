@@ -582,13 +582,21 @@ ref_data %>%
 
 rgr_m <- glmmTMB(
   RGR ~ 
-    log(cat_pre_wt) * (as.factor(beta) * var_trt) + pupated_cam_end + (1|session_id), 
+    log(cat_pre_wt) * (beta +  var_trt) + pupated_cam_end + (1|session_id), 
   family = gaussian(), 
   data = ref_data %>% 
     filter(!is.na(cat_pre_wt))
 ); summary(rgr_m)
 
-plot_model(rgr_m, type = "pred", terms = c("cat_pre_wt[all]","var_trt", "beta")) + 
+plot_model(rgr_m, type = "pred", terms = c("cat_pre_wt[all]", "beta")) + 
+  labs(title = NULL, 
+       subtitle = NULL, 
+       y = "RGR (h^-1)", x = "Cat pre weight", color = "beta") + 
+  scale_x_continuous(trans = "log10") +
+  theme(legend.position = "top") +
+  theme_bw(base_size = 15)
+
+plot_model(rgr_m, type = "pred", terms = c("cat_pre_wt[all]","var_trt")) + 
   labs(title = NULL, 
        subtitle = NULL, 
        y = "RGR (h^-1)", x = "Cat pre weight", color = "var_trt") + 
@@ -600,9 +608,38 @@ plot_model(rgr_m, type = "pred", terms = c("cat_pre_wt[all]","var_trt", "beta"))
 plot_model(rgr_m, type = "pred", terms = c("cat_pre_wt[all]", "var_trt"))
 
 
+pup_wt_m <- glmmTMB(
+  log(pupal_weight) ~
+  log(cat_pre_wt) + (beta +  var_trt) + (1|session_id), 
+  family = gaussian, 
+  data = ref_data %>% 
+    filter(!is.na(cat_pre_wt))
+); summary(pup_wt_m)
+
+
+
+coxme::coxme(
+  Surv(pupation_time, is.na(pupated)) ~
+    log(cat_pre_wt) + (beta +  var_trt) + (1|session_id), 
+  data = ref_data %>% 
+    filter(!is.na(cat_pre_wt) & !is.na(pupation_time))
+)
+
+ref_data$pupation_time %>% hist()
+
+
+
+pup_time_m <- glmmTMB(
+  1/pupation_time ~
+    log(cat_pre_wt) + (beta +  var_trt) + (1|session_id), 
+  family = Gamma(link = "log"), 
+  data = ref_data %>% 
+    filter(!is.na(cat_pre_wt))
+); summary(pup_time_m)
+
 death_m <- glmmTMB(
   cat_dead_cam_end ~ 
-    log(cat_pre_wt) + var_trt + as.factor(beta) + (1|session_id), 
+    log(cat_pre_wt) + var_trt + beta + (1|session_id), 
   family = binomial(), 
   data = ref_data %>% 
     filter(!is.na(cat_pre_wt))

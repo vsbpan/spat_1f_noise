@@ -7,7 +7,7 @@ library(glmmTMB)
 
 
 
-ref_data <- read_csv("raw_data/1_f_noise_experiment data_Dec_13_2023.csv")
+ref_data <- read_csv("raw_data/1_f_noise_experiment data_Dec_16_2023.csv")
 
 ref_data <- ref_data %>% 
   filter(!is.na(cat_dead_cam_end)) %>% 
@@ -63,6 +63,26 @@ ref_data <- ref_data %>%
         0
       ),
       1
+    )
+  ) %>% 
+  mutate(
+    pupation_time = ifelse(
+      is.na(pupated),
+      NA,
+      ifelse(
+        pupated == 1, 
+        as.numeric(as.difftime(pupation_date - date_start, units = "d")),
+        as.numeric(as.difftime(today - date_start, units = "d"))
+      )
+    ), 
+    eclosure_time = ifelse(
+      is.na(eclosed),
+      NA,
+      ifelse(
+        pupated == 1, 
+        as.numeric(as.difftime(eclosure_date - date_start, units = "d")),
+        as.numeric(as.difftime(today - date_start, units = "d"))
+      )
     )
   ) %>% 
   mutate(

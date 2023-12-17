@@ -1,13 +1,4 @@
-library(tidyverse)
-library(herbivar)
-library(foreach)
-library(doSNOW)
-library(sjPlot)
-source("helper_functions/file_mgmt.R")
-source("helper_functions/image_utils.R")
-source("helper_functions/utils.R")
-source("helper_functions/anchor_picker.R")
-herbivar::pre_cmp_fun()
+source("helper_functions/init_analysis.R")
 
 
 
