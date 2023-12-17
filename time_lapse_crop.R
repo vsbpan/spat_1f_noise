@@ -15,7 +15,7 @@ files <- list.files(src_dir, pattern = ".jpg") %>% files_reorder()
 files_full_name <- paste(src_dir, files, sep = "/") %>% files_reorder()
 
 # Initialize directory
-init_dir(root_path = dest_root, dir_name = trialID)
+#init_dir(root_path = dest_root, dir_name = trialID)
 
 # Read in test image and detect corners
 img <- fast_load_image(files_full_name[1], transform = FALSE) 
@@ -71,9 +71,6 @@ pts2 %>%
 # If all is well, reproject for all images
 # NOTE: The cropped image is mirrored by the x axis (looks correct with plot.cimg though bc the y-axis is flipped)
 crop_raw_img(); save_anchors(trialID)
-
-
-
 
 
 
