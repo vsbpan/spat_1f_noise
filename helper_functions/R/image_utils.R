@@ -449,6 +449,10 @@ crop_raw_img <- function(
   
   start_time <- Sys.time()
   
+  stopifnot(!any(duplicated(indices)))
+  stopifnot(
+    length(.files_full_name) == length(indices)
+  )
   
   if(is.null(indices)){
     indices <- seq_along(.files_full_name)
