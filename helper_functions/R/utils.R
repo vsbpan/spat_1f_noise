@@ -199,3 +199,7 @@ null_to_NA <- function(x, len = 1){
   }
 }
 
+numbers_only <- function(x){
+  !grepl("\\D", x)
+}
+
