@@ -132,8 +132,7 @@ cpu_report <- function(x){
     ) %>% 
     filter(core != "_Total") %>% 
     mutate_all(as.numeric) %>% 
-    arrange(core) %>% 
-    mutate(core = core + 1)
+    arrange(core)
 }
 
 # Check CPU resource usage and if the requested number of cores has usage above 50%, apply error condition. 
