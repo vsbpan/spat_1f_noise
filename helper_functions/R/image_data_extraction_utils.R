@@ -352,6 +352,19 @@ registerS3method(genname = "print",
                  class = "data_dict", 
                  method = print.data_dict)
 
+# Method to get formatted keypoints from 'data_dict' objects
+get_bbox <- function(x){
+  stopifnot(inherits(x, "data_dict"))
+  lapply(map(x, "bbox"), function(z){
+    if(is.null(z)){
+      return(NULL)
+    } else {
+     return(as.vector(t(z))) 
+    }
+  }) 
+}
+
+
 # Method to get formatted key points from 'data_dict' objects
 get_keypoints <- function(x){
   stopifnot(inherits(x, "data_dict"))
@@ -458,4 +471,9 @@ get_data <- function(x, type = c("file_meta", "score", "keypoints", "mask_summar
   }
   return(out)
 }
+
+
+
+
+
 
