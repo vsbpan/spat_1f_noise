@@ -42,7 +42,11 @@ as.Json.data_dict <- function(x){
   }
   
   
+  
   fmeta <- get_file_meta(x)
+  n <- nrow(fmeta)
+  empty_list <- vector(mode = "list", length = n)
+  empty_list_list <- lapply(seq_len(n), function(x) vector(mode = "list", length = 0))
   
   img_id <- sprintf("1%s%05d", 
                     format_set(repID_clean(fmeta$repID)), 
@@ -79,9 +83,12 @@ as.Json.data_dict <- function(x){
     "num_keypoints" = ifelse(lapply(kp, is.null) %>% 
                                do.call("c",.), 
                              0,
-                             3)
+                             3),
+    "isbbox" = FALSE,
+    "color" = "#f963b6"
   )
   
+  annotations$metadata <- empty_list
   annotations$bbox <- unname(get_bbox(x)) 
   annotations$keypoints <- kp
   annotations$segmentation <- unname(seg)
@@ -93,8 +100,18 @@ as.Json.data_dict <- function(x){
     "path" = fmeta$file_path, 
     "height" = get_dim(x)[2], 
     "width" = get_dim(x)[1],
-    "id" = as.numeric(img_id)
+    "id" = as.numeric(img_id),
+    "regenerate_thumbnail" = FALSE,
+    "milliseconds" = 0,
+    "deleted" = FALSE,
+    "num_annotations" = 0,
+    "annotated" = FALSE
   )
+  
+  images$category_ids <- empty_list
+  images$events <- empty_list_list
+  images$annotating <- empty_list_list
+  images$metadata <- empty_list
   
   categories <- data.frame(
     "color" = "#8186d5",

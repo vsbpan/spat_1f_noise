@@ -7,7 +7,7 @@ library(glmmTMB)
 
 
 
-ref_data <- read_csv("raw_data/1_f_noise_experiment data_Dec_16_2023.csv")
+ref_data <- read_csv("raw_data/1_f_noise_experiment data_Dec_24_2023.csv")
 
 ref_data <- ref_data %>% 
   filter(!is.na(cat_dead_cam_end)) %>% 

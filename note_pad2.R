@@ -617,10 +617,10 @@ pup_wt_m <- glmmTMB(
 ); summary(pup_wt_m)
 
 
-
+library(survival)
 coxme::coxme(
   Surv(pupation_time, is.na(pupated)) ~
-    log(cat_pre_wt) + (beta +  var_trt) + (1|session_id), 
+    scale(log(cat_pre_wt)) + (beta +  var_trt) + (1|session_id), 
   data = ref_data %>% 
     filter(!is.na(cat_pre_wt) & !is.na(pupation_time))
 )
@@ -631,7 +631,7 @@ ref_data$pupation_time %>% hist()
 
 pup_time_m <- glmmTMB(
   1/pupation_time ~
-    log(cat_pre_wt) + (beta +  var_trt) + (1|session_id), 
+    log(cat_pre_wt) + (beta + var_trt) + (1|session_id), 
   family = Gamma(link = "log"), 
   data = ref_data %>% 
     filter(!is.na(cat_pre_wt))
@@ -639,7 +639,7 @@ pup_time_m <- glmmTMB(
 
 death_m <- glmmTMB(
   cat_dead_cam_end ~ 
-    log(cat_pre_wt) + var_trt + beta + (1|session_id), 
+    scale(log(cat_pre_wt)) + var_trt + beta + (1|session_id), 
   family = binomial(), 
   data = ref_data %>% 
     filter(!is.na(cat_pre_wt))
