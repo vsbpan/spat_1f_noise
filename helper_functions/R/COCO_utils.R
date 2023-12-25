@@ -104,8 +104,9 @@ as.Json.data_dict <- function(x){
     "regenerate_thumbnail" = FALSE,
     "milliseconds" = 0,
     "deleted" = FALSE,
-    "num_annotations" = 0,
-    "annotated" = FALSE
+    "num_annotations" = 1,
+    "annotated" = TRUE,
+    "dataset_id" = 5
   )
   
   images$category_ids <- empty_list
