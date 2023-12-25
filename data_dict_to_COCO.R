@@ -25,3 +25,32 @@ export_COCO(import_COCO(x = "annotations/rep50_COCO_annotator.json"), "annotatio
 
 
 obj$images$events[[1]] %>% length()
+
+
+
+db <- import_COCO("annotations/COCO_database.json")
+
+db <- db$images %>% filter(dataset_id == "2")
+
+dbdf <- data.frame(
+  "id" = db$id,
+  "file_name" = db$file_name
+)
+
+
+
+a$images
+
+a <- as.Json(fetch_data_dict(50), db = dbdf)
+a <- a %>% set_new_path(path_root = "datasets/rep50")
+
+
+
+
+
+
+
+
+
+
+

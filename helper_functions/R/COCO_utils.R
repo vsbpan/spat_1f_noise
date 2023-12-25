@@ -9,7 +9,7 @@ print.COCO_Json <- function(x){
 
 
 # Convert data dict object to Json object
-as.Json.data_dict <- function(x){
+as.Json.data_dict <- function(x, db){
   
   format_set <- function(x){
     if(unique_len(x) == 1){
@@ -48,10 +48,28 @@ as.Json.data_dict <- function(x){
   empty_list <- vector(mode = "list", length = n)
   empty_list_list <- lapply(seq_len(n), function(x) vector(mode = "list", length = 0))
   
-  img_id <- sprintf("1%s%05d", 
-                    format_set(repID_clean(fmeta$repID)), 
-                    as.numeric(fmeta$rank)
-  )
+  # img_id <- sprintf("1%s%05d", 
+  #                   format_set(repID_clean(fmeta$repID)), 
+  #                   as.numeric(fmeta$rank)
+  # )
+  
+  id_lookup <- function(fn, db){
+    vapply(
+      fn, 
+      function(x){
+        db[(db$file_name == x), "id"]
+      }, 
+      numeric(1)
+    ) %>% 
+      unname()
+  }
+  
+  img_id <- id_lookup(fmeta$file_base, db)
+  
+  
+  
+  
+  
   thing_id <- switch(unlist(unname(attr(x, "summary")["thing_class"])), 
                      "cat" = "1")
   
@@ -148,7 +166,7 @@ as.Json.data_dict <- function(x){
   return(out)
 }
 
-as.Json <- function(x){
+as.Json <- function(x, ...){
   UseMethod("as.Json")
 }
 
@@ -246,5 +264,8 @@ merge_COCO <- function(...){
 }
 
 
-
+set_new_path <- function(x, path_root){
+  x$images$path <- paste0(path_root, "/", x$images$file_name)
+  return(x)
+}
 
