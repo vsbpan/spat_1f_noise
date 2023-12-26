@@ -9,7 +9,7 @@ print.COCO_Json <- function(x){
 
 
 # Convert data dict object to Json object
-as.Json.data_dict <- function(x, db){
+as.Json.data_dict <- function(x){
   
   format_set <- function(x){
     if(unique_len(x) == 1){
@@ -25,11 +25,11 @@ as.Json.data_dict <- function(x, db){
     out <- vapply(x, function(x){
       ifelse(
         numbers_only(x), 
-        sprintf("%02d%04d", 0, as.numeric(x)),
+        sprintf("%01d%03d", 0, as.numeric(x)),
         ifelse(
           x %in% trial_sets, 
-          sprintf("%02d%04d", 1, which(x %in% trial_sets)),
-          sprintf("%02d%04d", 2, floor(runif(1, 0, 10000)))
+          sprintf("%01d%03d", 1, which(x %in% trial_sets)),
+          sprintf("%01d%03d", 2, floor(runif(1, 0, 1000)))
         )
       )
     }, 
@@ -48,25 +48,24 @@ as.Json.data_dict <- function(x, db){
   empty_list <- vector(mode = "list", length = n)
   empty_list_list <- lapply(seq_len(n), function(x) vector(mode = "list", length = 0))
   
-  # img_id <- sprintf("1%s%05d", 
-  #                   format_set(repID_clean(fmeta$repID)), 
-  #                   as.numeric(fmeta$rank)
-  # )
+  img_id <- sprintf("1%s%04d",
+                    format_set(repID_clean(fmeta$repID)),
+                    as.numeric(fmeta$rank)
+  )
   
-  id_lookup <- function(fn, db){
-    vapply(
-      fn, 
-      function(x){
-        db[(db$file_name == x), "id"]
-      }, 
-      numeric(1)
-    ) %>% 
-      unname()
-  }
+  # id_lookup <- function(fn, db){
+  #   vapply(
+  #     fn, 
+  #     function(x){
+  #       db[(db$file_name == x), "id"]
+  #     }, 
+  #     numeric(1)
+  #   ) %>% 
+  #     unname()
+  # }
   
-  img_id <- id_lookup(fmeta$file_base, db)
-  
-  
+  #img_id <- id_lookup(fmeta$file_base, db)
+  #img_id <- seq_len(n)
   
   
   
@@ -87,54 +86,67 @@ as.Json.data_dict <- function(x, db){
   seg <- map(x, "polygon") %>% 
     lapply(function(z){
       if(is.null(z)){
-        return(NULL)
+        return(
+          vector(mode= "list", length = 0)
+        )
       } else {
-        return(as.vector(t(z)))
+        return(
+          list(as.vector(t(z)))
+        )
       }
     })
   
   annotations <- data.frame(
-    "category_id" = 1,
-    "id" = as.numeric(sprintf("%s%s", img_id, thing_id)),
-    "image_id" = as.numeric(img_id),
+    "category_id" = as.integer(1),
+    "id" = as.integer(as.numeric(sprintf("%s%s", img_id, thing_id))),
+    "image_id" = as.integer(img_id),
     "iscrowd" = FALSE,
-    "num_keypoints" = ifelse(lapply(kp, is.null) %>% 
+    "num_keypoints" = as.integer(ifelse(lapply(kp, is.null) %>% 
                                do.call("c",.), 
                              0,
-                             3),
-    "isbbox" = FALSE,
-    "color" = "#f963b6"
+                             3))
+    #"isbbox" = FALSE,
+    #"color" = "#f963b6",
+    #"area" = as.integer(100)
   )
   
-  annotations$metadata <- empty_list
+  #annotations$metadata <- data.frame(now.names = seq_len(n))
   annotations$bbox <- unname(get_bbox(x)) 
   annotations$keypoints <- kp
   annotations$segmentation <- unname(seg)
   
+  #annotation_ord <- c("id", "image_id", "category_id", "segmentation", "area", "bbox", "iscrowd", "isbbox", "color", "keypoints", "metadata", "num_keypoints")
+  
+  #annotations <- annotations[, annotation_ord]
   
   
   images <- data.frame(
     "file_name" = fmeta$file_base,
     "path" = fmeta$file_path, 
-    "height" = get_dim(x)[2], 
-    "width" = get_dim(x)[1],
-    "id" = as.numeric(img_id),
-    "regenerate_thumbnail" = FALSE,
-    "milliseconds" = 0,
-    "deleted" = FALSE,
-    "num_annotations" = 1,
-    "annotated" = TRUE,
-    "dataset_id" = 5
+    "height" = as.integer(get_dim(x)[2]), 
+    "width" = as.integer(get_dim(x)[1]),
+    "id" = as.integer(img_id)
+    #"regenerate_thumbnail" = FALSE
+    #"milliseconds" = as.integer(1),
+    #"deleted" = FALSE,
+    #"num_annotations" = as.integer(1),
+    #"annotated" = FALSE
+    #"dataset_id" = as.integer(1)
   )
   
-  images$category_ids <- empty_list
-  images$events <- empty_list_list
-  images$annotating <- empty_list_list
-  images$metadata <- empty_list
+  #images$category_ids <- empty_list
+  #images$events <- empty_list_list
+  #images$annotating <- empty_list_list
+  #images$metadata <- data.frame(now.names = seq_len(n))
+  
+  #img_lab_ord <- c("id", "dataset_id", "category_ids", "path", "width", "height", "file_name", "annotated", "annotating", "num_annotations", "metadata", "deleted", "milliseconds", "events","regenerate_thumbnail")
+  
+  i#mages <- images[, img_lab_ord]
+  
   
   categories <- data.frame(
     "color" = "#8186d5",
-    "id" = thing_id,
+    "id" = as.integer(thing_id),
     "name" = c("cat"),
     "supercategory" = ""
   )
@@ -154,9 +166,9 @@ as.Json.data_dict <- function(x, db){
   
   
   out <- list(
-    "annotations" = annotations,
-    "categories" = categories, 
     "images" = images,
+    "categories" = categories, 
+    "annotations" = annotations,
     "info" = list(),
     "licenses" = list()
   )
