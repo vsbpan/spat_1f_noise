@@ -45,6 +45,7 @@ as.Json.data_dict <- function(x){
   
   fmeta <- get_file_meta(x)
   n <- nrow(fmeta)
+  #empty_df <- data.frame(row.names = seq_len(n))
   empty_list <- vector(mode = "list", length = n)
   empty_list_list <- lapply(seq_len(n), function(x) vector(mode = "list", length = 0))
   
@@ -102,20 +103,20 @@ as.Json.data_dict <- function(x){
     "image_id" = as.integer(img_id),
     "iscrowd" = FALSE,
     "num_keypoints" = as.integer(ifelse(lapply(kp, is.null) %>% 
-                               do.call("c",.), 
-                             0,
-                             3))
+                                          do.call("c",.), 
+                                        0,
+                                        3)),
     #"isbbox" = FALSE,
-    #"color" = "#f963b6",
+    "color" = "#f963b6"
     #"area" = as.integer(100)
   )
   
-  #annotations$metadata <- data.frame(now.names = seq_len(n))
+  #annotations$metadata <- empty_df
   annotations$bbox <- unname(get_bbox(x)) 
   annotations$keypoints <- kp
   annotations$segmentation <- unname(seg)
   
-  #annotation_ord <- c("id", "image_id", "category_id", "segmentation", "area", "bbox", "iscrowd", "isbbox", "color", "keypoints", "metadata", "num_keypoints")
+  #annotation_ord <- c("id", "image_id", "category_id", "segmentation", "bbox", "iscrowd", "isbbox", "color", "keypoints", "metadata", "num_keypoints")
   
   #annotations <- annotations[, annotation_ord]
   
@@ -125,23 +126,23 @@ as.Json.data_dict <- function(x){
     "path" = fmeta$file_path, 
     "height" = as.integer(get_dim(x)[2]), 
     "width" = as.integer(get_dim(x)[1]),
-    "id" = as.integer(img_id)
-    #"regenerate_thumbnail" = FALSE
+    "id" = as.integer(img_id),
+    #"regenerate_thumbnail" = FALSE,
     #"milliseconds" = as.integer(1),
-    #"deleted" = FALSE,
-    #"num_annotations" = as.integer(1),
+    "deleted" = FALSE,
+    "num_annotations" = as.integer(1)
     #"annotated" = FALSE
     #"dataset_id" = as.integer(1)
   )
   
-  #images$category_ids <- empty_list
-  #images$events <- empty_list_list
-  #images$annotating <- empty_list_list
-  #images$metadata <- data.frame(now.names = seq_len(n))
+  images$category_ids <- empty_list
+  images$events <- empty_list_list
+  images$annotating <- empty_list_list
+  #images$metadata <- empty_df
   
-  #img_lab_ord <- c("id", "dataset_id", "category_ids", "path", "width", "height", "file_name", "annotated", "annotating", "num_annotations", "metadata", "deleted", "milliseconds", "events","regenerate_thumbnail")
+  #img_lab_ord <- c("id", "category_ids", "path", "width", "height", "file_name", "annotated", "annotating", "num_annotations", "metadata", "deleted", "milliseconds", "events","regenerate_thumbnail")
   
-  i#mages <- images[, img_lab_ord]
+  #images <- images[, img_lab_ord]
   
   
   categories <- data.frame(
@@ -199,10 +200,12 @@ import_COCO <- function(x){
 }
 
 export_COCO <- function(x, path){
+  stopifnot(is.COCO(x))
   jsonlite::write_json(x, path, pretty = TRUE)
 }
 
 sample_COCO <- function(x, size){
+  stopifnot(is.COCO(x))
   n <- nrow(x$images)
   s <- sample(seq_len(n), size, replace = FALSE)
   
@@ -212,7 +215,17 @@ sample_COCO <- function(x, size){
   return(x)
 }
 
+# Subset COCO annotation with file_name that is a subset of file_name. 
+subset_COCO <- function(x, file_name){
+  stopifnot(is.COCO(x))
+  i <- x$images$file_name %in% file_name
+  x$images <- x$images[i, ]
+  x$annotations <- x$annotations[i, ]
+  return(x)
+}
+
 split_COCO <- function(x, test, val = 0){
+  stopifnot(is.COCO(x))
   n <- nrow(x$images)
   s_val <- sample(seq_len(n), round(n * val), replace = FALSE)
   s_test <- sample(seq_len(n)[-s_val], round(n * test), replace = FALSE)
@@ -240,32 +253,46 @@ merge_COCO <- function(...){
   dots <- as.list(match.call())[-1]
   
   dots <- lapply(dots, function(x){
-    eval(x)
+    x <- eval(x)
+    stopifnot(is.COCO(x))
+    return(x)
   })
   
-  categories <- lapply(dots, function(x){
-    x$categories
-  }) %>% 
+  
+  categories <- lapply(seq_along(dots), function(i, x){
+    o <- x[[i]]$categories
+    rownames(o) <- paste0(i,"_",rownames(o))
+    o
+  }, x = dots) %>% 
     do.call("rbind",.) %>% 
     unique()
   
-  annotations <- lapply(dots, function(x){
-    x$annotations
-  }) %>% 
+  
+  annotations <- lapply(seq_along(dots), function(i, x){
+    o <- x[[i]]$annotations
+    rownames(o) <- paste0(i,"_",rownames(o))
+    o
+  }, x = dots) %>% 
     do.call("rbind",.) %>% 
     unique()
   
-  images <- lapply(dots, function(x){
-    x$images
-  }) %>% 
+  images <- lapply(seq_along(dots), function(i, x){
+    o <- x[[i]]$images
+    rownames(o) <- paste0(i,"_",rownames(o))
+    o
+  }, x = dots) %>% 
     do.call("rbind",.) %>% 
     unique()
   
+  # n <- length(images$id)
+  # images$id <- as.integer(seq_len(n))
+  # annotations$id <- images$id
+  # annotations$image_id <- images$id
   
   out <- list(
-    "annotations" = annotations,
-    "categories" = categories, 
     "images" = images,
+    "categories" = categories, 
+    "annotations" = annotations,
     "info" = list(),
     "licenses" = list()
   )
@@ -277,7 +304,12 @@ merge_COCO <- function(...){
 
 
 set_new_path <- function(x, path_root){
+  stopifnot(is.COCO(x))
   x$images$path <- paste0(path_root, "/", x$images$file_name)
   return(x)
+}
+
+is.COCO <- function(x){
+ inherits(x, "COCO_Json") 
 }
 
