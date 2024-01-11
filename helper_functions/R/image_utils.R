@@ -660,11 +660,25 @@ add_point <- function(img, x, y, r = ceiling(min(dim(img)[1:2])/80), color = "re
 }
 
 # Draw bounding box
-draw_bbox <- function(coord, dimxy = c(1000, 1000)){
+draw_bbox <- function(coord, dim_xy = c(1000, 1000)){
   imager::draw_rect(
-    im = imager::imfill(dimxy[1],dimxy[2], val = FALSE), 
+    im = imager::imfill(dim_xy[1],dim_xy[2], val = FALSE), 
     x0 = coord[1,1], y0 = coord[1,2], x1 = coord[2,1], y1 = coord[2,2], 
     filled = TRUE, 
     color = TRUE
   ) %>% highlight(col = "red")
+}
+
+
+
+# Check if object mask is out of frame (if polygon edge is within `tolerance` number of pixels of the boarders). Returns a boolean.  
+out_of_frame <- function(polygon, tolerance = 5, dim_xy = c(1000, 1000)){
+  any(
+    polygon[,1] < (1 + tolerance) | 
+      polygon[,1] > (dim_xy[1] - tolerance)
+  ) | 
+    any(
+      polygon[,2] < (1 + tolerance) | 
+        polygon[,2] > (dim_xy[2] - tolerance)
+    )
 }

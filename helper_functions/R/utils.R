@@ -199,7 +199,34 @@ null_to_NA <- function(x, len = 1){
   }
 }
 
+# Returns TRUE if the string has only numbers
 numbers_only <- function(x){
   !grepl("\\D", x)
+}
+
+# Returns TRUE if is odd
+is.odd <- function(x){
+  x %% 2 == 1
+}
+
+# Evaluate a function on a vector with a double sided window of size w. 'w' must be odd. 
+roll_vapply <- function(x, w, FUN){
+  
+  stopifnot(is.odd(w))
+  n <- length(x)
+  i <- seq_len(n)
+  out <- rep(NA, n)
+  FUN <- match.fun(FUN)
+  side_len <- (w - 1)/2
+  for(k in seq(
+    side_len + 1, 
+    n - side_len + 1,
+    by = 1
+  )){
+    indices <- seq(k - side_len, k + side_len, by = 1)
+    out[k] <- FUN(x[indices])
+  }
+  
+  return(out)
 }
 
