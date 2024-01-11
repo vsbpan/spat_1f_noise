@@ -161,6 +161,20 @@ parse_polygon_vec <- function(x){
   return(out)
 }
 
+# Parse model info
+parse_inference_info <- function(x){
+  if(is.null(x) || is.na(x)){
+    model_version <- NA
+    model_inference_timestamp <- NA
+  } else {
+    model_version <- gsub("__.*", "", x)
+    model_inference_timestamp <- gsub(".*__", "", x)
+  }
+  
+  c("version" = model_version, "inf_time" = model_inference_timestamp)
+}
+
+
 # Turn polygon into a binary mask
 polygon2mask <- function(x,y = NULL, dim_xy = c(1000, 1000)){
   if(is.null(x)){
@@ -235,6 +249,10 @@ parse_inference <- function(df){
     "polygon" = parse_pylist(df$polygon, simplify = FALSE) %>% 
       lapply(function(x){
         parse_polygon_vec(x)
+      }), 
+    "inference_info" = df$inference_info %>% 
+      lapply(function(x){
+        parse_inference_info(x)
       })
   )
   
@@ -259,6 +277,8 @@ parse_inference <- function(df){
   run_time <- hms_format(diff(range(fm$time)))
   n_steps <- round(diff(range(fm$time))/ 360)
   thing_class <- paste0(na.omit(do.call("c",unique(map(out_list, "thing_class")))), collapse = ",")
+  inference_info <- do.call(map(out_list, "inference_info"), "rbind") %>% unique()
+  
   
   if(all(do.call("rbind", map(out_list, "dim")) %>% 
          apply(2,function(x){length(unique(x)) == 1}))){
@@ -286,11 +306,12 @@ parse_inference <- function(df){
                                            "thing_class" = thing_class,
                                            "n_bbox" = n_bbox,
                                            "n_keypoints" = n_kp,
-                                           "n_mask" = n_mask)
+                                           "n_mask" = n_mask,
+                                           "version" = inference_info[,1],
+                                           "inf_time" = inference_info[,2])
   
   return(out_list)
 }
-
 
 
 # S3 print method for data_dict objects
@@ -309,11 +330,17 @@ print.data_dict <- function(x, ...){
   dim_formated <- null_to_NA(m$dim)
   repID <- null_to_NA(m$repID)
   camID <- null_to_NA(m$camID)
+  version <- null_to_NA(m$version)
+  inf_time <- null_to_NA(m$inf_time)
   
   cat(sprintf("rep_ID: %s\n\ncam_ID: %s\tdim: %s\n", 
               repID, 
               camID,
               dim_formated
+  ))
+  cat(sprintf("version: %s\tinference_time: %s\n", 
+              version, 
+              inf_time
   ))
   cat(sprintf("frames: %s\tmissing: %s\t duplicate: %s\t time_steps: %s \tduration: %s\n", 
               n,
@@ -393,11 +420,18 @@ get_keypoints <- function(x){
   return(out)
 }
 
+# Method to get polygons 'data_dict' objects
+get_polygon <- function(x){
+  stopifnot(inherits(x, "data_dict"))
+  map(x, "polygon")
+}
+
+
 # Method to get binary masks from from 'data_dict' objects
 get_mask <- function(x, frames){
   stopifnot(inherits(x, "data_dict"))
   x[frames] %>% 
-    map("polygon") %>% 
+    get_polygon() %>% 
     lapply(function(x){
       polygon2mask(x)
     }) %>% 
@@ -408,9 +442,9 @@ get_mask <- function(x, frames){
 get_mask_summary <- function(x){
   stopifnot(inherits(x, "data_dict"))
   out <- x %>% 
-    map("polygon") %>% 
+    get_polygon() %>% 
     lapply(function(x){
-      mask_info(polygon2mask(x))
+      cbind(mask_info(polygon2mask(x)), "out_of_frame" = out_of_frame(x))
     }) %>% 
     do.call("rbind",.)
   cbind("frame_id" = names(x),out)
@@ -455,7 +489,7 @@ get_camID <- function(x){
   attr(x,"summary")$camID
 }
 
-# Wrapper function for various get_* methods. Joins the output as a single data.frame
+# Wrapper function for various get_* methods on 'data_dict' objects. Joins the output as a single data.frame
 get_data <- function(x, type = c("file_meta", "score", "keypoints", "mask_summary")){
   for (i in seq_along(type)){
     method <- switch(type[i],

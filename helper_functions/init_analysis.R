@@ -3,11 +3,12 @@ library(sjPlot)
 library(performance)
 library(tidybayes)
 library(glmmTMB)
-#source("helper_functions/init.R")
+source("helper_functions/init.R")
 
 
 
-ref_data <- read_csv("raw_data/1_f_noise_experiment data_Dec_24_2023.csv")
+ref_data <- suppressMessages(read_csv("raw_data/1_f_noise_experiment data_Dec_29_2023.csv"))
+today <- as.character("2023-12-29")#Sys.Date()
 
 ref_data <- ref_data %>% 
   filter(!is.na(cat_dead_cam_end)) %>% 
@@ -20,7 +21,7 @@ ref_data <- ref_data %>%
     assemble_date = as.POSIXct(assemble_date, format = "%m-%d-%Y"),
     date_start = as.POSIXct(date_start, format = "%m-%d-%Y"),
     date_end_camera = as.POSIXct(date_end_camera, format = "%m-%d-%Y"),
-    today = as.POSIXlt(Sys.Date(), format = "%Y-%m-%d")
+    today = as.POSIXlt(today, format = "%Y-%m-%d")
   ) %>% 
   mutate(
     exp_time_elapsed = as.numeric(as.difftime(exp_end - exp_start, units = "h")),
@@ -92,6 +93,6 @@ ref_data <- ref_data %>%
     repID = paste0("rep",rep_id)
   )
 
-
-
+cat(sprintf("Data last updated on %s", today))
+rm("today")
 

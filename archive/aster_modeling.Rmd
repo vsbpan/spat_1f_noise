@@ -1,0 +1,89 @@
+---
+title: "Aster Modeling"
+author: "Vincent Pan"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc_float: true
+    toc: true 
+    toc_depth: 2 
+    number_sections: true
+    code_folding: show
+    highlight: tango
+    theme: default
+---
+
+# Life stage graph
+
+$$\begin{align} 
+1 \quad \to & \quad l_1 \quad \to \quad  ... \quad \to & l_t \\
+& \quad \downarrow & \downarrow\\
+& \quad p_1 & p_t\\ 
+& \quad \downarrow & \downarrow \\
+& \quad m_1 & m_t
+\end{align}$$
+
+$$\begin{align} 
+1 \quad \to & \quad l_1 \quad \to \quad  ... \quad \to & l_t \\
+& \quad \downarrow & \downarrow\\
+& \quad p_1 & p_t\\ 
+& \quad \downarrow & \downarrow \\
+& \quad m_1 & m_t
+\end{align}$$
+
+
+
+$$\begin{align} 
+1 \to l_5 \to \text{RGR}
+\end{align}$$
+
+
+
+
+# Fitness calculation
+
+We introduce the monotonic mapping function $f(.)$ relating the pupal mass at time $t$, $m_t$, to the fecundity of the moth.  
+
+
+$$
+\mu_t = f(m_t)
+$$
+
+
+The unconditional model without population growth rate correction does not account for the fact that insects that reproduce early have a shorter generation time and can therefore produce more offspring in the same time. We therefore use Fisher's stable age equation per Eck et al. (2015) to infer the population growth rate. 
+
+$$
+1 = \frac{1}{n}\sum_{i=1}^n \sum_t \mu_t \exp(-r t)
+$$
+Solving for $r$ gives the instantaneous population growth rate, averaged across $n$ individuals in the sample, which are allowed to differ in $\mu_t$, the unconditional expected fecundity. To account for the population growth rate in the adjusted calculation of fitness, we use the weights $w_j$, where $u_j$ is a vector of binary values indicating whether a node $j$ is a fitness surrogate node. When $w_j = u_j$ the model reduce to the classical aster model (Geyer et al. 2007, Shaw et al. 2008). 
+
+
+$$
+w_j = u_j \exp(-r t_j)
+$$
+
+With the fitness surrogate weights, we can write our unconditional canonical linear model equation as 
+
+
+$$
+\varphi_j = \beta_{v_{j}} + w_j(Z\beta_z)
+$$
+
+where $Z$ is a $z$ by $j$ matrix of covariates, $\beta_z$ is a $j$ by $1$ matrix of selection gradients, and $\beta_{v_j}$ is a vector of node $v_{j}$. Since there is a multivariate monotone relationship between the unconditional canonical parameter $\varphi$ and unconditional mean value parameter $\mu$ (in this case, the population growth rate weighted fecundity) vectors in an aster model, we have $\varphi(Z)$ as a measure of the fitness landscape. 
+
+
+
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+

@@ -276,8 +276,8 @@ which_time <- function(x, time){
 
 # Add prev_time + 360 to the file time of a vector of file names
 shift_time_label <- function(src_dir, prev_time){
-  x <- list.files("time_lapse_feed/rep63", full.names = TRUE)
-  t <- file_time() %>% as.numeric()
+  x <- list.files(src_dir, full.names = TRUE)
+  t <- file_time(x) %>% as.numeric()
   t <- t + prev_time + 360
   x_new <- gsub("_s[0-9].*","",x) %>% paste(., "_s",t,".jpg", sep = "")
   return(x_new)

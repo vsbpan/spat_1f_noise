@@ -23,6 +23,15 @@ img <- fast_load_image(files_full_name[1], transform = FALSE)
 pts <- anchor_picker_app(files_full_name[1], thin = 1, anchor_size = 5)
 attr(pts, "indices") <- seq_along(files_full_name)
 pts_list <- list(pts)
+
+
+plot(fast_load_image(files_full_name[500], transform = FALSE))
+pts %>% 
+  pt_list2df() %$% 
+  points(x,y, col = c("green", "blue","blue","blue"), pch = 19, cex = 2)
+
+#save_anchors(trialID)
+
 # 
 # pts2 <- anchor_picker_app(files_full_name[max(attr(pts, "indices"))+1],
 #                           thin = 1, anchor_size = 5)
@@ -57,7 +66,7 @@ pts2 %>%
   points(x,y, col = c("green", "blue","blue","blue"), pch = 19, cex = 2)
 
 
-
+save_anchors(trialID)
 
 
 
