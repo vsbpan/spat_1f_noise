@@ -160,7 +160,7 @@ check_CPU_request <- function(cores,
         if(condition == "delay"){
           for (i in 1:100){ # timeout after 1500 seconds
             cat(
-              sprintf("%s  Not eough cores at the moment. %s of %s requested cores fulfilled. Waiting . . . \r",
+              sprintf("%s  Not eough cores at the moment. %s of %s requested cores fulfilled. Waiting . . . \r\n",
                       hms_format((i-1) * 15),
                       av_cores, 
                       cores)

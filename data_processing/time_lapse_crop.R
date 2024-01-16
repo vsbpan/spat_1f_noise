@@ -25,10 +25,7 @@ attr(pts, "indices") <- seq_along(files_full_name)
 pts_list <- list(pts)
 
 
-plot(fast_load_image(files_full_name[500], transform = FALSE))
-pts %>% 
-  pt_list2df() %$% 
-  points(x,y, col = c("green", "blue","blue","blue"), pch = 19, cex = 2)
+
 
 #save_anchors(trialID)
 
@@ -54,7 +51,7 @@ pts %>%
 # attr(pts5, "indices") <- (max(attr(pts4, "indices"))+1):length(files_full_name)
 # pts_list <- c(pts_list,list(pts5))
 
-which_time(files_full_name, 68121)
+which_time(files_full_name, 323299)
 
 plot(fast_load_image(files_full_name[500], transform = FALSE))
 pts %>% 
