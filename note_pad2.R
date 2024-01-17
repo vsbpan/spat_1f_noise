@@ -582,11 +582,26 @@ ref_data %>%
 
 rgr_m <- glmmTMB(
   RGR ~ 
-    log(cat_pre_wt) * (beta +  var_trt) + pupated_cam_end + (1|session_id), 
+    log(cat_pre_wt) * (beta +  var_trt), 
   family = gaussian(), 
   data = ref_data %>% 
     filter(!is.na(cat_pre_wt))
 ); summary(rgr_m)
+
+
+rgr_m2 <- glmmTMB(
+  RGR ~ 
+    log(cat_pre_wt), 
+  family = gaussian(), 
+  data = ref_data %>% 
+    filter(!is.na(cat_pre_wt)) %>% 
+    filter(var_trt == "constant")
+); summary(rgr_m2)
+
+
+
+x <- seq_interval(na.omit(ref_data$cat_pre_wt))
+
 
 plot_model(rgr_m, type = "pred", terms = c("cat_pre_wt[all]", "beta")) + 
   labs(title = NULL, 
@@ -594,7 +609,20 @@ plot_model(rgr_m, type = "pred", terms = c("cat_pre_wt[all]", "beta")) +
        y = "RGR (h^-1)", x = "Cat pre weight", color = "beta") + 
   scale_x_continuous(trans = "log10") +
   theme(legend.position = "top") +
-  theme_bw(base_size = 15)
+  theme_bw(base_size = 15) + 
+  geom_line(color = "black", 
+            data = data.frame(
+              x,
+              y = predict(rgr_m2, newdata = data.frame(cat_pre_wt = x))
+            ), 
+            aes(
+              x = x,
+              y = y,
+              group = NULL,
+              color = NULL,
+              fill = NULL
+            ), 
+            size = 2)
 
 plot_model(rgr_m, type = "pred", terms = c("cat_pre_wt[all]","var_trt")) + 
   labs(title = NULL, 

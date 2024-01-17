@@ -7,7 +7,7 @@ source("helper_functions/init.R")
 
 
 
-ref_data <- suppressMessages(read_csv("raw_data/1_f_noise_experiment data_Dec_29_2023.csv"))
+ref_data <- suppressMessages(read_csv("raw_data/1_f_noise_experiment data_Jan_16_2024.csv"))
 today <- as.character("2023-12-29")#Sys.Date()
 
 ref_data <- ref_data %>% 

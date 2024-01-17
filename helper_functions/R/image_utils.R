@@ -672,7 +672,7 @@ draw_bbox <- function(coord, dim_xy = c(1000, 1000)){
 
 
 # Check if object mask is out of frame (if polygon edge is within `tolerance` number of pixels of the boarders). Returns a boolean.  
-out_of_frame <- function(polygon, tolerance = 5, dim_xy = c(1000, 1000)){
+out_of_frame <- function(polygon, tolerance = 20, dim_xy = c(1000, 1000)){
   any(
     polygon[,1] < (1 + tolerance) | 
       polygon[,1] > (dim_xy[1] - tolerance)
@@ -682,3 +682,4 @@ out_of_frame <- function(polygon, tolerance = 5, dim_xy = c(1000, 1000)){
         polygon[,2] > (dim_xy[2] - tolerance)
     )
 }
+

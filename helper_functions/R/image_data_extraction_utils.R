@@ -176,6 +176,7 @@ parse_inference_info <- function(x){
 
 
 # Turn polygon into a binary mask
+# Kind of finiky and doesn't perform as well as graphics::polygon(), but it'll do. 
 polygon2mask <- function(x,y = NULL, dim_xy = c(1000, 1000)){
   if(is.null(x)){
     mask <- imager::imfill(x = dim_xy[1], y = dim_xy[2], val = 0)
@@ -203,7 +204,7 @@ polygon2mask <- function(x,y = NULL, dim_xy = c(1000, 1000)){
     spatstat.geom::as.array.im()
   
   dim(mask) <- c(dim(mask)[1:2], 1, dim(mask)[3])
-  return(as.cimg(mask))
+  return(as.cimg(mask) %>% rotate_90())
 }
 
 # Turn a binary mask into a polygon
@@ -212,7 +213,7 @@ mask2polygon <- function(mask){
     spatstat.geom::as.polygonal() %>% 
     .$bdry %>% 
     .[[1]]
-  return(do.call("cbind",l))
+  return(do.call("cbind",l)[,c(2,1)])
 }
 
 
@@ -220,8 +221,14 @@ mask2polygon <- function(mask){
 
 
 # Take formatted detectron2 predictions from python and parse into 'data_dict' object 
-parse_inference <- function(df){
-  df <- df[order(file_time(df$file_name)),]
+parse_inference <- function(df, mode = c("rep","evaluate")){
+  is_rep <- match.arg(mode) == "rep"
+  
+  
+  if(is_rep){
+    df <- df[order(file_time(df$file_name)),]
+  }
+  
   
   master_list <- list(
     "dim" = parse_pylist(df$image_size, simplify = FALSE),
@@ -266,18 +273,39 @@ parse_inference <- function(df){
                             )
   
   
+
+  
+  
+  out_list <- .data_dict_summary_calc(out_list, is_rep)
+  class(out_list) <- c("data_dict", "list")
+
+  
+  return(out_list)
+}
+
+.data_dict_summary_calc <- function(out_list, is_rep){
   
   fm <- do.call("rbind",map(out_list, "file_meta"))
   n <- length(out_list)
   n_bbox <- n - (map(out_list, "bbox") %>% lapply(is.null) %>% do.call("c",.) %>% sum())
   n_kp <- n - (map(out_list, "keypoints") %>% lapply(is.null) %>% do.call("c",.) %>% sum())
   n_mask <- n - (map(out_list, "polygon") %>% lapply(is.null) %>% do.call("c",.) %>% sum())
-  n_missing <- count_time_gaps(fm$time)
-  n_dups <- count_time_dups(fm$time)
-  run_time <- hms_format(diff(range(fm$time)))
-  n_steps <- round(diff(range(fm$time))/ 360)
+  
+  if(is_rep){
+    n_missing <- count_time_gaps(fm$time)
+    n_dups <- count_time_dups(fm$time)
+    run_time <- hms_format(diff(range(fm$time)))
+    n_steps <- round(diff(range(fm$time))/ 360)
+  } else {
+    n_missing <- NA
+    n_dups <- NA
+    run_time <- NA
+    n_steps <- NA
+    
+  }
+  
   thing_class <- paste0(na.omit(do.call("c",unique(map(out_list, "thing_class")))), collapse = ",")
-  inference_info <- do.call(map(out_list, "inference_info"), "rbind") %>% unique()
+  inference_info <- do.call("rbind", map(out_list, "inference_info")) %>% unique()
   
   
   if(all(do.call("rbind", map(out_list, "dim")) %>% 
@@ -288,13 +316,11 @@ parse_inference <- function(df){
   }
   
   
-  repID <- gsub("rep","",unique(fm$repID))
-  camID <- gsub("cam","", unique(fm$camID))
+  repID <- paste0(null_to_NA(gsub("rep","",unique(fm$repID))), collapse = ", ")
+  camID <- paste0(null_to_NA(gsub("cam","", unique(fm$camID))), collapse = ", ")
   
   
-  
-  
-  class(out_list) <- c("data_dict", "list")
+  attr(out_list, "is_rep") <- is_rep
   attr(out_list, "summary") <-  data.frame("repID" = repID, 
                                            "camID" = camID, 
                                            "frames" = n, 
@@ -309,9 +335,9 @@ parse_inference <- function(df){
                                            "n_mask" = n_mask,
                                            "version" = inference_info[,1],
                                            "inf_time" = inference_info[,2])
-  
-  return(out_list)
+  out_list
 }
+
 
 
 # S3 print method for data_dict objects
@@ -369,6 +395,20 @@ summary.data_dict <- function(x, ...){
   return(m)
 }
 
+
+# S3 '[]' for data_dict objects.
+`[.data_dict` <- function(x, ...){
+  args <- lapply(as.list(substitute(list(...)))[-1L], 
+                 function(x){
+                   eval(x, envir = parent.frame(3))
+                  })
+  class(x) <- c("list")
+  out <- do.call("[", c(list(x), args))
+  class(out) <- c("data_dict", "list")
+  out <- .data_dict_summary_calc(out, attr(x, "is_rep"))
+  out
+}
+
 # S3 methods registration
 registerS3method(genname = "summary", 
                  class = "data_dict", 
@@ -379,9 +419,13 @@ registerS3method(genname = "print",
                  class = "data_dict", 
                  method = print.data_dict)
 
+registerS3method(genname = "[", 
+                 class = "data_dict", 
+                 method = `[.data_dict`)
+
 # Method to get formatted keypoints from 'data_dict' objects
 get_bbox <- function(x){
-  stopifnot(inherits(x, "data_dict"))
+  stopifnot(is.data_dict(x))
   lapply(map(x, "bbox"), function(z){
     if(is.null(z)){
       return(NULL)
@@ -394,7 +438,7 @@ get_bbox <- function(x){
 
 # Method to get formatted key points from 'data_dict' objects
 get_keypoints <- function(x){
-  stopifnot(inherits(x, "data_dict"))
+  stopifnot(is.data_dict(x))
   
   labs <- c("head", "middle", "tail")
   
@@ -422,14 +466,14 @@ get_keypoints <- function(x){
 
 # Method to get polygons 'data_dict' objects
 get_polygon <- function(x){
-  stopifnot(inherits(x, "data_dict"))
+  stopifnot(is.data_dict(x))
   map(x, "polygon")
 }
 
-
 # Method to get binary masks from from 'data_dict' objects
 get_mask <- function(x, frames){
-  stopifnot(inherits(x, "data_dict"))
+  stopifnot(is.data_dict(x))
+  stopifnot(!missing(frames))
   x[frames] %>% 
     get_polygon() %>% 
     lapply(function(x){
@@ -440,7 +484,7 @@ get_mask <- function(x, frames){
 
 # Method to get summary of binary masks from from 'data_dict' objects
 get_mask_summary <- function(x){
-  stopifnot(inherits(x, "data_dict"))
+  stopifnot(is.data_dict(x))
   out <- x %>% 
     get_polygon() %>% 
     lapply(function(x){
@@ -452,7 +496,7 @@ get_mask_summary <- function(x){
 
 # Method to get file meta data from from 'data_dict' objects
 get_file_meta <- function(x){
-  stopifnot(inherits(x, "data_dict"))
+  stopifnot(is.data_dict(x))
   out <- map(x, "file_meta") %>% 
     lapply(
       function(x){
@@ -465,7 +509,7 @@ get_file_meta <- function(x){
 
 # Method to get bbox confidence score from from 'data_dict' objects
 get_score <- function(x){
-  stopifnot(inherits(x, "data_dict"))
+  stopifnot(is.data_dict(x))
   map(x, "score") %>% 
     bind_vec(keep_row_names = FALSE, row_names_as_col = "frame_id") %>% 
     rename(score = V1)
@@ -473,19 +517,19 @@ get_score <- function(x){
 
 # Method to get image dimension from from 'data_dict' objects
 get_dim<- function(x){
-  stopifnot(inherits(x, "data_dict"))
+  stopifnot(is.data_dict(x))
   as.numeric(strsplit(gsub("\\(|\\)","",attr(x,"summary")$dim), ",")[[1]])
 }
 
 # Method to get repID
 get_repID <- function(x){
-  stopifnot(inherits(x, "data_dict"))
+  stopifnot(is.data_dict(x))
   attr(x,"summary")$repID
 }
 
 # Method to get camID
 get_camID <- function(x){
-  stopifnot(inherits(x, "data_dict"))
+  stopifnot(is.data_dict(x))
   attr(x,"summary")$camID
 }
 
@@ -507,7 +551,9 @@ get_data <- function(x, type = c("file_meta", "score", "keypoints", "mask_summar
 }
 
 
-
+is.data_dict <- function(x, ...){
+  inherits(x, "data_dict")
+}
 
 
 

@@ -230,3 +230,26 @@ roll_vapply <- function(x, w, FUN){
   return(out)
 }
 
+
+is_null_na <- function(x){
+  if(is.null(x)){
+    return(TRUE)
+  } else {
+    return(is.na(x))
+  }
+}
+
+
+is_between <- function(x, range, inclusive = FALSE){
+  if(inclusive){
+    return(
+      x >= range[1] & x <= range[2]
+    )
+  } else {
+    return(
+      x > range[1] & x < range[2]
+    )
+  }
+}
+  
+  
