@@ -9,10 +9,11 @@ inf_fn
 list.files("cleaned_data/data_dicts/")
 
 
+
 # pb_par_lapply(
 #   inf_fn,
 #   function(x){
-#     
+# 
 #     save_path <- paste0("cleaned_data/data_dicts/", gsub("_inference.*",".rds",basename(x)))
 #     if(file.exists(save_path)){
 #       return(NULL)
