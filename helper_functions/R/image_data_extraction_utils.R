@@ -179,10 +179,6 @@ polygon2mask <- function(x,y = NULL, dim_xy = c(1000, 1000),
   x <- round(x)
   y <- round(y)
   
-  if(!.polygon_area(cbind(x,y)) < 0){
-    x <- rev(x)
-    y <- rev(y)
-  }
   mask <- spatstat.geom::owin(poly = list(
     x = x, y = y, check = FALSE
   ))
@@ -239,4 +235,24 @@ polygon_centroid <- function(poly){
 }
 
 
+validate_polygon <- function(poly){
+  if(is.null(poly)){
+    return(NULL)
+  }
+  
+  if(nrow(poly) < 3){
+    return(NULL)
+  }
+  
+  if(length(unique(poly[,1])) < 2 || length(unique(poly[,2])) < 2){
+    return(NULL)
+  }
+  
+  if(!.polygon_area(poly) < 0){
+    out <- apply(poly, 2, rev)
+  } else {
+    out <- poly
+  }
+  return(out)
+}
 

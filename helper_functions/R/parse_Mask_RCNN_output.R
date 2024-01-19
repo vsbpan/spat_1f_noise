@@ -51,9 +51,7 @@ parse_bbox_vec <- function(x){
 parse_polygon_vec <- function(x){
   out <- split_n_steps(x, n = 2, name = c("x","y"))
   out <- unique(out)
-  if(is.null(out)|| nrow(out) < 3){
-    out <- NULL
-  }
+  out <- validate_polygon(out)
   return(out)
 }
 
