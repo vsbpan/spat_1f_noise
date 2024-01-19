@@ -179,8 +179,12 @@ polygon2mask <- function(x,y = NULL, dim_xy = c(1000, 1000),
   x <- round(x)
   y <- round(y)
   
+  if(!.polygon_area(cbind(x,y)) < 0){
+    x <- rev(x)
+    y <- rev(y)
+  }
   mask <- spatstat.geom::owin(poly = list(
-    x = rev(x), y = rev(y), check = FALSE
+    x = x, y = y, check = FALSE
   ))
   
   if(mini_mask){

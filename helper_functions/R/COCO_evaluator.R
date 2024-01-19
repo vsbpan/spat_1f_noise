@@ -207,11 +207,16 @@ mask_area.default <- function(x, ...){
     stopifnot(dim(x)[3] == 1)
     sum(as.pixset(x))
   } else {
-    spatstat.utils::Area.xypolygon(
-      list("x" = rev(x[,1]), "y" = rev(x[,2]))
-    )
+    abs(.polygon_area(x))
   }
 }
+
+.polygon_area <- function(x){
+  spatstat.utils::Area.xypolygon(
+    list("x" = rev(x[,1]), "y" = rev(x[,2]))
+  )
+}
+
 
 mask_area.data_dict <- function(x, ...){
     lapply(get_polygon(x), function(p){
