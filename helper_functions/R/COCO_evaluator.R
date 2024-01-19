@@ -161,11 +161,14 @@ mask_intersection_area <- function(img, img2, na.rm = FALSE){
 }
 
 
-mask_IOU <- function(img, img2, na.rm = FALSE){
-  mask_intersection_area(img, img2, na.rm) / mask_union_area(img, img2, na.rm)
+#pkgbuild::compile_dll("helper_functions/src/")
+mask_IOU <- function(img, img2, na.rm = FALSE, use_C = TRUE){
+  if(use_C){
+    iouC(img[,,1,1], img2[,,1,1])
+  } else {
+    mask_intersection_area(img, img2, na.rm) / mask_union_area(img, img2, na.rm) 
+  }
 }
-
-
 
 bbox_area.default <- function(x, ...){
   if(is.null(x)){
@@ -200,13 +203,19 @@ mask_area.default <- function(x, ...){
   if(is.null(x)){
     return(0)
   }
-  stopifnot(dim(x)[3] == 1)
-  sum(as.pixset(x))
+  if(is.pixset(x) || is.cimg(x)){
+    stopifnot(dim(x)[3] == 1)
+    sum(as.pixset(x))
+  } else {
+    spatstat.utils::Area.xypolygon(
+      list("x" = rev(x[,1]), "y" = rev(x[,2]))
+    )
+  }
 }
 
 mask_area.data_dict <- function(x, ...){
-    lapply(seq_along(x), function(i){
-      mask_area.default(get_mask(pred, i)[[1]])
+    lapply(get_polygon(x), function(p){
+      mask_area.default(p)
     }) %>% 
     do.call("c",.) %>% 
     unname()

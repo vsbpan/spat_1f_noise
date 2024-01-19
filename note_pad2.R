@@ -646,19 +646,52 @@ pup_wt_m <- glmmTMB(
 
 
 library(survival)
-coxme::coxme(
-  Surv(pupation_time, is.na(pupated)) ~
-    scale(log(cat_pre_wt)) + (beta +  var_trt) + (1|session_id), 
+
+coxph(
+  Surv(pupation_time, as.numeric(!is.na(pupated))) ~
+    scale(log(cat_pre_wt)) + (beta +  var_trt), 
   data = ref_data %>% 
     filter(!is.na(cat_pre_wt) & !is.na(pupation_time))
-)
+) %>% summary()
+
+
+coxph(
+  Surv(eclosure_time, as.numeric(!is.na(eclosed))) ~
+    scale(log(cat_pre_wt)) + (beta +  var_trt), 
+  data = ref_data %>% 
+    filter(!is.na(cat_pre_wt))
+) %>% summary()
+
+coxph(
+  Surv(surv_time, as.numeric(!is.na(dead))) ~
+    scale(log(cat_pre_wt)) + (beta +  var_trt), 
+  data = ref_data %>% 
+    filter(!is.na(cat_pre_wt))
+) %>% summary()
+
+coxph(
+  Surv(surv_time, as.numeric(!is.na(dead))) ~
+    scale(log(cat_pre_wt)) + (beta +  var_trt) + session_id, 
+  data = ref_data %>% 
+    filter(!is.na(cat_pre_wt))
+) %>% summary()
+
+coxph(
+  Surv(adult_time, as.numeric(!is.na(dead))) ~
+    scale(log(cat_pre_wt)) + (beta +  var_trt) + session_id, 
+  data = ref_data %>% 
+    filter(!is.na(cat_pre_wt))
+) %>% summary()
+
+names(ref_data)
+
 
 ref_data$pupation_time %>% hist()
 
 
 
 pup_time_m <- glmmTMB(
-  1/pupation_time ~
+  pupation_time ~
     log(cat_pre_wt) + (beta + var_trt) + (1|session_id), 
   family = Gamma(link = "log"), 
   data = ref_data %>% 
@@ -673,6 +706,7 @@ death_m <- glmmTMB(
     filter(!is.na(cat_pre_wt))
 ); summary(death_m)
 
+
 plot_model(death_m, type = "pred", terms = c("beta")) + 
   theme_bw(base_size = 15) + 
   labs(title = NULL, 
@@ -684,7 +718,7 @@ plot_model(death_m, type = "pred", terms = c("beta")) +
 
 pup_m <- glmmTMB(
   pupated ~ 
-    log(cat_pre_wt) + var_trt + as.factor(beta) + (1|session_id), 
+    log(cat_pre_wt) + var_trt + beta + (1|session_id), 
   family = binomial(), 
   data = ref_data %>% 
     filter(!is.na(cat_pre_wt))
@@ -695,6 +729,30 @@ plot_model(pup_m, type = "pred", terms = c("beta")) +
   labs(title = NULL, 
        subtitle = NULL, 
        y = "Prop. Pupated", x = "Beta")
+
+
+eclosed_m <- glmmTMB(
+  eclosed ~ 
+    log(cat_pre_wt) * (var_trt + beta) + (1|session_id), 
+  family = binomial(), 
+  data = ref_data %>% 
+    mutate(
+      eclosed = eclosed * deformed_adult
+    ) %>% 
+    filter(!is.na(cat_pre_wt))
+); summary(eclosed_m)
+
+
+
+pup_time_m <- glmmTMB(
+  adult_time ~
+    log(cat_pre_wt) + (beta + var_trt) + (1|session_id), 
+  family = Gamma(link = "log"), 
+  data = ref_data %>% 
+    filter(!is.na(cat_pre_wt))
+); summary(pup_time_m)
+
+
 
 
 move_list %>% 

@@ -7,8 +7,8 @@ source("helper_functions/init.R")
 
 
 
-ref_data <- suppressMessages(read_csv("raw_data/1_f_noise_experiment data_Jan_16_2024.csv"))
-today <- as.character("2023-12-29")#Sys.Date()
+ref_data <- suppressMessages(read_csv("raw_data/1_f_noise_experiment data_Jan_17_2024.csv"))
+today <- as.character("2024-01-17")#Sys.Date()
 
 ref_data <- ref_data %>% 
   filter(!is.na(cat_dead_cam_end)) %>% 
@@ -83,6 +83,15 @@ ref_data <- ref_data %>%
         pupated == 1, 
         as.numeric(as.difftime(eclosure_date - date_start, units = "d")),
         as.numeric(as.difftime(today - date_start, units = "d"))
+      )
+    ), 
+    adult_time = ifelse(
+      is.na(eclosed), 
+      NA, 
+      ifelse(
+        eclosed == 0, 
+        NA, # or 0
+        as.numeric(as.difftime(death_date - eclosure_date, units = "h"))
       )
     )
   ) %>% 

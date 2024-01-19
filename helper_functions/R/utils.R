@@ -251,5 +251,47 @@ is_between <- function(x, range, inclusive = FALSE){
     )
   }
 }
+
+
+
+assert_frames <- function(x, frames){
+  missing_frame <- missing(frames)
   
+  if(missing_frame){
+    if(length(x) == 1L){
+      frames <- 1L
+    } else {
+      stop("Missing arguent 'frames' with no default")
+    }
+  } else {
+    if(!is.numeric(frames) || any((frames %% 1) != 0)){
+      stop(sprintf("Expecting 'frames' to be an integer."))
+    }
+  }
+  
+  return(frames)
+}
+
+assert_frame <- function(x, frame){
+  missing_frame <- missing(frame)
+  
+  if(missing_frame){
+    if(length(x) == 1L){
+      frame <- 1L
+    } else {
+      stop("Missing arguent 'frame' with no default")
+    }
+  } else {
+    n <- length(frame)
+    if(n != 1){
+      stop(sprintf("Expecting 1 frame, but received %s", n))
+    }
+    if(!is.numeric(frame) || (frame %% 1) != 0){
+      stop(sprintf("Expecting 'frame' to be an integer."))
+    }
+  }
+  
+  return(frame)
+}
+
   

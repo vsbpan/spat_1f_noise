@@ -17,6 +17,10 @@ Depends:
 Imports:
     doSNOW,
     foreach,
-    shiny
-    
+    shiny,
+    Rcpp(>= 1.0.8),
+    RcppArmadillo
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo 
 

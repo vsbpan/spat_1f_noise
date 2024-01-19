@@ -1,35 +1,4 @@
 
-# Overlays grid cell labels on the treatment raster image
-plot_image_guide <- function(img, col = "red", cex = 0.8, main = NULL, mar = NULL, axes = TRUE, ...){
-  
-  if(!is.null(mar)){
-    temp_mar <- par()$mar
-    par(mar = mar)
-  }
-  
-  ny <- nrow(img)
-  nx <- ncol(img)
-  
-  d <- expand.grid(
-    "y" = seq_len(ny),
-    "x" = seq_len(nx)
-  ) %>% 
-    mutate(
-      label = paste0(LETTERS[y],x)
-    ) %>% 
-    mutate(
-      y = y/ny*(ny-1) + 0.5,
-      x = x/nx*(nx-1) + 0.5
-    )
-  
-  plot.cimg(img, main = main, axes = axes, ...)
-  text(x = d$x, y = d$y, col = col, label = d$label, cex = cex)
-  
-  if(!is.null(mar)){
-    par(mar = temp_mar)
-  }
-}
-
 # Turns image into a single vector
 image_flatten <- function(img){
   as.numeric(c(img))
@@ -221,30 +190,30 @@ q2q_trans <- function(img,
 
 
 # Corner detection engine
-detect_corners_engine <- function(img, list_of_list = TRUE, scale = 1){
-  pts <- image.CornerDetectionHarris:::detect_corners(img[,,1,1] * 255, 
-                                                      nx = nrow(img), 
-                                                      ny = ncol(img),
-                                                      Nselect = 4L, 
-                                                      strategy = 2L, 
-                                                      verbose = FALSE)
-  out <- data.frame("x" = as.numeric(pts$x) * scale, 
-                    "y" = as.numeric(pts$y) * scale) %>% 
-    arrange(x,y)
-  
-  if(nrow(out) != 4L){
-    stop("Failed to detect 4 points")
-  }
-  
-  if(list_of_list){
-    out <- lapply(seq.int(4), function(i){
-      as.list(out[i,])
-    })
-    return(out)
-  } else {
-    return(out)
-  }
-}
+# detect_corners_engine <- function(img, list_of_list = TRUE, scale = 1){
+#   pts <- image.CornerDetectionHarris:::detect_corners(img[,,1,1] * 255, 
+#                                                       nx = nrow(img), 
+#                                                       ny = ncol(img),
+#                                                       Nselect = 4L, 
+#                                                       strategy = 2L, 
+#                                                       verbose = FALSE)
+#   out <- data.frame("x" = as.numeric(pts$x) * scale, 
+#                     "y" = as.numeric(pts$y) * scale) %>% 
+#     arrange(x,y)
+#   
+#   if(nrow(out) != 4L){
+#     stop("Failed to detect 4 points")
+#   }
+#   
+#   if(list_of_list){
+#     out <- lapply(seq.int(4), function(i){
+#       as.list(out[i,])
+#     })
+#     return(out)
+#   } else {
+#     return(out)
+#   }
+# }
 
 # Convert point list into a data.frame
 pt_list2df<- function(x){
@@ -341,26 +310,26 @@ reproject_grid <- function(img, init_pts = NULL, dest_size = NULL, qc_plot = FAL
 }
 
 # Lighting correction for single source of light
-im_lighting_correction <- function(img){
-  d <- as.data.frame(img)
-  m <- sample_n(d,1e4) %>% lm(value ~ x*y,data=.) 
-  img-predict(m,d)
-}
+# im_lighting_correction <- function(img){
+#   d <- as.data.frame(img)
+#   m <- sample_n(d,1e4) %>% lm(value ~ x*y,data=.) 
+#   img-predict(m,d)
+# }
 
-# Detect luster dust and apply shadow correction. Returns color inverted image
-detect_luster <- function(img, shadow_weight = 0.5){
-  luster_mask <- color_index(img, 
-                             index = c("HUE"), 
-                             plot = FALSE)[[1]] %>% 
-    imager::renorm(max = 1) %>% 
-    na_replace(0)
-  wt_mask <- color_index(img, index = "CI", plot = FALSE)[[1]] %>% 
-    renorm(min = 0.5, max = 1) %>% 
-    na_replace(1) # NAs classified as no shadows
-  wt_mask <- (shadow_weight / wt_mask) 
-  luster_mask_c <- imager::renorm(luster_mask + wt_mask, min = 0, max = 1)
-  invert(luster_mask_c)
-}
+# # Detect luster dust and apply shadow correction. Returns color inverted image
+# detect_luster <- function(img, shadow_weight = 0.5){
+#   luster_mask <- color_index(img, 
+#                              index = c("HUE"), 
+#                              plot = FALSE)[[1]] %>% 
+#     imager::renorm(max = 1) %>% 
+#     na_replace(0)
+#   wt_mask <- color_index(img, index = "CI", plot = FALSE)[[1]] %>% 
+#     renorm(min = 0.5, max = 1) %>% 
+#     na_replace(1) # NAs classified as no shadows
+#   wt_mask <- (shadow_weight / wt_mask) 
+#   luster_mask_c <- imager::renorm(luster_mask + wt_mask, min = 0, max = 1)
+#   invert(luster_mask_c)
+# }
 
 # Replace NA values with val
 na_replace <- function(img, val){
@@ -381,29 +350,29 @@ fast_load_image <- function(path, transform = TRUE){
 }
 
 # Detect if a video has significant shift in pixel values
-detect_jostle <- function(vid, res = 10000, delta_thresh = 0.15, prop_px = 0.1){
-  if(!is.null(res) || !is.na(res)){
-    if(prod(dim(vid)[1:2]) > res){
-      side_len <- floor(sqrt(10000))
-      vid <- imager::resize(vid, size_x = side_len, size_y = side_len)  
-    }
-  }
-  
-  if(imager::spectrum(vid) > 1){
-    vid <- grayscale(vid)
-  }
-  
-  del <- get_gradient(vid, axes = "z", scheme = -1)[[1]] %>% 
-    imsplit(axis = "z")
-  
-  indices <- lapply(del, function(x){
-    mean(abs(c(x)) > delta_thresh) > prop_px
-  }) %>% 
-    do.call("c",.) %>% 
-    unname() %>% 
-    which()
-  return(indices)
-}
+# detect_jostle <- function(vid, res = 10000, delta_thresh = 0.15, prop_px = 0.1){
+#   if(!is.null(res) || !is.na(res)){
+#     if(prod(dim(vid)[1:2]) > res){
+#       side_len <- floor(sqrt(10000))
+#       vid <- imager::resize(vid, size_x = side_len, size_y = side_len)  
+#     }
+#   }
+#   
+#   if(imager::spectrum(vid) > 1){
+#     vid <- grayscale(vid)
+#   }
+#   
+#   del <- get_gradient(vid, axes = "z", scheme = -1)[[1]] %>% 
+#     imsplit(axis = "z")
+#   
+#   indices <- lapply(del, function(x){
+#     mean(abs(c(x)) > delta_thresh) > prop_px
+#   }) %>% 
+#     do.call("c",.) %>% 
+#     unname() %>% 
+#     which()
+#   return(indices)
+# }
 
 
 # Make video form a stack of images in a directory
@@ -528,58 +497,58 @@ crop_raw_img <- function(
 
 
 
-# Detect caterpillar from a colored image using thresholding 
-detect_cat <- function(img, w = c(5,1), thr = "kmeans", adjust = 1.3, clean = 3,
-                       lambda = 0.1, sat = 0.1,  cores = 1){
-  start_time <- Sys.time()
-  if(TRUE){
-    out <- img %>% 
-      color_index(index = c("BI","NG"), plot = FALSE) %>% 
-      iml_prod(w) %>% 
-      renorm(min = 0, max = 1) %>% 
-      imsplit(axis = "z") %>% 
-      pb_par_lapply(function(x, lambda, sat, thr, adjust, clean){
-        imagerExtra::SPE(x, lambda, s = sat, range = c(0,1)) %>% 
-          threshold2(thr = thr, adjust = adjust) %>% 
-          clean(clean) %>% 
-          split_max()
-      }, 
-      clean = clean,
-      adjust = adjust,
-      thr = thr,
-      lambda = lambda, 
-      sat = sat,
-      cores = cores, 
-      inorder = TRUE) %>% 
-      as.imlist() %>% 
-      imappend("z")
-  }
-  hms_runtime(as.numeric(Sys.time() - start_time, units = "secs"))
-  return(out)
-}
-
-
-# Take two matrices and do element-wise multiplication with some weight
-iml_prod <- function(x, w = c(1,1)){
-  for(i in seq_along(w)){
-    if(i == 1){
-      if(w[i] > 0){
-        z <- x[[i]] * w[i]
-      } else {
-        z <- 1 / x[[i]] * w[i]
-      }
-      
-    } else {
-      if(w[i] > 0){
-        z <- z + x[[i]] * w[i]
-      } else {
-        z <- z + 1 / x[[i]] * w[i]
-        }
-      
-    }
-  }
-  z
-}
+# # Detect caterpillar from a colored image using thresholding 
+# detect_cat <- function(img, w = c(5,1), thr = "kmeans", adjust = 1.3, clean = 3,
+#                        lambda = 0.1, sat = 0.1,  cores = 1){
+#   start_time <- Sys.time()
+#   if(TRUE){
+#     out <- img %>% 
+#       color_index(index = c("BI","NG"), plot = FALSE) %>% 
+#       iml_prod(w) %>% 
+#       renorm(min = 0, max = 1) %>% 
+#       imsplit(axis = "z") %>% 
+#       pb_par_lapply(function(x, lambda, sat, thr, adjust, clean){
+#         imagerExtra::SPE(x, lambda, s = sat, range = c(0,1)) %>% 
+#           threshold2(thr = thr, adjust = adjust) %>% 
+#           clean(clean) %>% 
+#           split_max()
+#       }, 
+#       clean = clean,
+#       adjust = adjust,
+#       thr = thr,
+#       lambda = lambda, 
+#       sat = sat,
+#       cores = cores, 
+#       inorder = TRUE) %>% 
+#       as.imlist() %>% 
+#       imappend("z")
+#   }
+#   hms_runtime(as.numeric(Sys.time() - start_time, units = "secs"))
+#   return(out)
+# }
+# 
+# 
+# # Take two matrices and do element-wise multiplication with some weight
+# iml_prod <- function(x, w = c(1,1)){
+#   for(i in seq_along(w)){
+#     if(i == 1){
+#       if(w[i] > 0){
+#         z <- x[[i]] * w[i]
+#       } else {
+#         z <- 1 / x[[i]] * w[i]
+#       }
+#       
+#     } else {
+#       if(w[i] > 0){
+#         z <- z + x[[i]] * w[i]
+#       } else {
+#         z <- z + 1 / x[[i]] * w[i]
+#         }
+#       
+#     }
+#   }
+#   z
+# }
 
 # Load a stack of images in a directory as video using parallelization. 
 load_video <- function(file_paths, thin.val = 5, cores = 6){
@@ -659,27 +628,23 @@ add_point <- function(img, x, y, r = ceiling(min(dim(img)[1:2])/80), color = "re
   return(img)
 }
 
-# Draw bounding box
-draw_bbox <- function(coord, dim_xy = c(1000, 1000)){
-  imager::draw_rect(
-    im = imager::imfill(dim_xy[1],dim_xy[2], val = FALSE), 
-    x0 = coord[1,1], y0 = coord[1,2], x1 = coord[2,1], y1 = coord[2,2], 
-    filled = TRUE, 
-    color = TRUE
-  ) %>% highlight(col = "red")
-}
-
-
 
 # Check if object mask is out of frame (if polygon edge is within `tolerance` number of pixels of the boarders). Returns a boolean.  
-out_of_frame <- function(polygon, tolerance = 20, dim_xy = c(1000, 1000)){
+out_of_frame <- function(poly, tolerance = 20, dim_xy = c(1000, 1000)){
+  if(is.null(poly)){
+    return(NA)
+  }
   any(
-    polygon[,1] < (1 + tolerance) | 
-      polygon[,1] > (dim_xy[1] - tolerance)
+    poly[,1] < (1 + tolerance) | 
+      poly[,1] > (dim_xy[1] - tolerance)
   ) | 
     any(
-      polygon[,2] < (1 + tolerance) | 
-        polygon[,2] > (dim_xy[2] - tolerance)
+      poly[,2] < (1 + tolerance) | 
+        poly[,2] > (dim_xy[2] - tolerance)
     )
 }
+
+
+
+
 
