@@ -10,20 +10,20 @@ list.files("cleaned_data/data_dicts/")
 
 overwrite <- TRUE
 
-pb_par_lapply(
-  inf_fn,
-  function(x, overwrite){
-
-    save_path <- paste0("cleaned_data/data_dicts/", gsub("_inference.*",".rds",basename(x)))
-    if(file.exists(save_path) && !overwrite){
-      return(NULL)
-    } else {
-      d <- read_csv(x)
-      l <- parse_inference(d)
-      saveRDS(l, save_path)
-    }
-  }, cores = 8, inorder = FALSE, export_fun_only = TRUE, overwrite = overwrite
-)
+# pb_par_lapply(
+#   inf_fn,
+#   function(x, overwrite){
+# 
+#     save_path <- paste0("cleaned_data/data_dicts/", gsub("_inference.*",".rds",basename(x)))
+#     if(file.exists(save_path) && !overwrite){
+#       return(NULL)
+#     } else {
+#       d <- read_csv(x)
+#       l <- parse_inference(d)
+#       saveRDS(l, save_path)
+#     }
+#   }, cores = 8, inorder = FALSE, export_fun_only = TRUE, overwrite = overwrite
+# )
 
 # pb_par_lapply(list.files("cleaned_data/data_dicts/", full.names = TRUE),
 #     function(x){
@@ -39,6 +39,6 @@ pb_par_lapply(
 #   }, cores = 8, inorder = FALSE, export_fun_only = TRUE)
 
 
-fetch_data_dict(101) %>% get_data()
+
 
 
