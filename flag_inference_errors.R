@@ -96,7 +96,41 @@ fetch_trt_spec(114) %>% flip_xy() %>% plot()
 
 
 
+
+
 plot_image_guide(fetch_trt_spec(114), transform = T)
+
+
+d <- fetch_events(50)
+z <- fetch_data_dict(50)
+
+
+d$head_high <- read_value(d$head_x, d$head_y, dim_xy = get_dim(z), 
+                          ref_img = fetch_trt_spec(50), 
+                          transform = TRUE)
+
+mean(d$head_high, na.rm = TRUE)
+
+
+out <- pb_par_lapply(fetch_repID()[1:149], function(i, ref_data){
+  d <- fetch_events(i)
+  read_value(d$head_x, d$head_y, dim_xy = c(1000, 1000), 
+             ref_img = fetch_trt_spec(i, quiet = TRUE, .ref_data = ref_data), 
+             transform = TRUE)
+}, ref_data = ref_data, cores = 8)
+
+
+
+out
+
+
+
+
+
+
+
+
+
 
 
 

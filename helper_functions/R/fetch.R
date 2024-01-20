@@ -5,7 +5,8 @@ fetch_trt_meta <- function(path = "raw_data/trt_spectra_meta/master_trt_meta.csv
 
 # Fetch treatment spectra using repID. 
 # For use in pb_par_lapply() or foreach(), set get("ref_data", envir = parent.frame())
-fetch_trt_spec <- function(repID, .ref_data = get("ref_data", envir = globalenv()), trt_meta_iml = NULL){
+fetch_trt_spec <- function(repID, .ref_data = get("ref_data", envir = globalenv()), 
+                           trt_meta_iml = NULL, quiet = FALSE){
   
   repID <- repID_clean(repID) # Cleaning
   
@@ -20,8 +21,10 @@ fetch_trt_spec <- function(repID, .ref_data = get("ref_data", envir = globalenv(
       filter(syn_id == syn_id_matched) %>% 
       trt_meta_as_list()
   }
+  if(!quiet){
+    cat(sprintf("Fetached synID '%s' for 'rep%s'\n", syn_id_matched, repID))
+  }
   
-  cat(sprintf("Fetached synID '%s' for 'rep%s'\n", syn_id_matched, repID))
   index <- which(names(trt_meta_iml) == paste0("syn_id__",syn_id_matched))
   
   if(length(index) != 1){
