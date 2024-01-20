@@ -116,7 +116,7 @@ plot_bbox <- function(data_dict, frame, fill = "#00000000", col = "red", ...){
 
 
 # Overlays grid cell labels on the treatment raster image
-plot_image_guide <- function(img, col = "red", cex = 0.8, main = NULL, mar = NULL, axes = TRUE, ...){
+plot_image_guide <- function(img, transform = FALSE, col = "red", cex = 0.8, main = NULL, mar = NULL, axes = TRUE, ...){
   
   if(!is.null(mar)){
     temp_mar <- par()$mar
@@ -138,6 +138,13 @@ plot_image_guide <- function(img, col = "red", cex = 0.8, main = NULL, mar = NUL
       x = x/nx*(nx-1) + 0.5
     )
   
+  if(transform){
+    img <- flip_xy(img)
+    x_temp <- d$x
+    y_temp <- d$y
+    d$y <- x_temp 
+    d$x <- y_temp
+  }
   plot.cimg(img, main = main, axes = axes, ...)
   text(x = d$x, y = d$y, col = col, label = d$label, cex = cex)
   

@@ -29,7 +29,7 @@ imager::imdraw(img, img_mask, opacity = 0.05) %>%
 pb_par_lapply(
   files, 
   function(x){
-    img <- fast_load_image(files[i], FALSE)
+    img <- fast_load_image(files[i], FALSE) # Fast load must be FALSE for the printed orientation to be up
     img_overlay <- imager::imdraw(img, img_mask, opacity = 0.05) 
     jpeg::writeJPEG(
       img_overlay %>% as.bmp(), 

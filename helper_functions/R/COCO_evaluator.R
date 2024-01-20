@@ -9,9 +9,8 @@ mask_evaluator <- function(prediction, ground_truth, IOU_thresh = c(0.5, 0.75, 0
   
   
   z <- lapply(seq_along(prediction), function(i){
-    mask_IOU(get_mask(prediction, i)[[1]],
-             get_mask(ground_truth, i)[[1]], 
-             na.rm = TRUE)
+    polygon_IOU(get_polygon(prediction[i])[[1]],
+             get_polygon(ground_truth[i])[[1]])
   }) %>% 
     do.call("c",.)
   pred_exist <- lapply(get_polygon(prediction), function(x){
@@ -153,16 +152,27 @@ mask_union_area <- function(img, img2, na.rm = FALSE){
   sum(as.pixset(img) | as.pixset(img2), na.rm = na.rm)
 }
 
-
+# Defunct function mostly for testing
 mask_intersection_area <- function(img, img2, na.rm = FALSE){
   stopifnot(all.equal(dim(img), dim(img2)))
   stopifnot(dim(img)[3] == 1)
   sum(as.pixset(img) & as.pixset(img2), na.rm = na.rm)
 }
 
+polygon_IOU <- function(poly, poly2){
+  a1 <- mask_area(poly)
+  a2 <- mask_area(poly2)
+  i <- mask_insersectC(polygon2mask(poly)[,,1,1], polygon2mask(poly2)[,,1,1])
+  iou <- i / (a1 + a2 - i)
+  return(iou)
+}
+
 
 #pkgbuild::compile_dll("helper_functions/src/")
 mask_IOU <- function(img, img2, na.rm = FALSE, use_C = TRUE){
+  if(is.null(img) | is.null(img2)){
+    return(NA)
+  }
   if(use_C){
     iouC(img[,,1,1], img2[,,1,1])
   } else {

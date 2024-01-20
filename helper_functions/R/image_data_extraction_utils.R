@@ -89,12 +89,17 @@ mask_info <- function(x){
 
 
 # Read value at specified coordinates from reference image. Scales the x,y input with dim_xy of the target image so that it matches relatively to the ref_img
-read_value <- function(x, y, dim_xy, ref_img){
+# Is the raw data read in as transformed from fast_load_image, if yes, then set transform = TRUE. This orients the ref_image to match that of the x,y input, as it appears on windows and from the output of the mask-RCNN.
+read_value <- function(x, y, dim_xy, ref_img, transform = TRUE){
   nx <- length(x)
   stopifnot(nx == length(y))
   
   if(is.null(ref_img)){
     return(rep(NA, nx))
+  }
+  
+  if(transform){
+    ref_img <- flip_xy(ref_img)
   }
   
   stopifnot(
@@ -214,7 +219,7 @@ polygon2mask <- function(x,y = NULL, dim_xy = c(1000, 1000),
   }
   
   dim(mask) <- c(dim(mask)[1:2], 1, dim(mask)[3])
-  return(as.cimg(mask) %>% rotate_90())
+  return(as.cimg(mask) %>% flip_xy())
 }
 
 # Turn a binary mask into a polygon

@@ -5,3 +5,7 @@ iouC <- function(img1, img2) {
     .Call(`_spat1f_iouC`, img1, img2)
 }
 
+mask_insersectC <- function(img1, img2) {
+    .Call(`_spat1f_mask_insersectC`, img1, img2)
+}
+

@@ -107,6 +107,23 @@ fetch_repID <- function(has = c("inference")){
     gsub("rep|_inference.csv","",.)
 }
 
+# Fetch image with file rank and repID or `data_dict`
+fetch_image <- function(x, rank, transform = TRUE){
+  if(!is.data_dict(x)){
+    x <- fetch_data_dict(x)
+  }
+  
+  fm <- get_file_meta(x)
+  
+  fp <- fm[fm$rank == rank, "file_path"]
+  stopifnot(length(fp) == 1)
+  if(!file.exists(fp)){
+    stop(sprintf("File does not exist on this machine: %s", basename(fp)))
+  } else {
+    fast_load_image(fp, transform = transform)
+  }
+}
+
 
 
 # Method to get formatted keypoints from 'data_dict' objects

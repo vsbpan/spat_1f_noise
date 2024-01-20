@@ -269,9 +269,30 @@ report_missing_photos <- function(root_dir){
 
 # Return the index of the specified time in a vector of file names
 which_time <- function(x, time){
+  if(is.data_dict(x)){
+    x <- get_file_meta(x)$file_base
+  }
   f_time <- file_time(files_reorder(x))
   which(f_time == time)
 }
+
+# Convert rank to time using data_dict meta data
+rank2time <- function(data_dict, x){
+  get_file_meta(data_dict) %>% 
+    dplyr::filter(rank == x) %>% 
+    dplyr::select(time) %>% 
+    unlist()
+}
+
+# Convert time to rank using data_dict meta data
+time2rank <- function(data_dict, x){
+   get_file_meta(data_dict) %>% 
+    dplyr::filter(time == x) %>% 
+    dplyr::select(rank) %>% 
+    unlist()
+}
+
+
 
 
 # Add prev_time + 360 to the file time of a vector of file names

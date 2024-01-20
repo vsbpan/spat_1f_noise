@@ -1,52 +1,32 @@
 source("helper_functions/init.R")
 
+# parse_inference
 
 d <- fetch_events(93)
 
 z <- fetch_data_dict(93)
 
-attr(z, "is_rep") <- TRUE
 
-z[1029] %>% 
-  plot_mask(frame = 1)
-z[1029] %>% 
-  plot_keypoint(frame = 1)
+rank2time(z, 926)
 
-z[1030] %>% 
-  plot_mask(frame = 1)
-z[1030] %>% 
-  plot_keypoint(frame = 1)
-
-plot(z, 1030, mask_col = "white")
-
-for (i in 800:1200){
+for (i in 1:50){
   plot(z, i, mask_col = "white", add = FALSE, main = i)
   cat(sprintf("Rank: %s \r", i))
   Sys.sleep(0.1)
 }
 
 
-f <- function(i){
-  if(missing(i)){
-    i <- get("i", envir = globalenv())
-  }
-  plot(z, i, mask_col = "white", add = FALSE, main = i)
-  cat(sprintf("Rank: %s \r", i))
-  i <<- i + 1
-}
-
 f <- forward_plot(z, 800)
 
 f()
 
-
 # 803 - 805
 
-get_mask(z, 803:805) %>% imappend("z") %>% mask_info()
+get_mask(z, 22:25) %>% imappend("z") %>% mask_info()
 
-plot(z, 803, mask_col = "white")
+plot(z, 800, mask_col = "white")
 
-a <- get_mask(z, 800:820) %>% imappend("z") %>% mask_info()
+a <- get_mask(z, 22:25) %>% imappend("z") %>% mask_info()
 
 f()
 
@@ -60,7 +40,7 @@ moved_head <- move_seq(b$head_x, b$head_y)$r > 10
 moved_head * !moved_centroid 
 
 
-b <- get_keypoints(z[800:820])
+b <- get_keypoints(z[22:25])
 
 f <- forward_plot(z, 800)
 f()
@@ -71,55 +51,52 @@ iou <- get_mask(z, 800:820) %>%
   }, l = .) %>% 
   do.call("c", .)
 
+move_IOU(z, c(1:10))
+
+
+
+get_polygon(z[c(0,1)])
+
 
 
 moved_head * !(iou < 0.5)
 
 
 
-#spatstat.geom:::
-?Area.xypolygon
+.detect_false_head_movement_stage1(z,d) %>% which()
 
 
-get_polygon(z[100])[[1]] %>%
-  as.data.frame() -> g
-
-spatstat.utils::Area.xypolygon(
-  list("x" = rev(g$x), "y" = rev(g$y))
-)
-
-mask_area(z)
+names(d)
 
 
-
-get_centroid()
-
-
-mask_area(z[100])
+moved_centroid <- move_seq(a$centroid_x, a$centroid_y)$r > 10
+moved_head <- move_seq(b$head_x, b$head_y)$r > 10
 
 
+fetch_events(7) %>% View()
+
+get_file_meta(z)
 
 
-i <- 100
-plot(z, i, kp_name = "head")
-w <- get_centroid2(get_polygon(z[i])[[1]])
-points(w[1], w[2], col = "white", pch = 19)
+detect_false_head_movement(data_dict = fetch_data_dict(50), cores = 8)
 
-polygon2mask(get_polygon(z[i])[[1]], mini_mask = T, raw_mat = T)
-
-polygon2mask
-
-z[1200]
-p <- get_polygon(z[i])[[1]]
-
-mask_area(p)
+get_file_meta(z)
 
 
-get_polygon(z[1:3]) %>% length()
-mask_info(z[11121])
+fetch_data_dict(7) %>% plot(frame = 1, add = TRUE, kp_name = "head")
+fetch_image(7, 1, transform = TRUE) %>% plot()
 
-polygon2mask(get_polygon(z[1])[[1]], raw_mat = TRUE, mini_mask = TRUE)
 
+read_value
+
+source("helper_functions/init_analysis.R")
+
+fetch_trt_spec(114) %>% flip_xy() %>% plot()
+
+
+
+
+plot_image_guide(fetch_trt_spec(114), transform = T)
 
 
 

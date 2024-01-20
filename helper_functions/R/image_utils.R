@@ -645,6 +645,11 @@ out_of_frame <- function(poly, tolerance = 20, dim_xy = c(1000, 1000)){
 }
 
 
+flip_xy <- function(img){
+  f <- switch(class(img)[1], cimg = as.cimg, pixset = as.pixset, 
+              array = as.array)
+  return(f(aperm(img, c(2, 1, 3, 4))))
+}
 
-
+rotate_90
 
