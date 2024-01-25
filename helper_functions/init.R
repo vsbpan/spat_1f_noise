@@ -1,5 +1,7 @@
 library(foreach)
 library(doSNOW)
+library(amt)
+library(survival)
 #library(aster)
 
 # Some custom functions in "./helper_functions/R/*.R" are loaded as a simulated 'spat1f' package

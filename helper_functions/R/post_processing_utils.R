@@ -9,10 +9,17 @@ turn_angle_calc <- function(theta){
   theta_rel <-  ifelse(theta_rel < pi, 
                            theta_rel, # Right turns
                            (theta_rel %% pi) - pi) # Convert left turns into negative angle
+  
+  
+  # Swap left right to match output of amt::steps()
+  # step length passes check with identical()
+  # turn angle passes check with error tolerance of .Machine$double.eps*4 radians
+  theta_rel <- -theta_rel
+  
   out <- rep(NA, length(where_NA))
   
   
-  out[!where_NA] <- theta_rel # Insert calculate theta_rel back in place, assuming those with NA stay at the same place
+  out[!where_NA] <- theta_rel # Insert calculated theta_rel back in place, assuming those with NA stay at the same place
   i <- (c(0,which(where_NA)) + 1) # Set the first turn angle of an uninterrupted sequence of movement vectors as NA 
   i <- i[i<length(where_NA)] # Remove if i is longer than the length of the target vector
   out[i] <- NA
@@ -25,21 +32,37 @@ rad2degree <- function(theta){
 }
 
 # Calculate step length and turn angle. step lengths smaller than r_thresh are considered none movement, causing the turn angle of that step to be NA
-move_seq <- function(x,y, r_thresh = 1){ 
+move_seq <- function(x,y, r_thresh = 1, inherit.theta = FALSE){ 
   stopifnot(length(x) == length(y))
   out <- lapply(seq_len(length(x) - 1), function(i){
     delta_x <- x[i] - x[i+1]
     delta_y <- y[i] - y[i+1]
     r <- sqrt((delta_x)^2 + (delta_y)^2)
     theta_abs <- atan2(delta_y, delta_x) # Angle with respect to the xy coordinate.
-    c("r" = r, "theta_abs" = theta_abs)
+    c("r" = r, "r_threshed" = ifelse(r > r_thresh, r, 0), "theta_abs" = theta_abs)
   }) %>% bind_vec()
   
   out$theta_abs[out$r < r_thresh] <- NA # Treat those with very small steps as stand still
   
   out$theta_rel <-  turn_angle_calc(out$theta_abs) # Get turn angle with vector at t-1 as 0 degree reference
-  out$step_id <- seq_len(nrow(out))
-  out
+  n <- nrow(out)
+  out <- data.frame("step_id" = seq_len(n), 
+             out,
+             "cos_theta" = cos(out$theta_rel), 
+             "x1" = x[-n], 
+             "x2" = x[-1], 
+             "y1" = y[-n],
+             "y2" = y[-1])
+  
+  if(inherit.theta){
+    out <- out %>% 
+      mutate(
+        theta_abs = inherit_theta(theta_abs, r_threshed),
+        theta_rel = turn_angle_calc(theta_abs),
+        cos_theta = cos(theta_rel)
+      )
+  }
+  return(out)
 }
 
 
@@ -60,8 +83,9 @@ trt_meta_as_list <- function(df){
 
 # Insert gaps of NAs at positions where a photo is expected
 # A bit buggy
-insert_gaps <- function(df, expected_gap = 360){
-  time <- file_time(df$frame_id)
+insert_gaps <- function(df, frame_id = frame_id, expected_gap = 360){
+  .expose_columns_interal()
+  time <- file_time(frame_id)
   time_grid <- 360 * (seq_len((diff(round(range(time) / expected_gap)) +1)) - 1)
   o <- order(time)
   df <- df[o,]
@@ -84,7 +108,7 @@ insert_gaps <- function(df, expected_gap = 360){
   out[is.na(out$frame_id),"frame_id"] <- paste0("gap", 
                                                 seq_len(sum(g)), 
                                                 "__s", time_grid[is.na(out$frame_id)])
-  out$is_gap <- grepl(out$frame_id,"gap")
+  out$is_gap <- grepl("gap", out$frame_id)
   return(out)
 }
 
@@ -113,5 +137,20 @@ detection_report <- function(repIDs){
     )
 }
 
+
+
+inherit_theta <- function(theta, r){
+  theta_inht <- theta[1]
+  for(i in seq_along(theta)){
+    if(is.na(theta[i])){
+      if(!is.na(r[i]) && r[i] == 0){
+        theta[i] <- theta_inht 
+      }
+    } else {
+      theta_inht <- theta[i]
+    }
+  }
+  return(theta)
+}
 
 

@@ -94,7 +94,7 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
           cat(sprintf("\r%s %d of %d",loop_text, n, length(indices)))
         }
       ),
-      .packages = 
+      .packages = pkg
     ) %dopar% {
       devtools::load_all(path = "helper_functions", 
                          export_all = TRUE, quiet = TRUE) # Load spat1f package
@@ -230,7 +230,7 @@ roll_vapply <- function(x, w, FUN){
   return(out)
 }
 
-
+# Check if is null, else, return a vector of is.na(x)
 is_null_na <- function(x){
   if(is.null(x)){
     return(TRUE)
@@ -239,7 +239,7 @@ is_null_na <- function(x){
   }
 }
 
-
+# Is between range?
 is_between <- function(x, range, inclusive = FALSE){
   if(inclusive){
     return(
@@ -253,7 +253,7 @@ is_between <- function(x, range, inclusive = FALSE){
 }
 
 
-
+# For checking frames are valid and if missing and length == 1, choose 1. Allow x be multiple integers
 assert_frames <- function(x, frames){
   missing_frame <- missing(frames)
   
@@ -272,6 +272,7 @@ assert_frames <- function(x, frames){
   return(frames)
 }
 
+# For checking frames are valid and if missing and length == 1, choose 1. x can only be an atomic integer
 assert_frame <- function(x, frame){
   missing_frame <- missing(frame)
   
@@ -294,4 +295,43 @@ assert_frame <- function(x, frame){
   return(frame)
 }
 
+# Check if two values are identical. If difference is greater than thresh, return the difference.
+check_identical <- function(x1,x2, thresh = .Machine$double.eps){
+  if(identical(x1, x2)){
+    return(TRUE)
+  }
+  z <- x1 - x2 
+  cond <- z < thresh 
+  if(!cond){
+    return(z)
+  } else {
+    return(cond)
+  }
+}
+
+# Function to be used in another function for exposing the columns of the first argument (data.frame or tibble) to the arguments. Useful for dplyr coding style. 
+.expose_columns_interal <- function(){
+  curr_env <- parent.frame(n = 1) # Parent function environment
+  f <- formals(sys.function(sys.parent())) # Fetch formals of parent function
+  mcall <- as.list(
+    match.call(sys.function(sys.parent()), call = sys.call(sys.parent()))
+  )[-c(1,2)] # Fetch parent function calls, dropping the first argument
+  f[match(names(mcall), names(f))] <- mcall # replace default formals with user specified arguments
   
+  l <- lapply(f[-1], function(x){ # Force evaluation of arguments in parent function env
+    eval(x, envir = get(names(f)[1], envir = curr_env))
+  })
+  lapply(seq_along(l), function(i){ # Assign objects to parent env
+    assign(names(l)[i], l[[i]], envir = curr_env)
+  })
+}
+
+
+
+wipe_functions <- function(){
+  as.character(lsf.str(pos = globalenv())) %>% 
+    lapply(function(x){
+      rm(list = x, envir = globalenv())
+    })
+  invisible()
+}

@@ -120,9 +120,84 @@ out <- pb_par_lapply(fetch_repID()[1:149], function(i, ref_data){
 }, ref_data = ref_data, cores = 8)
 
 
+ids <- fetch_repID()[1:149]
 
-out
+z <- data.frame(
+  "ids" = ids, 
+  "h1" = out %>% 
+    lapply(
+      function(x) mean(x, na.rm = TRUE)
+    ) %>% 
+    do.call("c", .),
+  "h2" = out2 %>% 
+    lapply(
+      function(x) mean(x, na.rm = TRUE)
+    ) %>% 
+    do.call("c", .)
+)
 
+
+z <- z %>% 
+  mutate(
+    ids = as.numeric(ids)
+  ) %>% 
+  arrange(ids)
+
+
+
+d <- ref_data %>% 
+  left_join(
+    z %>% 
+      select(ids, h1) %>% 
+      mutate(rep_id = as.character(ids)), by = "rep_id"
+  )
+
+
+
+
+
+
+
+
+
+
+d %>% 
+  mutate(size = ifelse(cat_pre_wt>0.02, "big", "small")) %>% 
+  ggplot(aes(x = var_trt, y = h1, color = beta, group = beta)) + 
+  geom_pointrange(stat = "summary", 
+                  position = position_dodge(width = 0.7), 
+                  color = "black") + 
+  geom_point(position = position_jitterdodge())+ 
+  facet_wrap(~size)
+
+
+
+
+
+d %>% 
+  mutate(size = ifelse(cat_pre_wt>0.01, "big", "small")) %>% 
+  ggplot(aes(x = cat_pre_wt, y = h1, color = beta)) + 
+  geom_point()+ 
+  scale_x_continuous(trans = "log10") +
+  geom_smooth(method = "lm")
+
+
+
+
+
+source("helper_functions/init.R")
+
+fetch_events(99) %$%
+  move_seq(head_x, head_y, r_thresh = 1) %>% 
+  mutate(
+    moved = ifelse(r > 20, 1, 0)
+  ) %>% 
+  summarise(
+    r = mean(r, na.rm = TRUE),
+    moved = mean(moved, na.rm = TRUE), 
+    n = n(),
+    n_moved = n * moved
+  )
 
 
 

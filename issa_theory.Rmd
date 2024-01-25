@@ -1,0 +1,50 @@
+---
+title: "iSSA notes"
+author: "Vincent Pan"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc_float: true
+    toc: true 
+    toc_depth: 2 
+    number_sections: true
+    code_folding: show
+    highlight: tango
+    theme: default
+---
+
+
+We consider a special case of the the generalized von Mises distribution (Gatto and Jammalamadaka 2007) which has the density function, 
+
+$$
+P(\omega;\kappa_1, \kappa_2) = \frac{\exp(\kappa_1 \cos(\omega + \pi) + \kappa_2 \cos(2\omega ))}{
+\int_0^{2 \pi} \exp(\kappa_1 \cos(\omega + \pi) + \kappa_2 \cos(2\omega )) d\omega
+}
+$$
+
+We generated random draws from this distribution using the standard ratio-of-uniforms algorithm from Gatto (2007). 
+
+It can be shown that the probability of observing a turn angle $\omega$ can be expressed as an exponential function of some linear combinations of $\cos(\omega + \pi)$ and $\cos(2\omega)$, 
+
+$$
+\ln(P(\omega; \kappa_1, \kappa_2)) \propto \kappa_1 \cos(\omega + \pi) + \kappa_2 \cos(2\omega)
+$$
+
+Thus, given the likelihood function $(3)$ the maximum likelihood estimate of the regression coefficients $\beta_1$ and $\beta_2$ can be seen as an estimator of the bias of $\kappa_1$ and $\kappa_2$ respectively. 
+
+$$
+\begin{align}
+\tag{3}
+\Pi _{t=3}^{T} \frac{\exp(\beta_1 \cos(\omega_t + \pi) + \beta_2 \cos(2\omega_t))}{\sum_{i=1}^S\exp(\beta_1 \cos(\omega_{i,t}' + \pi) + \beta_2 \cos(2\omega_{i,t}'))}
+\end{align}
+$$
+
+Here, $T$ is a set of spatial positions with turn angle $\omega_t$. $\omega_i'$ is an element of a set $S$ of randomly generated available turn angles. 
+
+
+
+
+
+
+
+

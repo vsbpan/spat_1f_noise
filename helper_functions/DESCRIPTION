@@ -19,7 +19,9 @@ Imports:
     foreach,
     shiny,
     Rcpp(>= 1.0.8),
-    RcppArmadillo
+    RcppArmadillo,
+	amt,
+	survival
 LinkingTo: 
     Rcpp,
     RcppArmadillo 
