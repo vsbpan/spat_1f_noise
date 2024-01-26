@@ -241,11 +241,11 @@ fit_list[[40]]$data %>% filter(case) %>%
 
 source("helper_functions/init.R")
 
-update_gamma
+
 
 test_d <- data.frame(
       "step_id" = 1:3000,
-      "r" = rgamma(3000, shape = 1, scale = 100),
+      "r" = rzigamma(3000, p = 0.8, shape = 1, scale = 100),
       "theta_rel" = random_numbers(make_genvonmises(0.5, 1), 3000)
     ) %>%
       add_random_steps(n = 100L,
@@ -253,56 +253,26 @@ test_d <- data.frame(
                        x_start =  rep(NA, 3000),
                        y_start = rep(NA, 3000),
                        direction_start = rep(NA, 3000),
-                       sl_distr = make_gamma_distr(1, 100),
-                       ta_distr = make_genvonmises(1, 0)) %>%
+                       sl_distr = make_zigamma(0.1, 1, 100),
+                       ta_distr = make_genvonmises(0.5, 1)) %>%
       mutate(
+        moved = ifelse(r == 0, 0, 1),
         sl = r,
-        logsl = log(r),
+        logsl = ifelse(r == 0, 0, log(r)),
       ) %>% 
   append_genvonmises_estimators()
 
 o <- issf(case ~ 
-       (cos_theta_pi + cos_2theta + sl + logsl) + 
+        moved + 
+       (cos_theta_pi + cos_2theta + sl + logsl) : moved + 
        strata(step_id),
      data = test_d)
 
-o$ta_updated
+o$model
 
+o$ta
 
-
-o$ta_updated
-o$sl_updated
-
-make_bivonmises(0.2, 3) %>% random_numbers(1000) %>% hist()
-
-
-fetch_events(5) %$% 
-  move_seq(centroid_x, centroid_y, 20) %$%
-  hist(theta_rel, nclass = 30)
-
-
-f <- function(theta, k1, k2){
-  exp(
-    k1 * cos(theta)
-  )  + 
-  exp(k2 * cos(theta - pi))
-}
-
-
-x <- seq(-pi, pi, by = 0.01)
-plot(
-  x, 
-  f(
-    x, 
-    3 * a,
-    3.1 * a
-  )
-)
-
-a <- 5
-
-
-
+update_zigamma(o$sl, -3.5325463)
 
 
 

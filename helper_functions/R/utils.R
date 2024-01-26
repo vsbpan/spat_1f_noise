@@ -335,3 +335,7 @@ wipe_functions <- function(){
     })
   invisible()
 }
+
+reload <- function(){
+  source("helper_functions/init.R")
+}

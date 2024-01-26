@@ -1,0 +1,212 @@
+fit_genvonmises <- function(x, 
+                            method = c("Nelder-Mead", "BFGS", "nlminb", "nlm"),
+                            init = c(1, 0.5),
+                            lower = c(0, 0),
+                            upper = c(Inf, Inf),
+                            parscale = c(1000, 1000),
+                            na.rm = TRUE){
+  
+  method <- match.arg(method)
+  
+  if(na.rm){
+    x <- x[!is.na(x)]
+  }
+  
+  param_names <- c("kappa1", "kappa2")
+  
+  fit <- optim2(
+    init = init * parscale,
+    fn = function(theta){
+      -sum(dgenvonmises(x,
+                        kappa1 = (theta[1]) / parscale[1], # Transform to deal with numerical issue
+                        kappa2 = (theta[2]) / parscale[2], 
+                        log = TRUE))
+    },
+    lower = lower * parscale,
+    upper = upper * parscale,
+    method = method
+  )
+  
+  if(fit$convergence != 0){
+    message(sprintf("Did not converge.\nCode: %s\nMessage: %s", fit$convergence, fit$message))
+    vcov <- matrix(rep(NA, length(param_names)^2),
+                   nrow = length(param_names),
+                   ncol = length(param_names))
+  } else {
+    vcov <- solve(fit$hessian) / crossprod(x = t(matrix(parscale)))
+  }
+  
+  params <- as.list(fit$par)
+  params[[1]] <- (params[[1]]) / parscale[1] # Back transform
+  params[[2]] <- (params[[2]]) / parscale[2]
+  
+  names(params) <- param_names
+  rownames(vcov) <- colnames(vcov) <- param_names
+  
+  out <- list("name" = "genvonmises",
+              "params" = params,
+              "vcov" = vcov) # VCV matrix on transformed scale
+  
+  class(out) <- c("genvonmises_distr", "ta_distr", "amt_distr", "list")
+  return(out)
+  
+}
+
+
+update_genvonmises <- function(dist, beta_cos_theta_pi, beta_cos_2theta){
+  new_kappa1 <- unname(dist$params$kappa1 + beta_cos_theta_pi)
+  new_kappa2 <- unname(dist$params$kappa2 + beta_cos_2theta)
+  make_genvonmises(new_kappa1, new_kappa2)
+}
+
+
+# Is a hack that fits zigamma in two parts. 
+fit_zigamma2 <- function(x, na.rm = TRUE){
+  if(na.rm){
+    x <- x[!is.na(x)]
+  }
+  
+  zero <- ifelse(x > 0, 0, 1)
+  x2 <- x[!as.logical(zero)]
+  
+  pfit <- optim2(c(0.1), fn = function(theta){
+    -sum(dbinom(zero, size = 1, prob = theta/1000, log = TRUE))
+  },
+  method = "Brent",
+  lower = 0,
+  upper = 1000,
+  silent = TRUE)
+  
+  
+  param_names <- c("p", "shape", "scale")
+  
+  params_gamma <- amt::fit_distr(x2, "gamma")$params
+  
+  params <- list(
+    pfit$par / 1000,
+    params_gamma[[1]],
+    params_gamma[[2]]
+  )
+  names(params) <- param_names
+  
+  out <- list("name" = "zigamma",
+              "params" = params,
+              "vcov" = NA) # VCV matrix on transformed scale
+  
+  class(out) <- c("zigamma_distr", "sl_distr", "amt_distr", "list")
+  return(out)
+}
+
+# Fit zigamma returning the same format as `amt::fit_distr()`
+fit_zigamma <- function(x,
+                        method = c("Nelder-Mead", "BFGS", "nlminb", "nlm"),
+                        init = c(0.1, 1, 30),
+                        lower = c(0, 0, 0),
+                        upper = c(1, Inf, Inf),
+                        parscale = c(1000, 10, 100),
+                        na.rm = TRUE){
+  
+  method <- match.arg(method)
+  
+  if(na.rm){
+    x <- x[!is.na(x)]
+  }
+  
+  param_names <- c("p", "shape", "scale")
+  
+  fit <- optim2(
+    init = init * parscale,
+    fn = function(theta){
+      -sum(dzigamma(x,
+                    p = (theta[1]) / parscale[1], # Transform to deal with numerical issue
+                    shape = (theta[2]) / parscale[2],
+                    scale = (theta[3]) / parscale[3], log = TRUE))
+    },
+    lower = lower * parscale,
+    upper = upper * parscale,
+    method = method
+  )
+  
+  if(fit$convergence != 0){
+    message(sprintf("Did not converge.\nCode: %s\nMessage: %s", fit$convergence, fit$message))
+    vcov <- matrix(rep(NA, length(param_names)^2),
+                   nrow = length(param_names),
+                   ncol = length(param_names))
+  } else {
+    vcov <- solve(fit$hessian) / crossprod(x = t(matrix(parscale)))
+  }
+  
+  params <- as.list(fit$par)
+  params[[1]] <- (params[[1]]) / parscale[1] # Back transform
+  params[[2]] <- (params[[2]]) / parscale[2]
+  params[[3]] <- (params[[3]]) / parscale[3]
+  
+  names(params) <- param_names
+  rownames(vcov) <- colnames(vcov) <- param_names
+  
+  out <- list("name" = "zigamma",
+              "params" = params,
+              "vcov" = vcov) # VCV matrix on transformed scale
+  
+  class(out) <- c("zigamma_distr", "sl_distr", "amt_distr", "list")
+  return(out)
+}
+
+fit_bivonmises <- function(x, 
+                           method = c("Nelder-Mead", "BFGS", "nlminb", "nlm"),
+                           init = c(1, 1),
+                           lower = c(0, 0),
+                           upper = c(Inf, Inf),
+                           parscale = c(100, 100),
+                           na.rm = TRUE){
+  
+  method <- match.arg(method)
+  
+  if(na.rm){
+    x <- x[!is.na(x)]
+  }
+  
+  param_names <- c("kappa1", "kappa2")
+  
+  fit <- optim2(
+    init = init * parscale,
+    fn = function(theta){
+      -sum(dbivonmises(x,
+                       kappa1 = (theta[1]) / parscale[1], # Transform to deal with numerical issue
+                       kappa2 = (theta[2]) / parscale[2], 
+                       log = TRUE))
+    },
+    lower = lower * parscale,
+    upper = upper * parscale,
+    method = method
+  )
+  
+  if(fit$convergence != 0){
+    message(sprintf("Did not converge.\nCode: %s\nMessage: %s", fit$convergence, fit$message))
+    vcov <- matrix(rep(NA, length(param_names)^2),
+                   nrow = length(param_names),
+                   ncol = length(param_names))
+  } else {
+    vcov <- solve(fit$hessian) / crossprod(x = t(matrix(parscale)))
+  }
+  
+  params <- as.list(fit$par)
+  params[[1]] <- (params[[1]]) / parscale[1] # Back transform
+  params[[2]] <- (params[[2]]) / parscale[2]
+  
+  names(params) <- param_names
+  rownames(vcov) <- colnames(vcov) <- param_names
+  
+  out <- list("name" = "bivonmises",
+              "params" = params,
+              "vcov" = vcov) # VCV matrix on transformed scale
+  
+  class(out) <- c("bivonmises_distr", "ta_distr", "amt_distr", "list")
+  return(out)
+  
+}
+
+update_zigamma <- function(dist, beta_move){
+  new_p <- unname(plogis(qlogis(dist$params$p) - beta_move))
+  make_zigamma(new_p, dist$params$shape, dist$params$scale)
+}

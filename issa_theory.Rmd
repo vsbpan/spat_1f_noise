@@ -13,8 +13,7 @@ output:
     theme: default
 ---
 
-
-We consider a special case of the the generalized von Mises distribution (Gatto and Jammalamadaka 2007) which has the density function, 
+For the distribution of turn angles $\omega$, we consider a special case of the the generalized von Mises distribution (Gatto and Jammalamadaka 2007) which has the density function, 
 
 $$
 P(\omega;\kappa_1, \kappa_2) = \frac{\exp(\kappa_1 \cos(\omega + \pi) + \kappa_2 \cos(2\omega ))}{
@@ -30,12 +29,12 @@ $$
 \ln(P(\omega; \kappa_1, \kappa_2)) \propto \kappa_1 \cos(\omega + \pi) + \kappa_2 \cos(2\omega)
 $$
 
-Thus, given the likelihood function $(3)$ the maximum likelihood estimate of the regression coefficients $\beta_1$ and $\beta_2$ can be seen as an estimator of the bias of $\kappa_1$ and $\kappa_2$ respectively. 
+Thus, given the likelihood function $(3)$ the maximum likelihood estimate of the regression coefficients $\beta_{\kappa_1}$ and $\beta_{\kappa_2}$ can be seen as an estimator of the bias of $\kappa_1$ and $\kappa_2$ respectively. 
 
 $$
 \begin{align}
 \tag{3}
-\Pi _{t=3}^{T} \frac{\exp(\beta_1 \cos(\omega_t + \pi) + \beta_2 \cos(2\omega_t))}{\sum_{i=1}^S\exp(\beta_1 \cos(\omega_{i,t}' + \pi) + \beta_2 \cos(2\omega_{i,t}'))}
+\Pi _{t=3}^{T} \frac{\exp(\beta_{\kappa_1} \cos(\omega_t + \pi) + \beta_{\kappa_2} \cos(2\omega_t))}{\sum_{i=1}^S\exp(\beta_{\kappa_1} \cos(\omega_{i,t}' + \pi) + \beta_{\kappa_2} \cos(2\omega_{i,t}'))}
 \end{align}
 $$
 
@@ -43,8 +42,37 @@ Here, $T$ is a set of spatial positions with turn angle $\omega_t$. $\omega_i'$ 
 
 
 
+For the distribution of step lengths $l$, we consider the zero inflated (hurdle) gamma distribution, an extension to the gamma distribution commonly used to model step length to handle transitions when the caterpillar remains stationary. It has density function,
+
+$$
+P(l; \varphi, k, \theta) = 
+\begin{cases} 
+\varphi & \text{for } l = 0 \\
+(1-\varphi) \frac{l^{k-1} \exp(-l/\theta)}{\theta^k \Gamma(k)} & \text{for } l > 0
+\end{cases}
+$$
+
+$1-\varphi$ is the movement probability, and $k$ and $\theta$ are the shape and scale parameters respectively. Avgar et al. (2015) has showed that including $l$ and $\ln(l)$ in conditional logistic regression can allow the use of their corresponding regression coefficients to update the $k$ and $\theta$ parameters, much like the above procedure. With the zigamma distribution, we include $l\cdot\text{moved}$ and $\ln(l)\cdot\text{moved}$ in place of $l$ and $\ln(l)$, where $\text{moved}$ is a binary variable indicating whether movement has occurred ($l > 0$). This has the effect of only using movement telemetry data to estimate the shape and scale parameters. The same goes for the estimation of $\kappa_1$ and $\kappa_2$ when we use zigamma. Updating te $p$ parameter is a bit trickier. Once we have fitted a first pass of the issa model then updated the movement parameters $k$, $\theta$, $\kappa_1$, and $\kappa_2$, we can repeat the random step simulation and conditional logistic regression fitting, arriving at a final estimate of $\beta_{\text{moved}}$. This coefficient can then be updated via, 
+
+$$
+\hat{\varphi}=\text{logit}^{-1}(\text{logit}(\varphi_{0}) - \beta_{\text{moved}})
+$$
 
 
 
+
+
+Our integrated step selection analysis model has the basic formulation, 
+
+
+$$
+\begin{align}
+y \sim \ & \text{Bernouli}(p) \\
+\text{logit}(p) = \ & \underbrace {X\beta}_{\text{Habitat Selection}} \ + \\ 
+& \underbrace{\beta_{\text{moved}} \ \text{Moved} + \beta_{k} \ l\cdot\text{Moved} + \beta_{\theta} \ \ln(l)\cdot\text{Moved} }_{\text{Step length}} \ +\\ 
+& \underbrace{\beta_{\kappa_1} \ \cos(\omega + \pi)\cdot\text{Moved} + \beta_{\kappa_2} \ \cos(2\omega)\cdot\text{Moved}}_{\text{Turn angle}} \ + \\
+& \underbrace{\alpha_{\text{stratum(i)}}}_{\text{Step matching}}
+\end{align}
+$$
 
 
