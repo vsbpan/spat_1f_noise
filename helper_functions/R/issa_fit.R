@@ -152,61 +152,29 @@ fit_zigamma <- function(x,
   return(out)
 }
 
-fit_bivonmises <- function(x, 
-                           method = c("Nelder-Mead", "BFGS", "nlminb", "nlm"),
-                           init = c(1, 1),
-                           lower = c(0, 0),
-                           upper = c(Inf, Inf),
-                           parscale = c(100, 100),
-                           na.rm = TRUE){
-  
-  method <- match.arg(method)
-  
-  if(na.rm){
-    x <- x[!is.na(x)]
-  }
-  
-  param_names <- c("kappa1", "kappa2")
-  
-  fit <- optim2(
-    init = init * parscale,
-    fn = function(theta){
-      -sum(dbivonmises(x,
-                       kappa1 = (theta[1]) / parscale[1], # Transform to deal with numerical issue
-                       kappa2 = (theta[2]) / parscale[2], 
-                       log = TRUE))
-    },
-    lower = lower * parscale,
-    upper = upper * parscale,
-    method = method
-  )
-  
-  if(fit$convergence != 0){
-    message(sprintf("Did not converge.\nCode: %s\nMessage: %s", fit$convergence, fit$message))
-    vcov <- matrix(rep(NA, length(param_names)^2),
-                   nrow = length(param_names),
-                   ncol = length(param_names))
-  } else {
-    vcov <- solve(fit$hessian) / crossprod(x = t(matrix(parscale)))
-  }
-  
-  params <- as.list(fit$par)
-  params[[1]] <- (params[[1]]) / parscale[1] # Back transform
-  params[[2]] <- (params[[2]]) / parscale[2]
-  
-  names(params) <- param_names
-  rownames(vcov) <- colnames(vcov) <- param_names
-  
-  out <- list("name" = "bivonmises",
-              "params" = params,
-              "vcov" = vcov) # VCV matrix on transformed scale
-  
-  class(out) <- c("bivonmises_distr", "ta_distr", "amt_distr", "list")
-  return(out)
-  
-}
 
-update_zigamma <- function(dist, beta_move){
+update_zigamma_p <- function(dist, beta_move){
   new_p <- unname(plogis(qlogis(dist$params$p) - beta_move))
   make_zigamma(new_p, dist$params$shape, dist$params$scale)
 }
+
+update_zigamma_ss <- function(dist, beta_sl, beta_log_sl){
+  new_shape <- unname(dist$params$shape + beta_log_sl)
+  new_scale <- unname(1/((1/dist$params$scale) - beta_sl))
+  make_zigamma(dist$params$p, new_shape, new_scale)
+}
+
+fit_gamma <- function(x){
+  amt::fit_distr(x, "gamma")
+}
+
+update_gamma <- function(dist, beta_sl, beta_log_sl){
+  amt::update_gamma(dist, beta_sl, beta_log_sl)
+}
+
+
+
+
+
+
+

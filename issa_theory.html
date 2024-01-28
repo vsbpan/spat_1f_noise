@@ -11,7 +11,7 @@
 
 <meta name="author" content="Vincent Pan" />
 
-<meta name="date" content="2024-01-25" />
+<meta name="date" content="2024-01-26" />
 
 <title>iSSA notes</title>
 
@@ -1540,45 +1540,46 @@ border-radius: 0px;
 
 <h1 class="title toc-ignore">iSSA notes</h1>
 <h4 class="author">Vincent Pan</h4>
-<h4 class="date">January 25, 2024</h4>
+<h4 class="date">January 26, 2024</h4>
 
 </div>
 
 
-<p>For the distribution of turn angles <span class="math inline">\(\omega\)</span>, we consider a special case of the
+<p>For the distribution of turn angles <span class="math inline">\(\theta\)</span>, we consider a special case of the
 the generalized von Mises distribution (Gatto and Jammalamadaka 2007)
 which has the density function,</p>
 <p><span class="math display">\[
-P(\omega;\kappa_1, \kappa_2) = \frac{\exp(\kappa_1 \cos(\omega + \pi) +
-\kappa_2 \cos(2\omega ))}{
-\int_0^{2 \pi} \exp(\kappa_1 \cos(\omega + \pi) + \kappa_2 \cos(2\omega
-)) d\omega
+P(\theta;\kappa_1, \kappa_2) = \frac{\exp(\kappa_1 \cos(\theta + \pi) +
+\kappa_2 \cos(2\theta ))}{
+\int_0^{2 \pi} \exp(\kappa_1 \cos(\theta + \pi) + \kappa_2 \cos(2\theta
+)) d\theta
 }
 \]</span></p>
-<p>We generated random draws from this distribution using the standard
+<p>We generated random draws from this distribution using the
 ratio-of-uniforms algorithm from Gatto (2007).</p>
-<p>It can be shown that the probability of observing a turn angle <span class="math inline">\(\omega\)</span> can be expressed as an exponential
-function of some linear combinations of <span class="math inline">\(\cos(\omega + \pi)\)</span> and <span class="math inline">\(\cos(2\omega)\)</span>,</p>
+<p>It can be shown that the probability of observing a turn angle <span class="math inline">\(\theta\)</span> can be expressed as an exponential
+function of some linear combination of <span class="math inline">\(\cos(\theta + \pi)\)</span> and <span class="math inline">\(\cos(2\theta)\)</span>,</p>
 <p><span class="math display">\[
-\ln(P(\omega; \kappa_1, \kappa_2)) \propto \kappa_1 \cos(\omega + \pi) +
-\kappa_2 \cos(2\omega)
+\ln(P(\theta; \kappa_1, \kappa_2)) \propto \kappa_1 \cos(\theta + \pi) +
+\kappa_2 \cos(2\theta)
 \]</span></p>
 <p>Thus, given the likelihood function <span class="math inline">\((3)\)</span> the maximum likelihood estimate of
 the regression coefficients <span class="math inline">\(\beta_{\kappa_1}\)</span> and <span class="math inline">\(\beta_{\kappa_2}\)</span> can be seen as an
 estimator of the bias of <span class="math inline">\(\kappa_1\)</span>
-and <span class="math inline">\(\kappa_2\)</span> respectively.</p>
+and <span class="math inline">\(\kappa_2\)</span> in the tentative
+distributions respectively.</p>
 <p><span class="math display">\[
 \begin{align}
 \tag{3}
-\Pi _{t=3}^{T} \frac{\exp(\beta_{\kappa_1} \cos(\omega_t + \pi) +
-\beta_{\kappa_2} \cos(2\omega_t))}{\sum_{i=1}^S\exp(\beta_{\kappa_1}
-\cos(\omega_{i,t}&#39; + \pi) + \beta_{\kappa_2}
-\cos(2\omega_{i,t}&#39;))}
+\prod_{t=3}^{T} \frac{\exp(\beta_{\kappa_1} \cos(\theta_t + \pi) +
+\beta_{\kappa_2} \cos(2\theta_t))}{\sum_{i=1}^S\exp(\beta_{\kappa_1}
+\cos(\theta_{i,t}&#39; + \pi) + \beta_{\kappa_2}
+\cos(2\theta_{i,t}&#39;))}
 \end{align}
 \]</span></p>
 <p>Here, <span class="math inline">\(T\)</span> is a set of spatial
-positions with turn angle <span class="math inline">\(\omega_t\)</span>.
-<span class="math inline">\(\omega_i&#39;\)</span> is an element of a
+positions with turn angle <span class="math inline">\(\theta_t\)</span>.
+<span class="math inline">\(\theta_i&#39;\)</span> is an element of a
 set <span class="math inline">\(S\)</span> of randomly generated
 available turn angles.</p>
 <p>For the distribution of step lengths <span class="math inline">\(l\)</span>, we consider the zero inflated (hurdle)
@@ -1586,18 +1587,18 @@ gamma distribution, an extension to the gamma distribution commonly used
 to model step length to handle transitions when the caterpillar remains
 stationary. It has density function,</p>
 <p><span class="math display">\[
-P(l; \varphi, k, \theta) =
+P(l; \varphi, k, q) =
 \begin{cases}
 \varphi &amp; \text{for } l = 0 \\
-(1-\varphi) \frac{l^{k-1} \exp(-l/\theta)}{\theta^k \Gamma(k)} &amp;
-\text{for } l &gt; 0
+(1-\varphi) \frac{l^{k-1} \exp(-l/q)}{q^k \Gamma(k)} &amp; \text{for } l
+&gt; 0
 \end{cases}
 \]</span></p>
 <p><span class="math inline">\(1-\varphi\)</span> is the movement
-probability, and <span class="math inline">\(k\)</span> and <span class="math inline">\(\theta\)</span> are the shape and scale parameters
+probability, and <span class="math inline">\(k\)</span> and <span class="math inline">\(q\)</span> are the shape and scale parameters
 respectively. Avgar et al. (2015) has showed that including <span class="math inline">\(l\)</span> and <span class="math inline">\(\ln(l)\)</span> in conditional logistic regression
 can allow the use of their corresponding regression coefficients to
-update the <span class="math inline">\(k\)</span> and <span class="math inline">\(\theta\)</span> parameters, much like the above
+update the <span class="math inline">\(k\)</span> and <span class="math inline">\(q\)</span> parameters, much like the above
 procedure. With the zigamma distribution, we include <span class="math inline">\(l\cdot\text{moved}\)</span> and <span class="math inline">\(\ln(l)\cdot\text{moved}\)</span> in place of <span class="math inline">\(l\)</span> and <span class="math inline">\(\ln(l)\)</span>, where <span class="math inline">\(\text{moved}\)</span> is a binary variable
 indicating whether movement has occurred (<span class="math inline">\(l
 &gt; 0\)</span>). This has the effect of only using movement telemetry
@@ -1605,7 +1606,7 @@ data to estimate the shape and scale parameters. The same goes for the
 estimation of <span class="math inline">\(\kappa_1\)</span> and <span class="math inline">\(\kappa_2\)</span> when we use zigamma. Updating te
 <span class="math inline">\(p\)</span> parameter is a bit trickier. Once
 we have fitted a first pass of the issa model then updated the movement
-parameters <span class="math inline">\(k\)</span>, <span class="math inline">\(\theta\)</span>, <span class="math inline">\(\kappa_1\)</span>, and <span class="math inline">\(\kappa_2\)</span>, we can repeat the random step
+parameters <span class="math inline">\(k\)</span>, <span class="math inline">\(q\)</span>, <span class="math inline">\(\kappa_1\)</span>, and <span class="math inline">\(\kappa_2\)</span>, we can repeat the random step
 simulation and conditional logistic regression fitting, arriving at a
 final estimate of <span class="math inline">\(\beta_{\text{moved}}\)</span>. This coefficient
 can then be updated via,</p>
@@ -1618,16 +1619,30 @@ formulation,</p>
 <p><span class="math display">\[
 \begin{align}
 y \sim \ &amp; \text{Bernouli}(p) \\
-\text{logit}(p) = \ &amp; \underbrace {X\beta}_{\text{Habitat
-Selection}} \ + \\
+\text{logit}(p) = \ &amp; \underbrace {X\beta}_{\text{Movement free
+habitat selection}} \ + \\
 &amp; \underbrace{\beta_{\text{moved}} \ \text{Moved} + \beta_{k} \
-l\cdot\text{Moved} + \beta_{\theta} \ \ln(l)\cdot\text{Moved}
-}_{\text{Step length}} \ +\\
-&amp; \underbrace{\beta_{\kappa_1} \ \cos(\omega + \pi)\cdot\text{Moved}
-+ \beta_{\kappa_2} \ \cos(2\omega)\cdot\text{Moved}}_{\text{Turn angle}}
-\ + \\
+l\cdot\text{Moved} + \beta_{q} \ \ln(l)\cdot\text{Moved}
+}_{\text{Selection free step length}} \ +\\
+&amp; \underbrace{\beta_{\kappa_1} \ \cos(\theta + \pi)\cdot\text{Moved}
++ \beta_{\kappa_2} \ \cos(2\theta)\cdot\text{Moved}}_{\text{Selection
+free turn angle}} \ + \\
 &amp; \underbrace{\alpha_{\text{stratum(i)}}}_{\text{Step matching}}
 \end{align}
+\]</span></p>
+<p>Instead of a zigamma distribution, a better approximation of the data
+generating process is a zeroed truncated gamma distribution (hereafter
+as zTG). <span class="math inline">\(l^*\)</span> correspond to the
+minimum threshold of step length to be considered as movement.</p>
+<p><span class="math display">\[
+P(l; l^*, k, q) =
+\begin{cases}
+G(l^*; k, q) &amp; \text{for } l &lt; l^* \\
+(1-G(l^*; k, q)) \frac{l^{k-1} \exp(-l/q)}{q^k \Gamma(k)} &amp;
+\text{for } l \geq l^*
+\end{cases}
+\]</span> <span class="math display">\[
+G(l; k, q) = \int_{l}^{\infty} \frac{l^{k-1} \exp(-l/q)}{q^k \Gamma(k)}
 \]</span></p>
 
 

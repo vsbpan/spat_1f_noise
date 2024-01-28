@@ -1,5 +1,5 @@
-rgenvonmises <- function(n, kappa1, kappa2, max_try = 500){
-  g <- function(omega){
+rgenvonmises <- function(n, kappa1, kappa2, a = NULL, max_try = 500){
+  .g_genvonmises <- function(omega, kappa1, kappa2){
     kappa1 * cos(omega) + kappa2 * cos(2 * (omega - pi))
   }
   # m <- max(g(seq(0, 2 * pi, by = 0.0001)))
@@ -17,7 +17,9 @@ rgenvonmises <- function(n, kappa1, kappa2, max_try = 500){
   # return(x[seq_len(n)] - pi)
   
   # Standard ratio-of-uniforms algorithm from 10.1016/j.stamet.2006.11.003
-  a <- exp(max(g(seq(0, 2 * pi, by = 0.00001))))
+  if(is.null(a)){
+    a <- exp(max(.g_genvonmises(seq(0, 2 * pi, by = 0.00001), kappa1, kappa2))) 
+  }
   n_out <- 0
   n_first_shot <- ceiling(n * 5L)
   x <- c()
@@ -28,7 +30,7 @@ rgenvonmises <- function(n, kappa1, kappa2, max_try = 500){
     s <- v > 2*pi*u
     u[s] <- a-u[s]
     v[s] <- 2 * pi * a - v[s]
-    w <- g(v/u)/2
+    w <- .g_genvonmises(v/u, kappa1, kappa2)/2
     cond <- u <= exp(w)
     
     x_temp <- v[cond]/u[cond]
@@ -75,6 +77,11 @@ make_genvonmises <- function(kappa1, kappa2){
   return(out)
 }
 
+
+make_gamma <- function(shape, scale){
+  amt::make_gamma_distr(shape = shape, scale = scale)
+}
+
 make_zigamma <- function(p, shape, scale){
   param_names <- c("p", "shape", "scale")
   
@@ -88,6 +95,7 @@ make_zigamma <- function(p, shape, scale){
   class(out) <- c("zigamma_distr", "sl_distr", "amt_distr", "list")
   return(out)
 }
+
 
 
 
@@ -109,44 +117,5 @@ dzigamma <- function (x, p, shape, scale = 1/rate, rate, log = FALSE) {
   return(d)
 }
 
-
-rbivonmises <- function(n, kappa1, kappa2){
-  x <- circular::rmixedvonmises(n = n, 
-                                mu1 = circular::circular(pi), 
-                                mu2 = circular::circular(0), 
-                                kappa1 = kappa1, 
-                                kappa2 = kappa2, 
-                                prop = 0.5) %>% 
-    as.numeric()
-  x - pi
-}
-
-dbivonmises <- function(x, kappa1, kappa2, log = FALSE){
-  d <- circular::dmixedvonmises(circular::circular(x + pi),
-                                mu1 = circular::circular(pi), 
-                                mu2 = circular::circular(0), 
-                                kappa1 = kappa1, 
-                                kappa2 = kappa2, 
-                                prop = 0.5) %>% 
-    as.numeric()
-  if(log){
-    d <- log(d)
-  }
-  return(d)
-}
-
-make_bivonmises <- function(kappa1, kappa2){
-  param_names <- c("kappa1", "kappa2")
-  
-  params <- as.list(c(kappa1, kappa2))
-  names(params) <- param_names
-  
-  out <- list("name" = "bivonmises",
-              "params" = params,
-              "vcov" = NULL)
-  
-  class(out) <- c("bivonmises_distr", "ta_distr", "amt_distr", "list")
-  return(out)
-}
 
 

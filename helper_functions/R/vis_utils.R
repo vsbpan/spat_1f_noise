@@ -165,6 +165,23 @@ forward_plot <- function(x,init_frame, mask_col = "white", ...){
 }
 
 
+plot_track <- function(data, x, y, type = c("track", "density")){
+  .expose_columns_interal()
+  type <- match.arg(type, several.ok = TRUE)
+  
+  g <- ggplot(data, aes(x = x, y = y))
+  
+  if("density" %in% type){
+    g <- g + geom_density_2d_filled()
+  }
+  
+  if("track" %in% type){
+    g <- g + geom_path()
+  }
+  return(g)
+}
+
+
 
 
 

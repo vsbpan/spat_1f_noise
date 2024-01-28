@@ -48,7 +48,6 @@ move_seq <- function(x,y, r_thresh = 1, inherit.theta = FALSE){
   n <- nrow(out)
   out <- data.frame("step_id" = seq_len(n), 
              out,
-             "cos_theta" = cos(out$theta_rel), 
              "x1" = x[-n], 
              "x2" = x[-1], 
              "y1" = y[-n],
@@ -58,10 +57,11 @@ move_seq <- function(x,y, r_thresh = 1, inherit.theta = FALSE){
     out <- out %>% 
       mutate(
         theta_abs = inherit_theta(theta_abs, r_threshed),
-        theta_rel = turn_angle_calc(theta_abs),
-        cos_theta = cos(theta_rel)
+        theta_rel = turn_angle_calc(theta_abs)
       )
   }
+  
+  attr(out, "r_thresh") <- r_thresh
   return(out)
 }
 

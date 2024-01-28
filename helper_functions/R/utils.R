@@ -336,6 +336,10 @@ wipe_functions <- function(){
   invisible()
 }
 
+rbind.fill <- function(...){
+  plyr::rbind.fill(...)
+}
+
 reload <- function(){
   source("helper_functions/init.R")
 }
