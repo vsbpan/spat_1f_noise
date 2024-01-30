@@ -114,6 +114,79 @@ library(amt)
 
 
 
+issf_fit_l <- readRDS("invisible/issf_fit_list.rds")
+# 
+# 
+# z <- issf_fit_l %>%
+#   lapply(function(x){
+#     c(
+#       coef(x$model), 
+#       "shape" = x$sl_updated$params$shape, 
+#       "scale" = x$sl_updated$params$scale, 
+#       "kappa1" = x$ta_updated$params$kappa1,
+#       "kappa2" = x$ta_updated$params$kappa2)
+#   }) %>% 
+#   lapply(function(x){
+#     as.data.frame(t(x))
+#   }) %>% 
+#   do.call("rbind.fill", .) %>% 
+#   cbind("rep_id" = names(issf_fit_l)) %>% 
+#   cbind(
+#     "on_toxic" = lapply(
+#       issf_fit_l, 
+#       function(x){
+#         has_toxic <- any(grepl("toxic",names(x$data)))
+#         
+#         if(has_toxic){
+#           x$data %>% 
+#             filter(case) %>% 
+#             filter(!is.na(toxic)) %>% 
+#             select(toxic) %>% 
+#             colMeans()
+#         } else {
+#           NA
+#         }
+#         
+#       }
+#     ) %>% 
+#       do.call("c", .) %>% 
+#       unname(),
+#     pb_par_lapply(issf_fit_l, function(x){
+#       x$data %>% 
+#         filter(case) %$% 
+#         ud_area(x2, y2) %>% 
+#         t() %>% 
+#         as.data.frame() %>% 
+#         rename_all(
+#           function(x){
+#             paste0("ud_", x)
+#           }
+#         )
+#     }, cores = 8, inorder = TRUE) %>% 
+#       do.call("rbind",.)
+#   )
+#   
+# 
+# 
+# z <- ref_data %>% 
+#   right_join(z, by = "rep_id")
+# 
+# z <- detection_report(z$rep_id) %>% 
+#   select(repID, n_keypoints, frames) %>% 
+#   mutate(
+#     prop_kp = n_keypoints / frames,
+#     rep_id = as.character(repID)
+#   ) %>% 
+#   select(-repID) %>% 
+#   right_join(z, by = "rep_id") %>% 
+#   filter(prop_kp > 0.7) %>% 
+#   filter(
+#     scale > 0
+#   )
+# 
+# 
+# 
+# write_csv(z, "cleaned_data/event_derivative.csv")
 
 
 
@@ -121,51 +194,22 @@ library(amt)
 
 
 
-
-z <- fit_list %>%
-  lapply(function(x){
-    c(coef(x$model), 
-      "shape" = x$sl_updated$params$shape, 
-      "scale" = x$sl_updated$params$scale, 
-      "kappa1" = x$ta_updated$params$kappa1,
-      "kappa2" = x$ta_updated$params$kappa2)
-  }) %>% 
-  do.call("rbind", .) %>% 
-  as.data.frame() %>% 
-  cbind("rep_id" = ids) %>% 
-  filter(scale > 0)
-
-
-z <- ref_data %>% 
-  right_join(z, by = "rep_id")
-
-z <- detection_report(z$rep_id) %>% 
-  select(repID, n_keypoints, frames) %>% 
-  mutate(
-    prop_kp = n_keypoints / frames,
-    rep_id = as.character(repID)
-  ) %>% 
-  select(-repID) %>% 
-  right_join(z, by = "rep_id")
-
-z %>% View()
 
 z %>% 
-  filter(prop_kp > 0.7) %>% 
   mutate(
-    y = toxic
+    y = ud_estimate
   ) %>% 
  # filter(abs(y) < 5) %>% 
   ggplot(aes(x = var_trt, y = y, group = beta, color = beta)) + 
   geom_pointrange(stat = "summary", color = "black", position = position_dodge(0.7)) + 
-  geom_point(position = position_jitterdodge())
+  geom_point(position = position_jitterdodge()) + 
+  scale_y_continuous(trans = "log10")
 
 z %>% 
-  filter(prop_kp > 0.7) %>% 
   mutate(
     y = toxic
   ) %>% 
-  filter(abs(y) < 5) %>% 
+  #filter(abs(y) < 5) %>% 
   ggplot(aes(x = log(cat_pre_wt), y = y, color = var_trt)) + 
   geom_point() +
   geom_smooth(method = "lm")
