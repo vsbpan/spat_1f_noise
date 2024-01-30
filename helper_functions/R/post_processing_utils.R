@@ -138,7 +138,7 @@ detection_report <- function(repIDs){
 }
 
 
-
+# Replace NA with theta from previous step if the step length is zero
 inherit_theta <- function(theta, r){
   theta_inht <- theta[1]
   for(i in seq_along(theta)){

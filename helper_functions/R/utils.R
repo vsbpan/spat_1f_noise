@@ -102,10 +102,12 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
       list(FUN(indf(x, i), ...))
     }
     
-    if(!has_clust){
-      message("\nClosing parallel workers. . .")
-      stopCluster(cl)
-    }
+    on.exit(
+      if(!has_clust){
+        message("\nClosing parallel workers. . .")
+        stopCluster(cl)
+      } 
+    )
     
   }
   
@@ -342,4 +344,8 @@ rbind.fill <- function(...){
 
 reload <- function(){
   source("helper_functions/init.R")
+}
+
+recompile <- function(){
+  pkgload::load_all("helper_functions")
 }

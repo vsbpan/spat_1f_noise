@@ -11,6 +11,33 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// g_genvonmisesC
+NumericVector g_genvonmisesC(NumericVector omega, double kappa1, double kappa2);
+RcppExport SEXP _spat1f_g_genvonmisesC(SEXP omegaSEXP, SEXP kappa1SEXP, SEXP kappa2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type omega(omegaSEXP);
+    Rcpp::traits::input_parameter< double >::type kappa1(kappa1SEXP);
+    Rcpp::traits::input_parameter< double >::type kappa2(kappa2SEXP);
+    rcpp_result_gen = Rcpp::wrap(g_genvonmisesC(omega, kappa1, kappa2));
+    return rcpp_result_gen;
+END_RCPP
+}
+// propose_genvonmises
+NumericVector propose_genvonmises(int n, double a, double kappa1, double kappa2);
+RcppExport SEXP _spat1f_propose_genvonmises(SEXP nSEXP, SEXP aSEXP, SEXP kappa1SEXP, SEXP kappa2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< double >::type a(aSEXP);
+    Rcpp::traits::input_parameter< double >::type kappa1(kappa1SEXP);
+    Rcpp::traits::input_parameter< double >::type kappa2(kappa2SEXP);
+    rcpp_result_gen = Rcpp::wrap(propose_genvonmises(n, a, kappa1, kappa2));
+    return rcpp_result_gen;
+END_RCPP
+}
 // iouC
 double iouC(arma::mat img1, arma::mat img2);
 RcppExport SEXP _spat1f_iouC(SEXP img1SEXP, SEXP img2SEXP) {
@@ -37,6 +64,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_spat1f_g_genvonmisesC", (DL_FUNC) &_spat1f_g_genvonmisesC, 3},
+    {"_spat1f_propose_genvonmises", (DL_FUNC) &_spat1f_propose_genvonmises, 4},
     {"_spat1f_iouC", (DL_FUNC) &_spat1f_iouC, 2},
     {"_spat1f_mask_insersectC", (DL_FUNC) &_spat1f_mask_insersectC, 2},
     {NULL, NULL, 0}

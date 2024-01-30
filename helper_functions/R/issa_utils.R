@@ -1,4 +1,4 @@
-# Add n random steps to the data frame, drawing from fitted sl and ta distirbutions
+# Add n random steps to the data frame, drawing from fitted sl and ta distributions. If sl_rand or ta_rand is supplied, then the vectors are randomly sampled for number number generation. Paired if set to TRUE uses the same random number index for sl_rand and ta_rand. Keep_obs if FALSE, drops the observed data. thresh_r sets r to zero if r is below thresh_r. turn angle theta is set to zero if r == 0
 add_random_steps <- function(
     data,
     n = 20L,
@@ -10,7 +10,9 @@ add_random_steps <- function(
     ta_distr = fit_genvonmises(data$theta_rel),
     sl_rand = NULL,
     ta_rand = NULL,
-    keep_obs = TRUE){
+    keep_obs = TRUE, 
+    thresh_r = NULL,
+    paired = FALSE){
   
   
   stopifnot(!any(duplicated(id)))
@@ -24,23 +26,35 @@ add_random_steps <- function(
   if(!is.null(ta_rand)){
     ta_rand <- ta_rand
   } else {
-    ta_rand <- amt::random_numbers(ta_distr, n = 10e5)
+    ta_rand <- rdist(ta_distr, n = 10e5)
   }
   
   if(!is.null(sl_rand)){
     sl_rand <- sl_rand
   } else {
-    sl_rand <- amt::random_numbers(sl_distr, n = 10e5)
+    sl_rand <- rdist(sl_distr, n = 10e5)
+  }
+  
+  if(!is.null(thresh_r)){
+    sl_rand[sl_rand < thresh_r] <- 0
   }
   
   
   out <- lapply(seq_along(id), function(i){
-    r <- sl_rand[sample.int(n = length(sl_rand), size = n)]
-    theta <- ta_rand[sample.int(n = length(ta_rand), size = n)]
+    if(paired){
+      index_theta <- index_r <- sample.int(n = length(sl_rand), size = n)
+    } else {
+      index_r <- sample.int(n = length(sl_rand), size = n)
+      index_theta <- sample.int(n = length(ta_rand), size = n)
+    }
+    r <- sl_rand[index_r]
+    theta <- ta_rand[index_theta]
+    
     
     x1 <- x_start[i]
     y1 <- y_start[i]
     theta_abs <- direction_start[i]
+    theta <- ifelse(r > 0, theta, 0)
     
     out <- data.frame(
       "step_id" = id[i],
@@ -84,15 +98,16 @@ flag_invalid_steps <- function(data, x = data$x2, y = data$y2,
   return(data)
 }
 
+# wrapper for survival::clogit
 .issf_fit_internal <- function(formula, data, ...){
   clogit(
     formula,
     data = data,
-    #method = "efron",
     ...
   )
 }
 
+# Refit issf with newdata. If is null, use the same old data
 refit_issf <- function(object, newdata = NULL){
   if(is.null(newdata)){
     newdata <- object$data
@@ -102,6 +117,7 @@ refit_issf <- function(object, newdata = NULL){
   return(object)
 }
 
+# Wrapper for clogit that update the distributions
 issf <- function(formula, data, 
                  zero_inflation_estimator = "moved",
                  scale_estimator = "sl", 
@@ -109,7 +125,7 @@ issf <- function(formula, data,
                  kappa_estimator = "cos_thta" ,
                  kappa1_estimator = "cos_theta_pi",
                  kappa2_estimator = "cos_2theta",
-                 remove_invalid = FALSE,
+                 remove_invalid = TRUE,
                  ...){
   m <- .issf_fit_internal(formula, data, ...)
   out <- list(
@@ -134,14 +150,18 @@ issf <- function(formula, data,
   return(out)
 }
 
-
+# S3 method for print and summary of issf_fit objects
 print.issf_fit <- function(x, ...){
   print(summary(x$model))
+  invisible(summary(x$model))
 }
 
+# S3 method registration
 registerS3method("print", "issf_fit", print.issf_fit)
+registerS3method("summary", "issf_fit", print.issf_fit)
 
 
+# Append generalized von mises distribution param estimators. na_as_zero should generally be set to TRUE as that they don't get dropped when used in tandem with :moved
 append_genvonmises_estimators <- function(x, na_as_zero = FALSE){
   if(na_as_zero){
     x %>% 
@@ -158,6 +178,7 @@ append_genvonmises_estimators <- function(x, na_as_zero = FALSE){
   }
 }
 
+# Append gamma distribution param estimators
 append_gamma_estimators <- function(x){
   x %>% 
     mutate(
@@ -166,6 +187,7 @@ append_gamma_estimators <- function(x){
     )
 }
 
+# Append zigamma zero inflation estimator
 append_moved <- function(x, thresh = NULL){
   if(is.null(thresh)){
     thresh <- attr(x, "r_thresh")
@@ -176,7 +198,8 @@ append_moved <- function(x, thresh = NULL){
     )
 }
 
-append_vonmises_estimators <- function(x, na_as_zero){
+# Append von mises param estimator. na_as_zero should generally be set to TRUE
+append_vonmises_estimators <- function(x, na_as_zero = FALSE){
   if(na_as_zero){
     x %>% 
       mutate(
@@ -190,7 +213,7 @@ append_vonmises_estimators <- function(x, na_as_zero){
   }
 }
 
-
+# General append estimator wrapper for various distributions
 append_estimators <- function(x, na_as_zero = FALSE){
   sl_est_method <- switch(attr(x, "sl")$name, 
                           "gamma" = append_gamma_estimators)
@@ -207,9 +230,7 @@ append_estimators <- function(x, na_as_zero = FALSE){
 }
 
 
-
-
-
+# General update distribution wrapper using param estimators  
 update_distr <- function(x, 
                          zero_inflation_estimator = "moved",
                          scale_estimator = "sl", 
@@ -264,7 +285,7 @@ update_distr <- function(x,
 }
 
 
-
+# Internal function for resampling data in refitting issf in two shot estimation of zigamma. Currently defunct bc zigamma support is mostly removed.  
 resample_data <- function(object, n = NULL, remove_invalid = FALSE){
   if(is.null(n)){
     n <- as.list(attr(object$data, "call"))$n
@@ -278,43 +299,91 @@ resample_data <- function(object, n = NULL, remove_invalid = FALSE){
 }
 
 
+# Compute the utilization distribution area (level_ud * 100 % isopleth area). conf is the confidence intervals. Uses kernel density estimate method from ctmm. Fits a continuous time movement model (iid bivariate gaussian)
+ud_area <- function(x, y, level_ud = 0.95,conf = 0.95){
+  keep <- !is.na(x) & !is.na(y)
+  x <- x[keep]
+  y <- y[keep]
+  
+  d <- data.frame(
+    lon = x, 
+    lat = y, 
+    timestamp = Sys.time() + seq_along(x), 
+    ID = 1) %>% 
+    ctmm::as.telemetry() %>% 
+    suppressMessages()
+  d$x <- d$longitude
+  d$y <- d$latitude
+  
+  res <- ctmm::akde(d, ctmm::ctmm.fit(d)) %>% 
+    ctmm::SpatialPolygonsDataFrame.UD(
+      level.UD = level_ud, 
+      conf.level = conf) %>% 
+    sf::st_as_sf() %>% 
+    sf::st_area() %>% 
+    as.vector()
+  
+  names(res) <- c("lower", "estimate", "upper")
+  res[c(2,1,3)]
+  # Result in pixels
+}
+
+# Uses fitted issf_fit object to do simulation. If use_observed = TRUE, then the raw data used to fit the model is used instead for simulation. 
+iterate_random_steps <- function(start, issf_fit, 
+                                 n = 100, 
+                                 paired = FALSE, 
+                                 use_observed = FALSE,
+                                 r_thresh = attr(issf_fit$data, "r_thresh")){
+  out.list <- vector(mode = "list", length = n+1)
+  out.list[[1]] <- start
+  
+  if(use_observed){
+    ra <- filter(o$data, case & !is.na(r) & !is.na(theta_rel))$theta_rel
+    rr <- filter(o$data, case & !is.na(r) & !is.na(theta_rel))$r
+    r_thresh <- NULL
+  } else {
+    ra <- rdist(issf_fit$ta_updated, 10^5)
+    rr <- rdist(issf_fit$sl_updated, 10^5)
+  }
+  
+  
+  new_x2 <- start$x2
+  new_y2 <- start$y2
+  for(i in seq_len(n)){
+    new <- TRUE
+    while(new | !is_between(new_x2, c(0, 1000)) | 
+          !is_between(new_y2, c(0, 1000))
+    ){
+      out.list[[i+1]] <- out.list[[i]] %>% 
+        add_random_steps(
+          data = .,
+          n = 1, 
+          keep_obs = FALSE, 
+          id = 1, 
+          x_start = .$x2,
+          y_start = .$y2,
+          direction_start = (.$theta_abs + .$theta_rel) %% (2 * pi),
+          sl_distr = NULL, 
+          ta_distr = NULL, 
+          ta_rand = ra,
+          sl_rand = rr, 
+          paired = paired, 
+          thresh_r = NULL)
+      new <- FALSE
+      new_x2 <- out.list[[i+1]]$x2
+      new_y2 <- out.list[[i+1]]$y2
+    }
+  }
+  do.call("rbind.fill", out.list)
+}
+
+# Create starting object for iterate_random_steps()
+creat_start <- function(x, y, theta){
+  data.frame("step_id" = 1, "x2" = x, "y2" = y, "theta_abs" = theta, "theta_rel" = 0)
+}
 
 
-# .test_p_adjust <- function(true_p, p){
-#   test_d <- data.frame(
-#     "step_id" = 1:3000, 
-#     "r" = rzigamma(3000, p = true_p, shape = 1, scale = 10), 
-#     "theta_rel" = random_numbers(make_vonmises_distr(5), 3000),
-#     "p" = p
-#   ) %>% 
-#     add_random_steps(n = 30L, 
-#                      id = step_id,
-#                      x_start =  rep(NA, 3000),
-#                      y_start = rep(NA, 3000),
-#                      direction_start = rep(NA, 3000), 
-#                      sl_distr = make_zigamma(unique(p), 1, 10), 
-#                      ta_distr = make_vonmises_distr(2)) %>% 
-#     mutate(
-#       cos_theta = cos(theta_rel),
-#       sl = r, 
-#       logsl = ifelse(r == 0, 0, log(r)),
-#       moved = ifelse(r == 0, 0, 1)
-#     )
-#   # issf(
-#   #   case ~ 
-#   #     moved+ 
-#   #     (sl + logsl):moved + cos_theta : moved + 
-#   #     strata(step_id),
-#   #   data = test_d
-#   # )$model
-#     # coef() %>% 
-#     # .[c(1)]
-#   test_d
-# }
-# # When the tentative distributions match in all params except for p, use update zigamma() to get true updated distribution. 
-# # Back transform directly from the betas very imprecise otherwise
-# 
-# 
+
 
 
 
