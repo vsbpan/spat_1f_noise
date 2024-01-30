@@ -62,7 +62,7 @@ plot_polygon <- function(data_dict, frame, col = "blue", alpha = 0.5, ...){
   }
 }
 
-
+# S3 generic for data_dict object, calling bbox, polygon, and keypoint plot methods
 plot.data_dict <- function(x, frame, add = FALSE, 
                            kp_col = c("green", "yellow", "red"), 
                            mask_col = "blue",
@@ -164,7 +164,7 @@ forward_plot <- function(x,init_frame, mask_col = "white", ...){
   }
 }
 
-
+# Visualize sequential animal track
 plot_track <- function(data, x, y, type = c("track", "density")){
   .expose_columns_interal()
   type <- match.arg(type, several.ok = TRUE)

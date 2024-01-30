@@ -81,6 +81,7 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
     # Remove spat1f package from list. foreach::`%dopar%` calls library(package) as some point, which would give an error
     pkg <- .packages()
     pkg <- pkg[pkg != "spat1f"]
+    spat1f_path <- path.package("spat1f")
     
     out <- foreach(
       i = indices, 
@@ -96,8 +97,9 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
       ),
       .packages = pkg
     ) %dopar% {
-      devtools::load_all(path = "helper_functions", 
-                         export_all = TRUE, quiet = TRUE) # Load spat1f package
+      devtools::load_all(path = spat1f_path, 
+                         export_all = TRUE, 
+                         quiet = TRUE) # Load spat1f package
       
       list(FUN(indf(x, i), ...))
     }
@@ -329,7 +331,7 @@ check_identical <- function(x1,x2, thresh = .Machine$double.eps){
 }
 
 
-
+# Helper function for wipping custom functions in the global env
 wipe_functions <- function(){
   as.character(lsf.str(pos = globalenv())) %>% 
     lapply(function(x){
@@ -338,14 +340,17 @@ wipe_functions <- function(){
   invisible()
 }
 
+# Export rbind.fill function from plyr
 rbind.fill <- function(...){
   plyr::rbind.fill(...)
 }
 
+# Lazy wrapper for reloading spat1f if it is already loaded
 reload <- function(){
-  source("helper_functions/init.R")
+  source(paste(path.package("spat1f"), "init.R", sep = "/"))
 }
 
+# Recompile C++ code
 recompile <- function(){
-  pkgload::load_all("helper_functions")
+  pkgload::load_all(path.package("spat1f"))
 }
