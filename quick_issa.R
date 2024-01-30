@@ -2,77 +2,115 @@ source("helper_functions/init_analysis.R")
 library(survival)
 library(amt)
 
-#mclogit::mclogit
+# ids <- ref_data %>% 
+#   filter(
+#     !is.na(camera_cutoff)
+#   ) %>% 
+#   filter(
+#     !is.na(syn_id)
+#   ) %>% 
+#   select(rep_id) %>% 
+#   unlist() %>% 
+#   unname()
+# 
+# 
+# 
+# ids <- ids[-c(17, 92, 115)]
+# 
+# 
+# fit_list <- pb_par_lapply(
+#   ids, 
+#   function(i, ref_data){
+#     # message(sprintf("%s \n", i))
+#     ID <- i
+#     d <- fetch_events(ID) %>% 
+#       clean_events(ref_data = ref_data) %>% 
+#       insert_gaps() %$% 
+#       move_seq(head_x, head_y, r_thresh = 30, inherit.theta = FALSE) %>% 
+#       add_random_steps(n = 100L,
+#                        sl_distr = fit_gamma(.$r),
+#                        ta_distr = fit_genvonmises(.$theta_rel)
+#       ) %>% 
+#       flag_invalid_steps(remove = TRUE) %>% 
+#       mutate(
+#         toxic = read_value(x2, y2, c(1000, 1000), 
+#                            ref_img = fetch_trt_spec(ID, .ref_data = ref_data))
+#       ) %>% 
+#       append_estimators(na_as_zero = TRUE)
+#     
+#     out <- issf(
+#       case ~ 
+#         toxic + 
+#         moved : (cos_theta_pi + cos_2theta) +
+#         sl + logsl + 
+#         strata(step_id),
+#       data = d, 
+#       scale_estimator = "sl", 
+#       shape_estimator = "logsl", 
+#       kappa1_estimator = "moved:cos_theta_pi",
+#       kappa2_estimator = "moved:cos_2theta"
+#     )
+#     
+#     return(out)
+#   }, 
+#   ref_data = ref_data,
+#   cores = 8, 
+#   inorder = TRUE
+# )
+# names(fit_list) <- ids
+# 
+# 
+# ids2 <- ref_data %>% 
+#   filter(
+#     !is.na(camera_cutoff)
+#   ) %>% 
+#   filter(
+#     var_trt == "constant"
+#   ) %>% 
+#   select(rep_id) %>% 
+#   unlist() %>% 
+#   unname()
+# 
+# ids2 <- ids2[-c(28)]
+# 
+# fit_list2 <- pb_par_lapply(
+#   ids2, 
+#   function(i, ref_data){
+#     # message(sprintf("%s \n", i))
+#     ID <- i
+#     d <- fetch_events(ID) %>% 
+#       clean_events(ref_data = ref_data) %>% 
+#       insert_gaps() %$% 
+#       move_seq(head_x, head_y, r_thresh = 30, inherit.theta = FALSE) %>% 
+#       add_random_steps(n = 100L,
+#                        sl_distr = fit_gamma(.$r),
+#                        ta_distr = fit_genvonmises(.$theta_rel)
+#       ) %>% 
+#       flag_invalid_steps(remove = TRUE) %>% 
+#       append_estimators(na_as_zero = TRUE)
+#     
+#     out <- issf(
+#       case ~ 
+#         moved : (cos_theta_pi + cos_2theta) +
+#         sl + logsl + 
+#         strata(step_id),
+#       data = d, 
+#       scale_estimator = "sl", 
+#       shape_estimator = "logsl", 
+#       kappa1_estimator = "moved:cos_theta_pi",
+#       kappa2_estimator = "moved:cos_2theta"
+#     )
+#     
+#     return(out)
+#   }, 
+#   ref_data = ref_data,
+#   cores = 8, 
+#   inorder = TRUE
+# )
+# names(fit_list2) <- ids2
 
-ids <- ref_data %>% 
-  filter(
-    !is.na(camera_cutoff)
-  ) %>% 
-  filter(
-    !is.na(syn_id)
-  ) %>% 
-  select(rep_id) %>% 
-  unlist() %>% 
-  unname()
 
-ids
-
-ids <- ids[-c(17, 92)]
-
-
-fit_list <- pb_par_lapply(
-  ids, 
-  function(i, ref_data){
-    ID <- i
-    d <- fetch_events(ID) %>% 
-      filter(
-        time <= filter(ref_data, rep_id == ID)$camera_cutoff
-      ) %>% 
-      insert_gaps() %$% 
-      move_seq(head_x, head_y, r_thresh = 10, inherit.theta = FALSE) %>% 
-      add_random_steps(n = 100L,
-                       sl_distr = fit_gamma(.$r),
-                       ta_distr = fit_genvonmises(.$theta_rel)
-      ) %>% 
-      flag_invalid_steps(remove = TRUE) %>% 
-      mutate(
-        toxic = read_value(x2, y2, c(1000, 1000), 
-                           ref_img = fetch_trt_spec(ID, .ref_data = ref_data))
-      ) %>% 
-      append_estimators()
-    
-    out <- issf(
-      case ~ 
-        toxic + 
-        moved : (cos_theta_pi + cos_2theta) +
-        sl + logsl + 
-        strata(step_id),
-      data = d, 
-      scale_estimator = "sl", 
-      shape_estimator = "logsl", 
-      kappa1_estimator = "moved:cos_theta_pi",
-      kappa2_estimator = "moved:cos_2theta"
-    )
-    
-    return(out)
-  }, 
-  ref_data = ref_data,
-  cores = 8, 
-  inorder = TRUE
-)
-
-
-
-
-
-
-
-fit_list
-
-
-
-
-
+#saveRDS(object = c(fit_list,fit_list2), "cleaned_data/issf_fit_list.rds")
 
 
 
@@ -87,7 +125,6 @@ fit_list
 z <- fit_list %>%
   lapply(function(x){
     c(coef(x$model), 
-      #"p" = x$sl$params$p, 
       "shape" = x$sl_updated$params$shape, 
       "scale" = x$sl_updated$params$scale, 
       "kappa1" = x$ta_updated$params$kappa1,
@@ -297,17 +334,6 @@ o$sl_updated %>% ddist(len=1000, x_max = 500) %>% plot()
 
 
 
-
-l <- pb_par_lapply(
-  ids, 
-  function(i, ref_data){
-    #cat(sprintf("%s", i))
-    ID <- i
-    d <- fetch_events(ID) %>% 
-      insert_gaps() %$% 
-      move_seq(head_x, head_y, r_thresh = 10, inherit.theta = FALSE) %$% 
-      fit_genvonmises(theta_rel)
-      }, cores = 8)
 
 
 a2 <- fetch_repID() %>% 

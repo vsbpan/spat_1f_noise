@@ -79,6 +79,7 @@ fetch_events <- function(repID, append_detection_summary = TRUE, src_dir = "clea
           s, 
           by = "repID")
     }
+    
     return(out)
   } else {
     warning(
@@ -103,6 +104,12 @@ fetch_data_dict <- function(repID, src_dir = "cleaned_data/data_dicts/"){
   }
 }
 
+# Fetch suspicious frames where there is false head movement due to misidentification. 
+fetch_sus_frames <- function(repID, sus_frame_list_path = "cleaned_data/sus_frames_list.rds"){
+  repID <- repID_clean(repID)
+  sus_list <- readRDS(sus_frame_list_path)
+  map(sus_list, "sus_frames")[[which((do.call("c",map(sus_list, "rep_id")) == repID))]]
+}
 
 # Fetch all the repIDs with inference on the computer
 fetch_repID <- function(has = c("inference")){

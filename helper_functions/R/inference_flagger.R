@@ -58,6 +58,15 @@ detect_false_head_movement <- function(data_dict, events = NULL,
     events <- get_data(data_dict)
   }
   
+  if(head_thresh == "auto"){
+    head_thresh <- median(sqrt(events$size_px), na.rm = TRUE) * 0.5
+  }
+  
+  if(cen_thresh == "auto"){
+    cen_thresh <- median(sqrt(events$size_px), na.rm = TRUE) * 0.5
+  }
+  
+  
   moved_head <- head_moved(events = events, head_thresh = head_thresh)
   
   candidate_frames <- which(.false_move_stage1(

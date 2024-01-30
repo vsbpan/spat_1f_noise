@@ -154,3 +154,26 @@ inherit_theta <- function(theta, r){
 }
 
 
+# Clean events by throwing out frames beyond the camera cutoff and sus frames. 
+clean_events <- function(x, ref_data = get("ref_data", envir = globalenv()), keep_sus = FALSE){
+  repID <- unique(repID_clean(x$repID))
+  stopifnot(length(repID) == 1)
+  sus_frames <- fetch_sus_frames(repID)
+  cut_off <- (ref_data[ref_data$rep_id == repID, ])$camera_cutoff
+  
+  x <- x %>%
+    mutate(
+      is_sus = ifelse(seq_len(nrow(x)) %in% sus_frames, TRUE, FALSE)
+    ) %>% 
+    filter(
+      time <= cut_off
+    )
+  if(!keep_sus){
+    x <- filter(x, !is_sus)
+  }
+  return(x)
+}
+
+
+
+
