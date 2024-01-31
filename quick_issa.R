@@ -189,6 +189,63 @@ issf_fit_l <- readRDS("invisible/issf_fit_list.rds")
 # write_csv(z, "cleaned_data/event_derivative.csv")
 
 
+extract_temporal_var <- function(issf_fit_l, hours = 12L){
+  v <- seq_along(issf_fit_l) %>% 
+    lapply(
+      function(i){
+        has_toxic <- any(grepl("toxic", names(issf_fit_l[[i]]$data)))
+        if(has_toxic){
+          l_conc <- ref_data %>% filter(rep_id == names(issf_fit_l)[i]) %>% .$low_diet_numeric
+          h_conc <- ref_data %>% filter(rep_id == names(issf_fit_l)[i]) %>% .$high_diet_numeric
+          
+          
+          out <- tryCatch(
+            issf_fit_l[[i]]$data %>% 
+              filter(case) %$% 
+              roll_vapply(toxic, w = 10 * hours + 1, FUN = function(xx){
+                xx <- xx[!is.na(xx)]
+                s <- xx == 0
+                xx[s] <- l_conc
+                xx[!s] <- h_conc
+                
+                var(xx, na.rm = TRUE)
+              }) %>% 
+              mean(na.rm = TRUE) ,
+            error = function(e){
+              NA
+            }
+          )
+        } else {
+          out <- 0
+        }
+        return(out)
+      }
+    ) %>% 
+    do.call("c", .)
+  
+  out <- data.frame(names(issf_fit_l), v)
+  names(out) <- c("rep_id", paste0("var_",hours))
+  
+  
+  return(out)
+}
+
+
+
+z <- read_csv("cleaned_data/event_derivative.csv")
+v <-extract_temporal_var(issf_fit_l, 12)
+v2 <-extract_temporal_var(issf_fit_l, 24)
+
+z <- z %>% 
+  mutate(rep_id = as.character(rep_id)) %>% 
+  left_join(
+    left_join(v, v2)
+  )
+
+
+
+
+
 
 
 

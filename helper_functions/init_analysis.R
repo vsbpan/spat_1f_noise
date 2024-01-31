@@ -100,7 +100,40 @@ ref_data <- ref_data %>%
     rep_id = as.character(rep_id),
     session_id = as.character(session_id),
     repID = paste0("rep",rep_id)
+  ) %>% 
+  left_join(
+    read_csv("cleaned_data/consumption_mask_derivative.csv") %>% 
+      suppressMessages() %>% 
+      mutate(rep_id = as.character(rep_id)), 
+    by = "rep_id" 
+  ) %>% 
+  left_join(
+    read_csv("cleaned_data/event_derivative.csv") %>% 
+      suppressMessages() %>% 
+      mutate(
+        rep_id = as.character(rep_id)
+      ) %>% 
+      dplyr::select(-repID),
+    by = "rep_id" 
+    ) %>% 
+  mutate(
+    mean_trt_numeric = parse_conc(mean_trt),
+    low_diet_numeric = parse_conc(low_diet),
+    high_diet_numeric = parse_conc(high_diet)
+  ) %>% 
+  mutate(
+    mean_toxic_conc = ifelse(
+      var_trt == "constant",
+      mean_trt_numeric,
+      (mean_toxic) * high_diet_numeric + (1 - mean_toxic) * low_diet_numeric
+    ),
+    on_toxic_conc = ifelse(
+      var_trt == "constant",
+      mean_trt_numeric,
+      (on_toxic) * high_diet_numeric + (1 - on_toxic) * low_diet_numeric
+    )
   )
+
 
 id_list <- list("var" = ref_data %>% 
        filter(!is.na(camera_cutoff)) %>% 

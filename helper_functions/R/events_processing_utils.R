@@ -114,6 +114,9 @@ insert_gaps <- function(df, frame_id = frame_id, expected_gap = 360){
 
 # Remove 'rep' from repID string for comparability reasons
 repID_clean <- function(x){
+  if(is.data_dict(x)){
+   x <- get_repID(x) 
+  }
   gsub("rep", "", x)
 }
 

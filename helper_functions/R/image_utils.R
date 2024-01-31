@@ -339,10 +339,12 @@ na_replace <- function(img, val){
 
 # Load image with JPEG 
 fast_load_image <- function(path, transform = TRUE){
+  bmp <- jpeg::readJPEG(path)
+  if(!is.null(dim(bmp)[3])){
+    dim(bmp)[3] <- 1
+  }
   if(transform){
-    bmp <- jpeg::readJPEG(path) %>% aperm(c(2, 1, 3))
-  } else {
-    bmp <- jpeg::readJPEG(path)
+    bmp <- bmp %>% aperm(c(2, 1, 3))
   }
   dim(bmp) <- c(dim(bmp)[1:2], 1, dim(bmp)[3])
   class(bmp) <- c("cimg", "imager_array", "numeric")

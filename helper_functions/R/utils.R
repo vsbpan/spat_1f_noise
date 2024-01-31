@@ -217,6 +217,7 @@ is.odd <- function(x){
 roll_vapply <- function(x, w, FUN){
   
   stopifnot(is.odd(w))
+  stopifnot(length(x) >= w)
   n <- length(x)
   i <- seq_len(n)
   out <- rep(NA, n)
@@ -354,3 +355,14 @@ reload <- function(){
 recompile <- function(){
   pkgload::load_all(path.package("spat1f"))
 }
+
+# Convert Nan to NA
+NaN_to_NA <- function(x){
+  ifelse(is.nan(x), NA, x)
+}
+
+
+parse_conc <- function(x){
+  as.numeric(gsub(" mg/g","", x))
+}
+
