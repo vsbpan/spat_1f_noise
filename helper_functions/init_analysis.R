@@ -7,8 +7,8 @@ source("helper_functions/init.R")
 
 
 
-ref_data <- suppressMessages(read_csv("raw_data/1_f_noise_experiment data_Jan_17_2024.csv"))
-today <- as.character("2024-01-17")#Sys.Date()
+ref_data <- suppressMessages(read_csv("raw_data/1_f_noise_experiment data_Jan_31_2024.csv"))
+today <- as.character("2024-01-31")#Sys.Date()
 
 ref_data <- ref_data %>% 
   filter(!is.na(cat_dead_cam_end)) %>% 
@@ -101,6 +101,19 @@ ref_data <- ref_data %>%
     session_id = as.character(session_id),
     repID = paste0("rep",rep_id)
   )
+
+id_list <- list("var" = ref_data %>% 
+       filter(!is.na(camera_cutoff)) %>% 
+       filter(var_trt != "constant") %>% 
+       dplyr::select(rep_id) %>% 
+       unlist() %>% 
+       unname(), 
+     "const" = ref_data %>% 
+       filter(!is.na(camera_cutoff)) %>% 
+       filter(var_trt == "constant") %>% 
+       dplyr::select(rep_id) %>% 
+       unlist() %>% 
+       unname())
 
 cat(sprintf("Data last updated on %s", today))
 rm("today")

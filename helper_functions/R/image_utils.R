@@ -596,6 +596,7 @@ anchor_reorder <- function(x){
 
 # Reformat cimg as bitmap format for interface with jpeg package
 as.bmp <- function(x){
+  x <- as.cimg(x)
   dim(x) <- dim(x)[-3]
   x
 }
@@ -644,12 +645,15 @@ out_of_frame <- function(poly, tolerance = 20, dim_xy = c(1000, 1000)){
     )
 }
 
-
+# Flip x and y axes
 flip_xy <- function(img){
   f <- switch(class(img)[1], cimg = as.cimg, pixset = as.pixset, 
               array = as.array)
   return(f(aperm(img, c(2, 1, 3, 4))))
 }
 
-rotate_90
+# Compute the HUE index of image with RGB
+HUE <- function(img){
+  color_index(img, "HUE", plot = FALSE)[[1]]
+}
 

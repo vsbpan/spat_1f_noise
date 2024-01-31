@@ -104,6 +104,13 @@ fetch_data_dict <- function(repID, src_dir = "cleaned_data/data_dicts/"){
   }
 }
 
+# Fetch cut off time for camera
+fetch_cutoff <- function(repID, ref_data = get("ref_data", envir = globalenv())){
+  repID <- repID_clean(repID)
+ (ref_data[ref_data$rep_id == repID, ])$camera_cutoff
+}
+
+
 # Fetch suspicious frames where there is false head movement due to misidentification. 
 fetch_sus_frames <- function(repID, sus_frame_list_path = "cleaned_data/sus_frames_list.rds"){
   repID <- repID_clean(repID)
@@ -112,15 +119,43 @@ fetch_sus_frames <- function(repID, sus_frame_list_path = "cleaned_data/sus_fram
 }
 
 # Fetch all the repIDs with inference on the computer
-fetch_repID <- function(has = c("inference")){
-  list.files("raw_data/inferences") %>% 
-    gsub("rep|_inference.csv","",.)
+fetch_repID <- function(has = c("inference", "processed", "raw", 
+                                "events", "data_dict", "anchors")){
+  has <- match.arg(has)
+  
+  if(has == "inference"){
+    x <- list.files("raw_data/inferences") %>% 
+      gsub("rep|_inference.csv","",.) 
+  }
+  if(has == "processed"){
+    x <- list.dirs("processed_feed/", recursive = FALSE, full.names = FALSE) %>% 
+      gsub("rep","",.)
+  }
+  if(has == "raw"){
+    x <- list.dirs("time_lapse_feed/", recursive = FALSE, full.names = FALSE) %>% 
+      gsub("rep","",.)
+  }
+  if(has == "events"){
+    x <- list.files("cleaned_data/events") %>% gsub("rep|.csv","",.)
+  }
+  if(has == "data_dict"){
+    x <- list.files("cleaned_data/data_dicts")%>% gsub("rep|.rds","",.)
+  }
+  if(has == "anchors"){
+    x <- list.files("raw_data/picked_anchors")%>% gsub("rep|.rds","",.)
+  }
+  
+  return(x)
 }
 
 # Fetch image with file rank and repID or `data_dict`
-fetch_image <- function(x, rank, transform = TRUE){
+fetch_image <- function(x, rank = NULL, time = NULL, transform = TRUE){
   if(!is.data_dict(x)){
     x <- fetch_data_dict(x)
+  }
+  
+  if(is.null(rank)){
+    rank <- time2rank(x, time)
   }
   
   fm <- get_file_meta(x)

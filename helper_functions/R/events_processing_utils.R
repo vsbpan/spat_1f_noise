@@ -159,7 +159,7 @@ clean_events <- function(x, ref_data = get("ref_data", envir = globalenv()), kee
   repID <- unique(repID_clean(x$repID))
   stopifnot(length(repID) == 1)
   sus_frames <- fetch_sus_frames(repID)
-  cut_off <- (ref_data[ref_data$rep_id == repID, ])$camera_cutoff
+  cut_off <- fetch_cutoff(repID, ref_data)
   
   x <- x %>%
     mutate(

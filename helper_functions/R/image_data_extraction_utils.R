@@ -239,7 +239,7 @@ polygon_centroid <- function(poly){
   c(mean_wt(o$xcol, colSums(o$m)), mean_wt(o$yrow, rowSums(o$m)))
 }
 
-
+# Validate polygon to have only positive area
 validate_polygon <- function(poly){
   if(is.null(poly)){
     return(NULL)
@@ -261,3 +261,24 @@ validate_polygon <- function(poly){
   return(out)
 }
 
+# A tentative quick and dirty method to get at area diet consumption
+detect_herbivory <- function(repID, time = fetch_cutoff(repID), plot = FALSE){
+  x <- fetch_data_dict(repID)
+  img1 <- fetch_image(x, 3) # Use third frame to avoid weirdness in the first two
+  img2 <- fetch_image(x,time = time) 
+  mask <- (x[which_time(get_file_meta(x)$file_base,time)] %>% get_mask())[[1]]
+  
+  
+  
+  hue_diff <- (HUE(img1) - HUE(img2)) * !imager::grow(mask, x = 20)
+  img_final <- hue_diff %>% 
+    imagerExtra::SPE(lamda = 0.001,range = c(0,1)) %>% 
+    threshold2(thr = "otsu") %>%
+    shrink(10)
+  
+  if(plot){
+    plot.imlist(imlist(img2, hue_diff, as.cimg(img_final)), 
+                main.panel = c("Target", "Delta HUE", "Threshold"))
+  }
+  return(img_final)
+}
