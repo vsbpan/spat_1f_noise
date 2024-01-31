@@ -38,20 +38,3 @@ source("helper_functions/init_analysis.R")
 # write_csv(z, "cleaned_data/consumption_mask_derivative.csv")
 
 
-
-
-glmmTMB(
-  RGR ~ 
-    mean_toxic_conc + (var_12) + (var_trt) + scale(log(cat_pre_wt))  + 
-    (1|session_id), 
-  data= ref_data %>% 
-    filter(var_trt != "constant")
-) %>% summary()
-  plot_model(terms = c("var_12", "var_trt"), type = "eff")
-
-
-
-
-
-
-

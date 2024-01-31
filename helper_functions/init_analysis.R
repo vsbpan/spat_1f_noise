@@ -31,9 +31,9 @@ ref_data <- ref_data %>%
       ifelse(
         error == 0, 
         NA,
-        as.numeric(as.difftime(today - date_start, units = "h"))
+        as.numeric(as.difftime(today - date_start, units = "d"))
       ),
-      as.numeric(as.difftime(death_date - date_start, units = "h"))
+      as.numeric(as.difftime(death_date - date_start, units = "d"))
     )
   ) %>% 
   mutate(
@@ -67,22 +67,30 @@ ref_data <- ref_data %>%
     )
   ) %>% 
   mutate(
-    pupation_time = ifelse(
+    time_to_pupation = ifelse(
       is.na(pupated),
       NA,
       ifelse(
         pupated == 1, 
         as.numeric(as.difftime(pupation_date - date_start, units = "d")),
-        as.numeric(as.difftime(today - date_start, units = "d"))
+        ifelse(
+          dead == 1,
+          NA,
+          as.numeric(as.difftime(today - date_start, units = "d"))
+        )
       )
     ), 
-    eclosure_time = ifelse(
+    time_to_eclosure = ifelse(
       is.na(eclosed),
       NA,
       ifelse(
         pupated == 1, 
         as.numeric(as.difftime(eclosure_date - date_start, units = "d")),
-        as.numeric(as.difftime(today - date_start, units = "d"))
+        ifelse(
+          dead == 1,
+          NA,
+          as.numeric(as.difftime(today - date_start, units = "d"))
+        )
       )
     ), 
     adult_time = ifelse(
@@ -91,7 +99,16 @@ ref_data <- ref_data %>%
       ifelse(
         eclosed == 0, 
         NA, # or 0
-        as.numeric(as.difftime(death_date - eclosure_date, units = "h"))
+        as.numeric(as.difftime(death_date - eclosure_date, units = "d"))
+      )
+    ),
+    pupation_time = ifelse(
+      is.na(pupated) | pupated == 0, 
+      NA, 
+      ifelse(
+        eclosed == 0, 
+        NA, # or 0
+        as.numeric(as.difftime(pupation_date - eclosure_date, units = "d"))
       )
     )
   ) %>% 
