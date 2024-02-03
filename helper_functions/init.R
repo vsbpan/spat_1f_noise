@@ -1,6 +1,6 @@
 library(foreach)
 library(doSNOW)
-library(amt)
+#library(amt)
 library(survival)
 #library(aster)
 

@@ -4,7 +4,7 @@ Title: INTERN 1/f noise project library
 Version: 0.0.1
 Date: 2023-12-13
 Authors@R: 
-    person("Vincent", "Pan", , email = "vsbpan@gmail.com",
+    person("Vincent", "Pan", email = "vsbpan@gmail.com",
              role = c("aut", "cre"), comment = c(ORCID = "0000-0001-9892-7805"))
 Maintainer: Vincent Pan <vsbpan@gmail.com>
 Description: Conding library for INTERN funded 1/f noise project
@@ -20,8 +20,8 @@ Imports:
     shiny,
     Rcpp(>= 1.0.8),
     RcppArmadillo,
-	amt,
-	survival
+    amt,
+    survival
 LinkingTo: 
     Rcpp,
     RcppArmadillo 

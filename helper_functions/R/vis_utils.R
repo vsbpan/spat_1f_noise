@@ -182,7 +182,128 @@ plot_track <- function(data, x, y, type = c("track", "density")){
 }
 
 
+# Generate marginal effect data frame for plotting
+marginal_effects <- function(model, terms, n = 300, ci = 0.95){
+  
+  predictor_frame <- insight::get_data(model)
+  yname <- insight::find_response(model)
+  predictor_frame <-predictor_frame[,!names(predictor_frame) %in% yname]
+  
+  rand_names <- insight::find_random(model)$random
+  var_names <- names(predictor_frame)
+  
+  fam <- insight::get_family(model)
+  if(!inherits(fam,"family")){
+    linkinv <-function(x) x
+  } else {
+    linkinv <- fam$linkinv 
+  }
+  
+  v <- lapply(terms, function(z){
+    switch(as.character(grepl("\\[", z) && grepl("\\[", z)), 
+           "TRUE" = as.numeric(unlist(strsplit(gsub(".*\\[|\\]","",z),","))),
+           "FALSE" = NULL)
+  })
+  terms <- gsub("\\[.*","",terms)
+  
+  
+  if(length(n) == 1){
+    n <- rep(n, length(terms))
+  }
+  
+  new_data <- expand.grid(lapply(seq_along(predictor_frame), function(i, d, n, v){
+    x <- d[, i]
+    
+    if(names(d)[i] %in% terms){
+      j <- which(terms %in% names(d)[i])
+      
+      if(is.null(v[[j]])){
+        if(is.numeric(x)){
+          x <- seq_interval(x, n[j])
+        } else {
+          x <- unique(x) 
+        }
+      } else {
+        x <- v[[j]]
+      }
+      return(x) 
+    } else {
+      if(is.numeric(x)){
+        x <- mean(x)
+      } else {
+        if(names(d)[i] %in% rand_names){
+          x <- "foooooooooooooooo"
+        } else {
+          x <- unique(x)  
+        }
+      }
+      return(x)
+    }
+  }, 
+  d = as.data.frame(predictor_frame), 
+  n = n, 
+  v = v))
+  
+  names(new_data) <- var_names
+  
+  if(inherits(model, "clm")){
+    pred <- suppressWarnings(predict(model, newdata = new_data, se = TRUE))
+    
+    new_data <- cbind(new_data, 
+                      "yhat" = pred$fit, 
+                      "se" = pred$se.fit)
+    
+    new_data <- new_data %>% 
+      group_by(all_of(terms)) %>% 
+      summarise_all(function(x){
+        if(is.numeric(x)){
+          mean(x)
+        } else {
+          NA
+        }
+      })
+    
+    new_data <- new_data %>% 
+      gather(value = "yhat", key = "cat", paste("yhat",levels(model$y), sep = ".")) %>% 
+      mutate(cat = factor(gsub(".*\\.","",cat), levels = levels(model$y), ordered = TRUE))
+    names(new_data)[names(new_data) == "cat"] <- yname
+    
+  } else {
+    pred <- suppressWarnings(predict(model, newdata = new_data, se = TRUE, type = "link"))
+    
+    new_data <- cbind(new_data, 
+                      "yhat_link" = pred$fit, 
+                      "se" = pred$se.fit)
+    new_data$lower_link <- new_data$yhat_link + qnorm((1 - ci)/2) * new_data$se
+    new_data$upper_link <- new_data$yhat_link + qnorm((1 - ci)/2, lower.tail = FALSE) * new_data$se
+    
+    new_data <- new_data %>% 
+      mutate(se = se^2) %>% 
+      group_by(across(terms)) %>% 
+      summarise_all(function(x){
+        if(is.numeric(x)){
+          mean(x)
+        } else {
+          NA
+        }
+      }) %>% 
+      mutate(se = sqrt(se)) 
+    
+    resp_inv <- insight::get_transformation(model)$inverse
+    
+    new_data$lower <- resp_inv(linkinv(new_data$lower_link))
+    new_data$upper <- resp_inv(linkinv(new_data$upper_link))
+    new_data$yhat <- resp_inv(linkinv(new_data$yhat_link))
+  }
+  
+  return(new_data)
+}
 
+unscalelog <- function(logx){
+  function(z) {
+    exp(mean(logx, na.rm = TRUE) + sd(logx, na.rm = TRUE) * z)
+  }
+}
 
 
 

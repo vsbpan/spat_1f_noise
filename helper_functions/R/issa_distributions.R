@@ -37,9 +37,9 @@ rgenvonmises <- function(n, kappa1, kappa2, a = NULL, max_try = 1000){
 
 # Density function for generalized von mises distribution
 dgenvonmises <- function(x, kappa1, kappa2, log = FALSE){
-  num <- exp(g_genvonmisesC(x, kappa1, kappa2))
+  num <- exp(g_genvonmisesC(x + pi, kappa1, kappa2))
   den <- integrate(function(x) {
-    exp(g_genvonmisesC(x, kappa1, kappa2))
+    exp(g_genvonmisesC(x + pi, kappa1, kappa2))
   },lower =  0,upper =  2 * pi)$value
   
   d <- num / den
@@ -70,6 +70,12 @@ make_gamma <- function(shape, scale){
   amt::make_gamma_distr(shape = shape, scale = scale)
 }
 
+# Wrapper for amt dist lnorm
+make_lnorm <- function(meanlog, sdlog){
+  amt::make_lnorm_distr(meanlog = meanlog, sdlog = sdlog)
+}
+
+
 # make amt dist 
 make_zigamma <- function(p, shape, scale){
   param_names <- c("p", "shape", "scale")
@@ -84,7 +90,6 @@ make_zigamma <- function(p, shape, scale){
   class(out) <- c("zigamma_distr", "sl_distr", "amt_distr", "list")
   return(out)
 }
-
 
 # Zero hurdle (inflated) gamma distribution random number generator
 rzigamma <- function(n, p, shape, scale = 1/rate, rate){
@@ -110,7 +115,7 @@ ddist <- function(dist, x_max = 1500, len = 100, return_x = TRUE){
   if(dist_name == "vonmises" | dist_name == "genvonmises"){
     x <- seq(-pi, pi, len = len)
   }
-  if(dist_name == "gamma"){
+  if(dist_name == "gamma" | dist_name == "lnorm"){
     x <- seq(0, x_max, len = len)
   } else {
     d <- do.call(
@@ -135,6 +140,17 @@ rdist <- function(dist, n, ...){
   do.call(paste0("r", dist$name), c(list(n = n), dist$params, dots))
 }
 
-
+# kth moment of absolute value of genvonmises dist
+genvonmises_abs_moments <- function(kappa1, kappa2, k = 1){
+  if(is.na(kappa1) | is.na(kappa2) | is.na(k)){
+    return(NA)
+  } else {
+    integrate(
+      function(x){
+        dgenvonmises(x, kappa1, kappa2) * abs(x^k)
+      }, lower = -pi, upper = pi
+    )$value 
+  }
+}
 
 

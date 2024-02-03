@@ -6,7 +6,7 @@ add_random_steps <- function(
     x_start = data$x1,
     y_start = data$y1,
     direction_start = data$theta_abs,
-    sl_distr = fit_gamma(data$r),
+    sl_distr = fit_lnorm(data$r),
     ta_distr = fit_genvonmises(data$theta_rel),
     sl_rand = NULL,
     ta_rand = NULL,
@@ -119,6 +119,8 @@ refit_issf <- function(object, newdata = NULL){
 
 # Wrapper for clogit that update the distributions
 issf <- function(formula, data, 
+                 mulog_estimator = "logsl",
+                 sdlog_estimator = "logslsq",
                  zero_inflation_estimator = "moved",
                  scale_estimator = "sl", 
                  shape_estimator = "logsl", 
@@ -126,6 +128,7 @@ issf <- function(formula, data,
                  kappa1_estimator = "cos_theta_pi",
                  kappa2_estimator = "cos_2theta",
                  remove_invalid = TRUE,
+                 adjust = TRUE,
                  ...){
   m <- .issf_fit_internal(formula, data, ...)
   out <- list(
@@ -136,15 +139,19 @@ issf <- function(formula, data,
     "call" = match.call(), 
     "formula" = formula
   )
+  if(adjust){
+    out <- update_distr(out, 
+                        mulog_estimator = mulog_estimator,
+                        sdlog_estimator = sdlog_estimator,
+                        zero_inflation_estimator = zero_inflation_estimator,
+                        scale_estimator = scale_estimator, 
+                        shape_estimator = shape_estimator,
+                        kappa_estimator = kappa_estimator, 
+                        kappa1_estimator = kappa1_estimator,
+                        kappa2_estimator = kappa2_estimator,
+                        remove_invalid = remove_invalid)
+  }
   
-  out <- update_distr(out, 
-                      zero_inflation_estimator = zero_inflation_estimator,
-                      scale_estimator = scale_estimator, 
-                      shape_estimator = shape_estimator,
-                      kappa_estimator = kappa_estimator, 
-                      kappa1_estimator = kappa1_estimator,
-                      kappa2_estimator = kappa2_estimator,
-                      remove_invalid = remove_invalid)
   class(out) <- c("issf_fit","list")
   
   return(out)
@@ -178,6 +185,16 @@ append_genvonmises_estimators <- function(x, na_as_zero = FALSE){
   }
 }
 
+
+# Append zigamma distribution param estimators
+append_zigamma_estimators <- function(x){
+  x %>% 
+    mutate(
+      sl = r_threshed,
+      logsl = ifelse(r_threshed > 0, r_threshed, 0)
+    )
+}
+
 # Append gamma distribution param estimators
 append_gamma_estimators <- function(x){
   x %>% 
@@ -186,6 +203,16 @@ append_gamma_estimators <- function(x){
       logsl = log(r)
     )
 }
+
+# Append lognormal distribution param estimators
+append_lnorm_estimators <- function(x){
+  x %>% 
+    mutate(
+      logsl = log(r),
+      logslsq = log(r)^2
+    )
+}
+
 
 # Append zigamma zero inflation estimator
 append_moved <- function(x, thresh = NULL){
@@ -216,7 +243,9 @@ append_vonmises_estimators <- function(x, na_as_zero = FALSE){
 # General append estimator wrapper for various distributions
 append_estimators <- function(x, na_as_zero = FALSE){
   sl_est_method <- switch(attr(x, "sl")$name, 
-                          "gamma" = append_gamma_estimators)
+                          "gamma" = append_gamma_estimators,
+                          "lnorm" = append_lnorm_estimators,
+                          "zigamma" = append_zigamma_estimators)
   
   ta_est_method <- switch(attr(x, "ta")$name, 
                           "vonmises" = append_vonmises_estimators,
@@ -232,6 +261,8 @@ append_estimators <- function(x, na_as_zero = FALSE){
 
 # General update distribution wrapper using param estimators  
 update_distr <- function(x, 
+                         mulog_estimator = "logsl",
+                         sdlog_estimator = "logslsq",
                          zero_inflation_estimator = "moved",
                          scale_estimator = "sl", 
                          shape_estimator = "logsl",
@@ -246,9 +277,7 @@ update_distr <- function(x,
   
   
   if(ta_dist_name == "vonmises"){
-    x$ta_updated <- amt::update_vonmises(
-      x$ta, 
-      beta_cos_ta = x$model$coefficients[kappa_estimator])
+    x$ta_updated <- update_vonmises(x$ta, beta_cos_ta = x$model$coefficients[kappa_estimator])
   } else {
     if(ta_dist_name == "genvonmises"){
       x$ta_updated <- update_genvonmises(
@@ -265,19 +294,20 @@ update_distr <- function(x,
                                 beta_log_sl = x$model$coefficients[shape_estimator])
   } else {
     if(sl_dist_name == "zigamma"){
-      x$sl_updated <- update_zigamma_ss(x$sl, 
-                                        beta_sl = x$model$coefficients[scale_estimator], 
-                                        beta_log_sl = x$model$coefficients[shape_estimator])
-      x$data_updated <- resample_data(x, remove_invalid = remove_invalid)
-      x <- refit_issf(x, newdata = x$data_updated)
-      x$sl_updated <- update_zigamma_p(x$sl_updated,
-                                     x$model$coefficients[zero_inflation_estimator])
+      warning("Zigamma not implemented")
+      # x$sl_updated <- update_zigamma_ss(x$sl, 
+      #                                   beta_sl = x$model$coefficients[scale_estimator], 
+      #                                   beta_log_sl = x$model$coefficients[shape_estimator])
+      # x$data_updated <- resample_data(x, remove_invalid = remove_invalid)
+      # x <- refit_issf(x, newdata = x$data_updated)
+      # x$sl_updated <- update_zigamma_p(x$sl_updated,
+      #                                x$model$coefficients[zero_inflation_estimator])
     } else {
-      # if(sl_dist_name == "cengamma"){
-      #   x$sl_updated <- update_cengamma(x$sl, 
-      #                                beta_sl = x$model$coefficients[scale_estimator], 
-      #                                beta_log_sl = x$model$coefficients[shape_estimator])
-      # }
+      if(sl_dist_name == "lnorm"){
+        x$sl_updated <- update_lnorm(x$sl, 
+                                     beta_log_sl = x$model$coefficients[mulog_estimator], 
+                                     beta_log_sl_sq = x$model$coefficients[sdlog_estimator])
+      }
     }
   }
   

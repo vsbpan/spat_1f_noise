@@ -9,6 +9,8 @@ source("helper_functions/init.R")
 
 ref_data <- suppressMessages(read_csv("raw_data/1_f_noise_experiment data_Jan_31_2024.csv"))
 today <- as.character("2024-01-31")#Sys.Date()
+problem_ids <- c("2","6","7", "9", "10","11", "20","28", "37", 
+                 "65", "84", "85", "87", "113", "115", "136", "140", "146", "154")
 
 ref_data <- ref_data %>% 
   filter(!is.na(cat_dead_cam_end)) %>% 
@@ -108,7 +110,7 @@ ref_data <- ref_data %>%
       ifelse(
         eclosed == 0, 
         NA, # or 0
-        as.numeric(as.difftime(pupation_date - eclosure_date, units = "d"))
+        as.numeric(as.difftime(eclosure_date - pupation_date, units = "d"))
       )
     )
   ) %>% 
@@ -129,8 +131,10 @@ ref_data <- ref_data %>%
       suppressMessages() %>% 
       mutate(
         rep_id = as.character(rep_id)
-      ) %>% 
-      dplyr::select(-repID),
+        ) %>% 
+      filter(
+        !rep_id %in% problem_ids
+      ),
     by = "rep_id" 
     ) %>% 
   mutate(
@@ -149,7 +153,19 @@ ref_data <- ref_data %>%
       mean_trt_numeric,
       (on_toxic) * high_diet_numeric + (1 - on_toxic) * low_diet_numeric
     )
-  )
+  ) %>% 
+  mutate(
+    observed_dead = ifelse(pupated == 1 & eclosed == 0, 0, 1), # !Cats that died at pupal stage
+    surv_time = ifelse(observed_dead == 1, 
+                       surv_time, 
+                       # censor at pupation date bc not sure when they died. 
+                       as.numeric(as.difftime(pupation_date - date_start, units = "d"))
+    )
+  ) 
+
+
+
+ref_data
 
 
 id_list <- list("var" = ref_data %>% 
