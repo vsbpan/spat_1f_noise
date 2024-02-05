@@ -262,15 +262,22 @@ validate_polygon <- function(poly){
 }
 
 # A tentative quick and dirty method to get at area diet consumption
-detect_herbivory <- function(repID, time = fetch_cutoff(repID), plot = FALSE){
+detect_herbivory <- function(repID, 
+                             time = fetch_cutoff(repID), 
+                             n = min(attr(rev(fetch_anchors(repID))[[1]], "indices")), 
+                             offset = 0, plot = FALSE){
   x <- fetch_data_dict(repID)
-  img1 <- fetch_image(x, 3) # Use third frame to avoid weirdness in the first two
-  img2 <- fetch_image(x,time = time) 
+  img1 <- fetch_image(x, n) # Use third frame to avoid weirdness in the first two
+  
+  r <- as.numeric(time2rank(x, time)) - offset
+  time <- rank2time(x, r)
+  img2 <- fetch_image(x, time = time)
   mask <- (x[which_time(get_file_meta(x)$file_base,time)] %>% get_mask())[[1]]
   
   
   
-  hue_diff <- (HUE(img1) - HUE(img2)) * !imager::grow(mask, x = 20)
+  hue_diff <- (HUE(img1) - HUE(img2)) 
+  hue_diff[imager::grow(mask, x = 20)] <- quantile(hue_diff, probs = 0.1)
   img_final <- hue_diff %>% 
     imagerExtra::SPE(lamda = 0.001,range = c(0,1)) %>% 
     threshold2(thr = "otsu") %>%
