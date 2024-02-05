@@ -340,7 +340,7 @@ na_replace <- function(img, val){
 # Load image with JPEG 
 fast_load_image <- function(path, transform = TRUE){
   bmp <- jpeg::readJPEG(path)
-  if(!is.null(dim(bmp)[3])){
+  if(is.null(dim(bmp)[3])){
     dim(bmp)[3] <- 1
   }
   if(transform){

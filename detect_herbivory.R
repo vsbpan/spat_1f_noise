@@ -38,3 +38,21 @@ source("helper_functions/init_analysis.R")
 # write_csv(z, "cleaned_data/consumption_mask_derivative.csv")
 
 
+
+
+
+
+
+
+repID <- 1
+fetch_image(fetch_data_dict(repID),time = fetch_cutoff(repID))
+
+
+
+
+
+
+
+
+
+
