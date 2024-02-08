@@ -1,5 +1,6 @@
 # Vectorized function that parse lists from python
 parse_pylist <- function(x, coerce = as.numeric, simplify = TRUE){
+  x <- gsub("c\\(|\\)","",x)
   out <- gsub("\\[|\\]","",x) %>% 
     str_split(",") %>% 
     lapply(function(x){
@@ -16,6 +17,18 @@ parse_pylist <- function(x, coerce = as.numeric, simplify = TRUE){
   
   return(out)
 }
+
+# Inverse of parse_pylist(). Takes a list of vec and package as python list charcter string
+unparse_pylist <- function(x){
+  lapply(
+    x,
+    function(z){
+      sprintf("[%s]",paste0(z, collapse = ", "))
+    }
+  ) %>% 
+    do.call("c", .)
+}
+
 
 # Parse vector into n columns by looping through column index. Undo ravel() in python
 split_n_steps <- function(x, n, name = paste0("x", seq_len(n))){
@@ -148,21 +161,23 @@ parse_inference <- function(df, mode = c("rep","evaluate")){
   n_kp <- n - (map(out_list, "keypoints") %>% lapply(is.null) %>% do.call("c",.) %>% sum())
   n_mask <- n - (map(out_list, "polygon") %>% lapply(is.null) %>% do.call("c",.) %>% sum())
   
+  inference_info <- do.call("rbind", map(out_list, "inference_info")) %>% unique()
+  thing_class <- paste0(na.omit(do.call("c",unique(map(out_list, "thing_class")))), collapse = ",")
+  
   if(is_rep){
     n_missing <- count_time_gaps(fm$time)
     n_dups <- count_time_dups(fm$time)
     run_time <- hms_format(diff(range(fm$time)))
     n_steps <- round(diff(range(fm$time))/ 360)
+    
   } else {
     n_missing <- NA
     n_dups <- NA
     run_time <- NA
     n_steps <- NA
-    
+    inference_info[, 2] <- NA
   }
   
-  thing_class <- paste0(na.omit(do.call("c",unique(map(out_list, "thing_class")))), collapse = ",")
-  inference_info <- do.call("rbind", map(out_list, "inference_info")) %>% unique()
   
   
   if(all(do.call("rbind", map(out_list, "dim")) %>% 
@@ -203,20 +218,20 @@ parse_inference <- function(df, mode = c("rep","evaluate")){
 print.data_dict <- function(x, ...){
   m <- attr(x, "summary")
   
-  n <- null_to_NA(m$frames)
-  n_bbox <- null_to_NA(m$n_bbox)
-  n_kp <- null_to_NA(m$n_keypoints)
-  n_mask <- null_to_NA(m$n_mask)
-  n_missing <- null_to_NA(m$missing)
-  n_dups <- null_to_NA(m$duplicate)
-  n_steps <- null_to_NA(m$time_steps)
-  duration <- null_to_NA(m$duration)
-  thing_class <- null_to_NA(m$thing_class)
-  dim_formated <- null_to_NA(m$dim)
-  repID <- null_to_NA(m$repID)
-  camID <- null_to_NA(m$camID)
-  version <- null_to_NA(m$version)
-  inf_time <- null_to_NA(m$inf_time)
+  n <- null_to_NA(m$frames) %>% unique()
+  n_bbox <- null_to_NA(m$n_bbox) %>% unique()
+  n_kp <- null_to_NA(m$n_keypoints) %>% unique()
+  n_mask <- null_to_NA(m$n_mask) %>% unique()
+  n_missing <- null_to_NA(m$missing) %>% unique()
+  n_dups <- null_to_NA(m$duplicate) %>% unique()
+  n_steps <- null_to_NA(m$time_steps) %>% unique()
+  duration <- null_to_NA(m$duration) %>% unique()
+  thing_class <- null_to_NA(m$thing_class) %>% unique()
+  dim_formated <- null_to_NA(m$dim) %>% unique()
+  repID <- null_to_NA(m$repID) %>% unique()
+  camID <- null_to_NA(m$camID) %>% unique()
+  version <- null_to_NA(m$version) %>% unique()
+  inf_time <- null_to_NA(m$inf_time) %>% unique()
   
   cat(sprintf("rep_ID: %s\n\ncam_ID: %s\tdim: %s\n", 
               repID, 
@@ -291,3 +306,68 @@ registerS3method(genname = "[",
 is.data_dict <- function(x, ...){
   inherits(x, "data_dict")
 }
+
+
+
+as.data_dict.COCO_Json <- function(x, ...){
+  x$annotations <- x$annotations[!duplicated(x$annotations$image_id),]
+  
+  x$annotations <- x$annotations[match(x$annotations$image_id, x$images$id), ]
+  
+  
+  inf_data <- data.frame(
+    "file_name" = x$images$path,
+    "image_size" = sprintf("[%s, %s]",x$images$width, x$images$height),
+    "thing_class" = x$categories$name,	
+    "score"	= NA, 
+    "keypoints" = x$annotations$keypoints %>% 
+      unparse_pylist(),
+    "bbox" = x$annotations$bbox %>% 
+      unparse_pylist(),
+    "polygon" = x$annotations$segmentation %>% 
+      unparse_pylist(),
+    "inference_info" = sprintf(
+      "%s__%s",
+      attr(x, "src"),
+      attr(x, "mtime")
+    )
+  )
+  parse_inference(inf_data, mode = "evaluate")
+}
+
+
+as.data_dict <- function(x, ...){
+  UseMethod("as.data_dict")
+}
+
+# S3 method registration
+registerS3method(genname = "as.data_dict", 
+                 class = "COCO_Json", 
+                 method = as.data_dict.COCO_Json)
+
+
+
+
+c.data_dict <- function(x, ...){
+  args <- lapply(as.list(substitute(list(...)))[-1L], 
+                 function(x){
+                   eval(x, envir = parent.frame(3))
+                 })
+  class(x) <- c("list")
+  out <- c(x, unlist(args, recursive = FALSE))
+  # is_rep <- attr(x, "is_rep")
+  # is_rep <- is_rep & lapply(args, function(z){
+  #   attr(z, "is_rep")
+  # }) %>% do.call("all",.)
+  # 
+  # if(is.null(is_rep)){
+  #   is_rep <- TRUE
+  #   warning("Outdated data_dict format. Setting 'is_rep' to TRUE.")
+  # }
+  out <- .data_dict_summary_calc(out, FALSE)
+  return(out)
+}
+
+registerS3method(genname = "c", 
+                 class = "data_dict", 
+                 method = c.data_dict)

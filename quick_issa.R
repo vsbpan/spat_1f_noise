@@ -11,8 +11,8 @@ fit_list <- pb_par_lapply(
       clean_events(ref_data = ref_data) %>%
       insert_gaps() %>% 
       mutate(
-        head_x = ifelse(score >=0.9, head_x, NA),
-        head_y = ifelse(score >=0.9, head_y, NA)
+        head_x = ifelse(score >=0.3, head_x, NA),
+        head_y = ifelse(score >=0.3, head_y, NA)
       ) %$%
       move_seq(head_x, head_y, r_thresh = 30, inherit.theta = FALSE) %>%
       filter(!is.na(r))
@@ -21,7 +21,7 @@ fit_list <- pb_par_lapply(
       return(NULL)
     } else {
       d <- d %>%
-        add_random_steps(n = 1000L,
+        add_random_steps(n = 500L,
                          sl_distr = fit_gamma(.$r),
                          ta_distr = fit_genvonmises(.$theta_rel)
         ) %>%
@@ -44,7 +44,7 @@ fit_list <- pb_par_lapply(
     if(has_toxic){
       mod_form <- formula(
         case ~
-          toxic:start_toxic +
+          toxic +
           moved : (cos_theta_pi + cos_2theta) +
           (sl + logsl) +
           strata(step_id)
@@ -77,11 +77,11 @@ names(fit_list) <- unname(unlist(id_list))
 
 
 
-#saveRDS(object = c(issf_fit_l), "invisible/issf_fit_list_split.rds")
+#saveRDS(object = c(fit_list), "invisible/issf_fit_list.rds")
 
 
 
-issf_fit_l <- readRDS("invisible/issf_fit_list_split.rds")
+issf_fit_l <- readRDS("invisible/issf_fit_list.rds")
 
 issf_fit_l <- issf_fit_l %>% 
   purrr:::keep(function(x){
@@ -195,20 +195,20 @@ z <- issf_fit_l %>%
         }
       }
     ) %>%
-      do.call("rbind", .),
-    pb_par_lapply(issf_fit_l, function(x){
-      x$data %>%
-        filter(case) %$%
-        ud_area(x2, y2) %>%
-        t() %>%
-        as.data.frame() %>%
-        rename_all(
-          function(x){
-            paste0("ud_", x)
-          }
-        )
-    }, cores = 8, inorder = TRUE, export_fun_only = TRUE) %>%
-      do.call("rbind",.)
+      do.call("rbind", .)
+    # pb_par_lapply(issf_fit_l, function(x){
+    #   x$data %>%
+    #     filter(case) %$%
+    #     ud_area(x2, y2) %>%
+    #     t() %>%
+    #     as.data.frame() %>%
+    #     rename_all(
+    #       function(x){
+    #         paste0("ud_", x)
+    #       }
+    #     )
+    # }, cores = 8, inorder = TRUE, export_fun_only = TRUE) %>%
+    #   do.call("rbind",.)
   )
 z <- detection_report(z$rep_id) %>%
   select(repID, n_keypoints, frames) %>%
@@ -251,7 +251,7 @@ w <- w %>%
 # 
 # 
 # 
-#write_csv(w, "cleaned_data/event_derivative_split.csv")
+#write_csv(w, "cleaned_data/event_derivative2.csv")
 
 
 

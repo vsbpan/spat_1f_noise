@@ -179,9 +179,19 @@ as.Json.data_dict <- function(x){
   return(out)
 }
 
+as.Json.list <- function(x, ...){
+  class(x) <- c("COCO_Json", "list")
+  x
+}
+
 as.Json <- function(x, ...){
   UseMethod("as.Json")
 }
+
+# S3 method registration
+registerS3method(genname = "as.Json", 
+                 class = "list", 
+                 method = as.Json.list)
 
 # S3 method registration
 registerS3method(genname = "as.Json", 
@@ -196,7 +206,12 @@ registerS3method(genname = "print",
 
 
 import_COCO <- function(x){
-  jsonlite::fromJSON(x)
+  out <- jsonlite::fromJSON(x) %>% as.Json()
+  attr(out, "mtime") <- file.mtime(x) %>% 
+    as.character() %>% 
+    gsub("\\..*", "", .)
+  attr(out, "src") <-  gsub("\\..*", "", basename(x))
+  return(out)
 }
 
 export_COCO <- function(x, path){
@@ -312,4 +327,9 @@ set_new_path <- function(x, path_root){
 is.COCO <- function(x){
  inherits(x, "COCO_Json") 
 }
+
+
+
+
+
 

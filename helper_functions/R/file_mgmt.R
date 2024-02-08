@@ -243,10 +243,13 @@ count_time_gaps <- function(x, expected_gap = 360){
 
 # Count file_time dups
 count_time_dups <- function(x, expected_gap = 360){
-  ((diff(sort(x)) - expected_gap) / expected_gap) %>% 
+  n_dups <- sum(duplicated(x))
+  x <- unique(x)
+  n <- ((diff(sort(x)) - expected_gap) / expected_gap) %>% 
     round() %>% 
     pmin(0) %>% 
     sum()
+  return(n + n_dups)
 }
 
 

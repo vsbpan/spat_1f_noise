@@ -307,3 +307,66 @@ unscalelog <- function(logx){
 
 
 
+plot_track_overlay <- function(events = NULL, repID = NULL, ref_data = get("ref_data", envir = globalenv())){
+  
+  if(is.null(repID)){
+    repID <- unique(events$repID)
+  }
+  
+  stopifnot(length(repID) == 1)
+  
+  trt_spec <- fetch_trt_spec(repID)
+  if(is.null(trt_spec)){
+    plot_d <- expand.grid(
+      "dim1" = 1:12, 
+      "dim2"= 1:12,
+      "val" = 1
+    )
+  } else {
+    plot_d <- trt_spec %>% 
+      flip_xy() %>% 
+      as.matrix() %>% 
+      melt()
+  }
+  
+  
+  if(is.null(events)){
+    events <- fetch_events(repID) %>%
+      clean_events() %>%
+      filter(score > 0.9) %>%
+      insert_gaps()
+  }
+  
+  events <- events %>% 
+    mutate(
+      head_x = head_x / 1000 * 12 + 0.5,
+      head_y = head_y / 1000 * 12 + 0.5
+    )
+  
+  plot_d %>% 
+    ggplot(aes(x = dim1, y = dim2)) + 
+    geom_tile(
+      fill = ifelse(plot_d$val == 1, "white", "grey"),
+      alpha = 0.5) +
+    geom_density_2d_filled(
+      data = events,
+      aes(x = head_x, y = head_y), 
+      inherit.aes = FALSE,
+      alpha = 0.5, 
+      show.legend = FALSE
+    ) +
+    geom_path(
+      data = events,
+      aes(x = head_x, y = head_y, color = round(time / 360))
+    ) +
+    theme_void() + 
+    geom_point(aes(x = 0.5, y = 0.5), alpha = 0) + # Force the edges to align
+    geom_point(aes(x = 12.5, y = 12.5), alpha = 0) + # Force the edges to align
+    theme(legend.position = "right", plot.title = element_text(hjust = 0.5)) + 
+    labs(title = sprintf("repID: %s", repID_clean(repID)), color = "time steps") + 
+    scale_color_gradient2(midpoint = 600) +
+    scale_fill_viridis_d(option = "mako")
+}
+
+
+

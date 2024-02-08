@@ -4,7 +4,8 @@ d <- ref_data %>%
   filter(error == 0) %>% 
   mutate(
     cat_pre_wt_log = log(cat_pre_wt),
-    cat_pre_wt_log_scale = as.numeric(scale(log(cat_pre_wt)))
+    cat_pre_wt_log_scale = as.numeric(scale(log(cat_pre_wt))),
+    cat_size = ifelse(cat_pre_wt < median(cat_pre_wt), "small", "big")
   ) 
   # mutate(
   #   `toxic:start_toxicyes` = ifelse(`toxic:start_toxicyes` < -10, NA, `toxic:start_toxicyes`),
@@ -56,7 +57,21 @@ d %>%
   filter(mean_trt == "1 mg/g") %>% 
   #filter(toxic_start_yes > -10) %>% 
   ggplot(aes(x = var_trt, 
-             y = log(sl_mean_obs),  # (no - yes)/2 = switch preference
+             y = toxic,  # (no - yes)/2 = switch preference
+             # (no + yes)/2 = toxic preference
+             color = beta, 
+             fill = beta)) + 
+  geom_point(
+    position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.6)) + 
+  geom_pointrange(stat = "summary", position = position_dodge(0.6), color = "black") + 
+  theme_bw(base_size = 15) + 
+  facet_wrap(~cat_size)
+
+d %>% 
+  filter(var_trt != "constant") %>% 
+  #filter(toxic_start_yes > -10) %>% 
+  ggplot(aes(x = as.factor(val), 
+             y =  mean_toxic,  # (no - yes)/2 = switch preference
              # (no + yes)/2 = toxic preference
              color = beta, 
              fill = beta)) + 
@@ -65,26 +80,13 @@ d %>%
   geom_pointrange(stat = "summary", position = position_dodge(0.6), color = "black") + 
   theme_bw(base_size = 15)
 
-d %>% 
-  filter(var_trt != "constant") %>% 
-  filter(toxic_start_yes > -10) %>% 
-  ggplot(aes(x = var_trt, 
-             y = switch_pref,  # (no - yes)/2 = switch preference
-             # (no + yes)/2 = toxic preference
-             color = beta, 
-             fill = beta)) + 
-  geom_point(
-    position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.6)) + 
-  geom_pointrange(stat = "summary", position = position_dodge(0.6), color = "black") + 
-  theme_bw(base_size = 15)
-
 
 
 d %>% 
   filter(var_trt != "constant") %>% 
-  filter(`toxic:start_toxicyes` > -10) %>% 
-  ggplot(aes(y = RGR, 
-             x = `toxic:start_toxicno` - `toxic:start_toxicyes`,  # (no - yes)/2 = switch preference
+  #filter(`toxic:start_toxicyes` > -10) %>% 
+  ggplot(aes(y = on_toxic, 
+             x = log(sl_mean_obs),  # (no - yes)/2 = switch preference
              # (no + yes)/2 = toxic preference
              color = beta, 
              fill = beta)) + 
@@ -94,8 +96,8 @@ d %>%
 
 d %>% 
   filter(mean_trt == "1 mg/g") %>% 
-  mutate(cat_size = ifelse(cat_pre_wt > 0.03, "big", "small")) %>% 
-  ggplot(aes(x = var_trt, y = RGR, color = beta, fill = beta)) + 
+  mutate(cat_size = ifelse(cat_pre_wt > median(cat_pre_wt), "big", "small")) %>% 
+  ggplot(aes(x = beta, y = RGR, color = beta, fill = beta)) + 
   geom_pointrange(stat = "summary", position = position_dodge(0.6), color = "black") +
   geom_point(
     position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.6)
@@ -111,7 +113,7 @@ d %>%
   #left_join(w, by = "rep_id") %>% 
   filter(var_trt != "constant") %>% 
   #filter(mean_trt == "1 mg/g") %>% 
-  ggplot(aes(x = log(cat_pre_wt), y = log(sl_mean_obs), color = beta)) + 
+  ggplot(aes(x = log(var_toxic_12), y = RGR, color = beta)) + 
   geom_point() + 
   #geom_pointrange(aes(ymax = toxic_est + toxic_se, ymin = toxic_est - toxic_se)) + 
   geom_smooth(method = "lm") 
@@ -123,34 +125,44 @@ d %>%
   
 glmmTMB(
     RGR ~ 
-      scale(mean_toxic_conc) + scale(log(area_herb + 1)) + cat_pre_wt_log_scale + 
+      scale(mean_toxic_conc) + 
+      scale(log(area_herb+1)) + 
+      cat_pre_wt_log_scale + 
       scale(sl_mean_obs) + 
+      scale(var_toxic_12) + 
       (1|session_id),
     data = d %>% 
       filter(
-        var_trt != "constant"
+        mean_trt_numeric == 1 & var_trt != "constant"
       )
   ) %>% summary()
 
-glmmTMB(
-  mean_toxic_conc ~ 
-    var_trt + beta * cat_pre_wt_log_scale + 
+m<- glmmTMB(
+  on_toxic ~ 
+    var_trt + beta + cat_pre_wt_log_scale + 
     (1|session_id),
   data = d %>% 
     filter(
       var_trt != "constant"
     )
-) %>% plot_model(type = "eff", terms = c("cat_pre_wt_log_scale", "beta")) 
+);summary(m)
+plot_model(m,type = "eff", terms = c("cat_pre_wt_log_scale", "beta")) 
 
-glmmTMB(
-  log(sl_mean_obs) ~ 
-    var_trt + beta * cat_pre_wt_log_scale + 
+m <- glmmTMB(
+  area_herb ~ 
+    var_trt * beta + cat_pre_wt_log_scale + 
     (1|session_id),
+  family = Gamma(link = "log"),
   data = d %>% 
     filter(
       var_trt != "constant"
     )
-) %>% plot_model(type = "eff", terms = c("cat_pre_wt_log_scale", "beta")) 
+);summary(m)
+plot_model(m, type = "eff", terms = c("var_trt", "beta")) 
+
+
+
+
 
 glmmTMB(
   prob_move_obs ~ 
@@ -164,7 +176,7 @@ glmmTMB(
 ) %>% plot_model(type = "eff", terms = c("cat_pre_wt_log_scale", "beta")) 
 
 glmmTMB(
-  kappa1 ~ 
+  log(sl_mean_obs) ~ 
     var_trt + beta * cat_pre_wt_log_scale + 
     (1|session_id),
   family = gaussian(),
@@ -172,14 +184,20 @@ glmmTMB(
     filter(
       var_trt != "constant"
     )
-) %>% summary() #%>% plot_model(type = "eff", terms = c("cat_pre_wt_log_scale", "beta")) 
+) %>% plot_model(type = "eff", terms = c("cat_pre_wt_log_scale", "beta")) 
 
 
 glmmTMB(
   RGR ~ 
     (var_trt + beta) * cat_pre_wt_log_scale + 
+    #mean_toxic_conc + cat_pre_wt_log_scale + 
+    #log(sl_mean_obs) + log(area_herb + 1) +
+    #var_toxic_12 + 
     (1|session_id),
-  data = d
+  data = d %>% 
+    filter(
+      mean_trt_numeric == 1
+    ) 
 ) %>% summary()
   plot_model(type = "eff", terms = c("cat_pre_wt[all]", "beta"), show.data = TRUE) + 
   scale_x_continuous(trans = "log10")
@@ -205,8 +223,8 @@ m <- glmmTMB(
 ); summary(m)
 
 m <- glmmTMB(
-  toxic ~ 
-    var_trt + beta + cat_pre_wt_log_scale +  
+  on_toxic_conc ~ 
+    var_trt + beta * cat_pre_wt_log_scale +  
     (1 | session_id),
   data = d,
   family = gaussian(),
@@ -217,7 +235,7 @@ plot_model(m, type = "eff", terms = c("beta", "var_trt"), show.data = TRUE, dodg
 
 m <- glmmTMB(
   var_toxic_12 ~ 
-    ava_switch_toxin * switch_pref + cat_pre_wt_log_scale + var_trt + 
+    cat_pre_wt_log_scale + var_trt + cat_pre_wt_log_scale + beta + 
     #(var_trt + beta) * cat_pre_wt_log_scale +
     (1 | session_id),
   data = d,
@@ -289,7 +307,7 @@ coxph(
 
 coxph(
   Surv(surv_time, observed_dead) ~ 
-    var_trt + (beta) * cat_pre_wt_log_scale +
+    #var_trt + (beta) * cat_pre_wt_log_scale +
     strata(session_id), 
   data = d %>% 
     filter(var_trt != "constant")
@@ -305,7 +323,7 @@ m <- glmmTMB(
 
 m <- glmmTMB(
   eclosed ~ 
-    var_trt + beta + cat_pre_wt_log_scale +
+    #var_trt + beta + cat_pre_wt_log_scale +
     (1|session_id),
   data = d, 
   family = binomial(),
@@ -314,7 +332,8 @@ m <- glmmTMB(
 
 m <- glmmTMB(
   time_to_pupation ~ 
-    var_trt + beta * log(cat_pre_wt) + 
+    #var_trt + beta * log(cat_pre_wt) + 
+    var_toxic_12 + mean_toxic_conc + cat_pre_wt_log_scale + 
     (1|session_id),
   data = d, 
   family = Gamma(link = "log"),
@@ -332,7 +351,19 @@ m <- glmmTMB(
 ); summary(m)
 
 
+problem_ids
 
 
 
+
+
+# 45, 46, 49
+
+ggarrange(
+  plot_track_overlay(repID = 45),
+  plot_track_overlay(repID = 46),
+  plot_track_overlay(repID = 49),
+  plot_track_overlay(repID = 61),
+  common.legend = FALSE, ncol = 2, nrow = 2, legend = "right"
+)
 
