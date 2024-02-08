@@ -312,7 +312,7 @@ is.data_dict <- function(x, ...){
 as.data_dict.COCO_Json <- function(x, ...){
   x$annotations <- x$annotations[!duplicated(x$annotations$image_id),]
   
-  x$annotations <- x$annotations[match(x$annotations$image_id, x$images$id), ]
+  x$annotations <- x$annotations[match(x$images$id, x$annotations$image_id), ]
   
   
   inf_data <- data.frame(
