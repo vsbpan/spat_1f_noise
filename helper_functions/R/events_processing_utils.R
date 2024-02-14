@@ -84,7 +84,12 @@ trt_meta_as_list <- function(df){
 # Insert gaps of NAs at positions where a photo is expected
 # A bit buggy
 insert_gaps <- function(df, frame_id = frame_id, expected_gap = 360){
+  if("is_gap" %in% names(df)){
+    df <- df %>% filter(!is_gap)
+  }
+  
   .expose_columns_interal()
+  
   time <- file_time(frame_id)
   time_grid <- 360 * (seq_len((diff(round(range(time) / expected_gap)) +1)) - 1)
   o <- order(time)
@@ -158,7 +163,9 @@ inherit_theta <- function(theta, r){
 
 
 # Clean events by throwing out frames beyond the camera cutoff and sus frames. 
-clean_events <- function(x, ref_data = get("ref_data", envir = globalenv()), keep_sus = FALSE){
+clean_events <- function(x, 
+                         ref_data = get("ref_data", envir = globalenv()), 
+                         keep_sus = FALSE){
   repID <- unique(repID_clean(x$repID))
   stopifnot(length(repID) == 1)
   sus_frames <- fetch_sus_frames(repID)
@@ -172,7 +179,10 @@ clean_events <- function(x, ref_data = get("ref_data", envir = globalenv()), kee
       time <= cut_off
     )
   if(!keep_sus){
-    x <- filter(x, !is_sus)
+    x <- filter(x, !is_sus) %>% 
+      filter(
+        !status %in% c("too big", "too small") & !false_cluster
+      )
   }
   return(x)
 }

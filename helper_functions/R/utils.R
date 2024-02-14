@@ -366,3 +366,7 @@ parse_conc <- function(x){
   as.numeric(gsub(" mg/g","", x))
 }
 
+keep_rowname <- function(x){
+  cbind("rn" = rownames(x), x)
+}
+

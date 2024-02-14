@@ -6,7 +6,7 @@ d <- ref_data %>%
     cat_pre_wt_log = log(cat_pre_wt),
     cat_pre_wt_log_scale = as.numeric(scale(log(cat_pre_wt))),
     cat_size = ifelse(cat_pre_wt < median(cat_pre_wt), "small", "big")
-  ) 
+  )
   # mutate(
   #   `toxic:start_toxicyes` = ifelse(`toxic:start_toxicyes` < -10, NA, `toxic:start_toxicyes`),
   #   switch_pref = (`toxic:start_toxicno` - `toxic:start_toxicyes` )/2,
@@ -19,6 +19,41 @@ d <- ref_data %>%
 
 
 
+plot_track_overlay(repID=problem_ids[10])
+
+fetch_events(84)$score %>% hist()
+
+fetch_events(84) %>% 
+  filter(false_cluster)
+
+plot_track_overlay(
+  events = fetch_events(84) %>% 
+    clean_events() %>% 
+    filter(score > 0.9) %>% 
+    insert_gaps()
+)
+
+
+plot_track_overlay(repID=problem_ids[11])
+
+fetch_events(problem_ids_2[5]) %>% 
+  clean_events() %>% 
+  filter(score > 0.9) %>% 
+  flag_false_cluster(bin_size = 60, r_thresh = 200, r = 60) %>% 
+  filter(!false_cluster) %>%
+  flag_false_cluster(bin_size = 60, r_thresh = 200, r = 60) %>% 
+  filter(!false_cluster) %>%
+  plot_track_overlay()
+
+
+
+fetch_data_dict(84) %>% plot(frame = 606)
+
+z2 %>% 
+  mutate(
+    sus = sqrt((x1 - z3$cx1)^2 + (y1 - z3$cy1)^2)
+  ) %>% 
+  View()
 
 d %>% 
   filter(mean_trt_numeric == 1) %>% 
@@ -69,9 +104,9 @@ d %>%
 
 d %>% 
   filter(var_trt != "constant") %>% 
-  #filter(toxic_start_yes > -10) %>% 
-  ggplot(aes(x = as.factor(val), 
-             y =  mean_toxic,  # (no - yes)/2 = switch preference
+  filter(abs(toxic) < 10) %>% 
+  ggplot(aes(x = var_trt, 
+             y =  toxic,  # (no - yes)/2 = switch preference
              # (no + yes)/2 = toxic preference
              color = beta, 
              fill = beta)) + 
@@ -305,17 +340,17 @@ coxph(
   data = d
 ) %>% summary()
 
-coxph(
+m <- coxph(
   Surv(surv_time, observed_dead) ~ 
-    #var_trt + (beta) * cat_pre_wt_log_scale +
+    var_trt + (beta) * cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) + 
     strata(session_id), 
   data = d %>% 
     filter(var_trt != "constant")
-) %>% summary()
+);summary(m)
 
 m <- glmmTMB(
   time_to_eclosure ~ 
-    var_trt + beta * log(cat_pre_wt) +
+    var_trt + beta * cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) +
     (1|session_id),
   data = d, 
   family = Gamma(link = "log"),
@@ -332,14 +367,16 @@ m <- glmmTMB(
 
 m <- glmmTMB(
   time_to_pupation ~ 
-    #var_trt + beta * log(cat_pre_wt) + 
-    var_toxic_12 + mean_toxic_conc + cat_pre_wt_log_scale + 
+    var_trt + beta * cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) + 
+    #var_toxic_12 + mean_toxic_conc + cat_pre_wt_log_scale + 
     (1|session_id),
   data = d, 
   family = Gamma(link = "log"),
 ); summary(m)
 plot_model(m , type = "eff", terms = c("cat_pre_wt[all]", "beta")) + 
   scale_y_log10()
+
+car::Anova(m, type = "III")
 
 
 m <- glmmTMB(

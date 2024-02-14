@@ -310,7 +310,7 @@ unscalelog <- function(logx){
 plot_track_overlay <- function(events = NULL, repID = NULL, ref_data = get("ref_data", envir = globalenv())){
   
   if(is.null(repID)){
-    repID <- unique(events$repID)
+    repID <- na.omit(unique(events$repID))
   }
   
   stopifnot(length(repID) == 1)

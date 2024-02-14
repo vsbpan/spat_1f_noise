@@ -1,8 +1,16 @@
 ---
-title: "Untitled"
+title: "1/f Noise Project Analysis"
 author: "Vincent Pan"
-date: "2024-02-06"
-output: html_document
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc_float: true
+    toc: true 
+    toc_depth: 2 
+    number_sections: true
+    code_folding: show
+    highlight: tango
+    theme: default
 ---
 
 

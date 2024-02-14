@@ -1,33 +1,52 @@
-glmmTMB(
+m <- glmmTMB(
   RGR ~ 
+    cat_pre_wt_log_scale + 
+    #I(cat_pre_wt_log_scale^2) +
+    cat_pre_wt_log_scale : (var_trt + beta) + 
+    var_trt + beta + 
     scale(mean_toxic_conc) + 
     scale(log(area_herb+1)) + 
-    cat_pre_wt_log_scale + 
-    scale(sl_mean_obs) + 
+    scale(sl_mean_obs)  + 
     scale(var_toxic_12) + 
     (1|session_id),
   data = d %>% 
     filter(
       mean_trt_numeric == 1 & var_trt != "constant"
+    ) %>% 
+    filter(
+      session_id != 1
     )
-) %>% summary()
+); summary(m)
 
 
 m <- glmmTMB(
   RGR ~ 
-    (var_trt + beta) * cat_pre_wt_log_scale + 
+    var_trt + beta + 
+    (var_trt + beta) : cat_pre_wt_log_scale + 
+    cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) +  
     (1|session_id),
   data = d %>% 
     filter(
-      var_trt != "constant" & session_id != 1
+      var_trt != "constant"
+    ) %>% 
+    filter(
+      !is.na(sl_mean_obs)
     )
 ); summary(m)
-plot_model(m, type = "eff", terms = c("cat_pre_wt_log_scale", "beta"))
+plot_model(m, type = "eff", terms = c("cat_pre_wt_log_scale[all]", "beta"), show.data = TRUE)
+check_model(m)
+
+d %>% 
+  filter(!is.na(beta)) %>% 
+  ggplot(aes(x = cat_pre_wt_log_scale, y = RGR, color = beta)) + 
+  geom_point() + 
+  geom_smooth()
+
 
 
 m <- glmmTMB(
   mean_toxic_conc ~ 
-    (var_trt + beta) * cat_pre_wt_log_scale + 
+    (beta + var_trt) * cat_pre_wt_log_scale  +
     (1|session_id),
   data = d %>% 
     filter(
@@ -39,19 +58,22 @@ car::Anova(m, type = "III")
 
 
 m <- glmmTMB(
-  log(sl_mean_obs) ~ 
-    (var_trt + beta) * cat_pre_wt_log_scale + 
+  sl_mean_obs ~ 
+    var_trt + beta + cat_pre_wt_log_scale   + #I(cat_pre_wt_log_scale^2) +
     (1|session_id),
+  family = Gamma(link = "log"),
   data = d %>% 
     filter(
-      var_trt != "constant"
+      var_trt != "constant" #& !rep_id %in% problem_ids
+    ) %>% 
+    mutate(
+      problem = ifelse(rep_id %in% problem_ids, 1, 0)
     ),
-  gaussian(),
 ); summary(m) #DHARMa::simulateResiduals() %>% plot()
 
 m <- glmmTMB(
   prob_move_obs ~ 
-    (var_trt + beta) * cat_pre_wt_log_scale + 
+    (var_trt + beta) * cat_pre_wt_log_scale + #I(cat_pre_wt_log_scale^2) + 
     (1|session_id),
   data = d %>% 
     filter(
@@ -76,7 +98,7 @@ glmmTMB(
 
 m <- glmmTMB(
   on_toxic ~ 
-    var_trt + beta * cat_pre_wt_log_scale + 
+    var_trt + beta * cat_pre_wt_log_scale +
     (1|session_id),
   data = d %>% 
     filter(
@@ -88,8 +110,9 @@ car::Anova(m, type = "III")
 
 m <- glmmTMB(
   toxic ~ 
-    (var_trt + beta) + cat_pre_wt_log_scale+ 
+    (var_trt + beta) + cat_pre_wt_log_scale + 
     (1|session_id),
+  family = gaussian(),
   data = d %>% 
     filter(
       var_trt != "constant"
@@ -97,11 +120,11 @@ m <- glmmTMB(
 ); summary(m)
 
 
-plot_model(m, type = "eff", terms = c("cat_pre_wt_log_scale", "beta","val"))
+plot_model(m, type = "eff", terms = c("cat_pre_wt_log_scale", "beta"), show.data = TRUE)
 
 m <- glmmTMB(
   ava_mean_toxin ~ 
-    (var_trt + beta) * cat_pre_wt_log_scale + 
+    (var_trt + beta) + cat_pre_wt_log_scale + 
     (1|session_id),
   data = d %>% 
     filter(
@@ -110,10 +133,26 @@ m <- glmmTMB(
 ); summary(m)
 
 
+m <- glmmTMB(
+  ud_estimate ~ 
+    (var_trt + beta) + cat_pre_wt_log_scale + 
+    (1|session_id),
+  family = Gamma(link = "log"),
+  data = d %>% 
+    filter(
+      var_trt != "constant"
+    ),
+); summary(m)
 
 
-
-
+d %>% 
+  mutate(sl_mean = (shape * scale)) %>% 
+  filter(kappa1 > 0 & kappa2 > 0) %>% 
+  ggplot(aes(x = var_trt, color = beta, y = log(sl_mean_obs), fill = beta)) + 
+  geom_pointrange(stat = "summary", 
+                  position = position_dodge(width = 0.5),
+                  color = "black") + 
+  geom_point(position = position_jitterdodge(jitter.height = 0))
 
 
 
@@ -256,29 +295,154 @@ sim_mean_toxic <- function(ref, trans_mat, t_max = 10000, n = 12){
 
 
 ids <- d %>% 
+  filter(var_trt != "constant") %>% 
   filter(!is.na(camera_cutoff)) %>% 
   select(rep_id) %>% 
+  filter(!rep_id %in% problem_ids) %>% 
   unlist(use.names = FALSE)
 
 
-l <- pb_par_lapply(
+
+
+
+
+
+
+
+
+
+
+out <- pb_par_lapply(
   ids,
   function(i, ref_data){
-    o <- fetch_events(i)[1,] %$% 
-      read_value(head_x, head_y, ref_img = fetch_trt_spec(i, ref_data), c(1000, 1000))
-    data.frame("rep_id" = i, "val" = o)
+    fetch_events(i) %>% 
+      clean_events(ref_data = ref_data) %>% 
+      insert_gaps() %>% 
+      mutate(
+        head_x = ifelse(score >=0.5, head_x, NA),
+        head_y = ifelse(score >=0.5, head_y, NA)
+      ) %$%
+      move_seq(head_x, head_y, r_thresh = 0, inherit.theta = FALSE) %>% 
+      as.data.frame() %>% 
+      cbind("rep_id" = i) %>% 
+      mutate(
+        end_toxic = read_value(x2, y2, c(1000, 1000),
+                           ref_img = fetch_trt_spec(i, .ref_data = ref_data, quiet = TRUE)),
+        start_toxic = read_value(x2, y2, c(1000, 1000),
+                               ref_img = fetch_trt_spec(i, .ref_data = ref_data, quiet = TRUE))
+      )
   },
   ref_data = ref_data,
   cores = 8,
   inorder = FALSE
-)
-
-
-d <- do.call("rbind", l) %>% 
-  left_join(d, by = "rep_id")
+) %>% 
+  do.call("rbind", .)
 
 
 
-plot_track_overlay(repID = 49)
+
+
+m <- glmmTMB(
+  y ~ 
+    (beta + var_trt) * cat_pre_wt_log_scale +
+    (1|session_id), 
+  family = gaussian(), 
+  data = d %>% 
+    mutate(
+      toxic = toxic,
+      toxic_time = `toxic:time`,
+      y = toxic_time
+    )
+); summary(m)
+
+plot_model(m, type = "eff", terms = c("cat_pre_wt_log_scale", "beta"))
+
+
+
+m <- glmmTMB(
+  r ~ 
+  var_trt * cat_pre_wt_log_scale *
+  time + 
+    beta * cat_pre_wt_log_scale +
+  (1|session_id) + (1 | rep_id) + ar1(step_id + 0 | rep_id), 
+  family = Gamma(link = "log"), 
+  data = 
+    out %>% 
+    left_join(d, by = "rep_id") %>% 
+    filter(
+      !rep_id %in% problem_ids
+    ) %>% 
+    mutate(
+      time = step_id / 1200,
+      step_id = as.factor(step_id)
+    ) %>% 
+    filter(
+      !is.na(r)
+    ) %>% 
+    filter(
+      !is.na(beta)
+    )
+); summary(m)
+
+
+
+
+
+
+
+m <- glmmTMB(
+  toxic ~ 
+    (beta + var_trt) * cat_pre_wt_log_scale *
+    scale(step_id) + 
+    (1|session_id/rep_id), 
+  family = binomial(), 
+  data = 
+    out %>% 
+    left_join(d %>% 
+                select(-toxic), by = "rep_id") %>% 
+    filter(
+      !rep_id %in% problem_ids
+    )
+); summary(m)
+
+plot_model(m, type = "eff", terms = c("cat_pre_wt_log_scale", "beta"))
+
+check_overdispersion(m)
+
+
+plot_model(m, 
+           type = "eff", 
+           terms = c("cat_pre_wt_log_scale", "beta", "time[0, 0.5, 1]")) + 
+  scale_y_continuous(trans = "log")
+
+
+
+
+
+
+
+
+m <- glmmTMB(
+  r ~ 
+    (beta + var_trt) * cat_pre_wt_log_scale + 
+    (1|session_id), 
+  family = Gamma(link = "log"), 
+  data = 
+    out %>% 
+    filter(step_id < 24 * 10) %>% 
+    group_by(rep_id) %>% 
+    summarise(r = mean(r, na.rm = TRUE)) %>% 
+    left_join(d, by = "rep_id") %>% 
+    filter(
+      !rep_id %in% problem_ids
+    ) 
+); summary(m)
+
+
+
+
+
+
+
 
 

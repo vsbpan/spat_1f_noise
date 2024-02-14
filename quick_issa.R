@@ -11,17 +11,17 @@ fit_list <- pb_par_lapply(
       clean_events(ref_data = ref_data) %>%
       insert_gaps() %>% 
       mutate(
-        head_x = ifelse(score >=0.3, head_x, NA),
-        head_y = ifelse(score >=0.3, head_y, NA)
+        head_x = ifelse(score >=0.9, head_x, NA),
+        head_y = ifelse(score >=0.9, head_y, NA)
       ) %$%
-      move_seq(head_x, head_y, r_thresh = 30, inherit.theta = FALSE) %>%
+      move_seq(head_x, head_y, r_thresh = 0, inherit.theta = FALSE) %>%
       filter(!is.na(r))
 
     if(length(d$r) < 10 | length(na.omit(d$theta_rel)) < 10){
       return(NULL)
     } else {
       d <- d %>%
-        add_random_steps(n = 500L,
+        add_random_steps(n = 100L,
                          sl_distr = fit_gamma(.$r),
                          ta_distr = fit_genvonmises(.$theta_rel)
         ) %>%
@@ -36,7 +36,10 @@ fit_list <- pb_par_lapply(
           toxic = read_value(x2, y2, c(1000, 1000),
                              ref_img = fetch_trt_spec(ID, .ref_data = ref_data, quiet = TRUE))
         ) %>%
-        append_estimators(na_as_zero = TRUE)
+        append_estimators(na_as_zero = TRUE) %>% 
+        mutate(
+          time = step_id / 1000
+        )
     }
 
     has_toxic <- !all(is.na(d$toxic))
@@ -45,14 +48,14 @@ fit_list <- pb_par_lapply(
       mod_form <- formula(
         case ~
           toxic +
-          moved : (cos_theta_pi + cos_2theta) +
-          (sl + logsl) +
+          (cos_theta_pi + cos_2theta) +
+          (sl + logsl) + 
           strata(step_id)
       )
     } else {
       mod_form <- formula(
         case ~
-          moved : (cos_theta_pi + cos_2theta) +
+          (cos_theta_pi + cos_2theta) +
           (sl + logsl) +
           strata(step_id)
       )
@@ -63,8 +66,8 @@ fit_list <- pb_par_lapply(
       data = d,
       shape_estimator = c("logsl"),
       scale_estimator = c("sl"),
-      kappa1_estimator = "moved:cos_theta_pi",
-      kappa2_estimator = "moved:cos_2theta"
+      kappa1_estimator = "cos_theta_pi",
+      kappa2_estimator = "cos_2theta"
     )
     
     return(out)
@@ -78,8 +81,6 @@ names(fit_list) <- unname(unlist(id_list))
 
 
 #saveRDS(object = c(fit_list), "invisible/issf_fit_list.rds")
-
-
 
 issf_fit_l <- readRDS("invisible/issf_fit_list.rds")
 
@@ -195,20 +196,20 @@ z <- issf_fit_l %>%
         }
       }
     ) %>%
-      do.call("rbind", .)
-    # pb_par_lapply(issf_fit_l, function(x){
-    #   x$data %>%
-    #     filter(case) %$%
-    #     ud_area(x2, y2) %>%
-    #     t() %>%
-    #     as.data.frame() %>%
-    #     rename_all(
-    #       function(x){
-    #         paste0("ud_", x)
-    #       }
-    #     )
-    # }, cores = 8, inorder = TRUE, export_fun_only = TRUE) %>%
-    #   do.call("rbind",.)
+      do.call("rbind", .),
+    pb_par_lapply(issf_fit_l, function(x){
+      x$data %>%
+        filter(case) %$%
+        ud_area(x2, y2) %>%
+        t() %>%
+        as.data.frame() %>%
+        rename_all(
+          function(x){
+            paste0("ud_", x)
+          }
+        )
+    }, cores = 8, inorder = TRUE, export_fun_only = TRUE) %>%
+      do.call("rbind",.)
   )
 z <- detection_report(z$rep_id) %>%
   select(repID, n_keypoints, frames) %>%
@@ -251,7 +252,7 @@ w <- w %>%
 # 
 # 
 # 
-#write_csv(w, "cleaned_data/event_derivative2.csv")
+#write_csv(w, "cleaned_data/event_derivative3.csv")
 
 
 
@@ -267,5 +268,7 @@ w %>%
   filter(prop_kp > 0.5) %>% 
   ggplot(aes(x = prop_kp, y = (sl_mean_obs))) + 
   geom_point()
+
+
 
 

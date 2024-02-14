@@ -9,8 +9,8 @@ source("helper_functions/init.R")
 
 ref_data <- suppressMessages(read_csv("raw_data/1_f_noise_experiment data_Jan_31_2024.csv"))
 today <- as.character("2024-01-31")#Sys.Date()
-problem_ids <- c("2","6","7", "9", "10","11", "20","28", "37", 
-                 "65", "84", "85", "87", "113", "115", "136", "140", "146", "154")
+problem_ids <- c("2","6","7", "9", "10","11", "20","28", "85", "113", "146")
+
 
 ref_data <- ref_data %>% 
   filter(!is.na(cat_dead_cam_end)) %>% 
@@ -117,7 +117,7 @@ ref_data <- ref_data %>%
   mutate(
     beta = as.factor(beta), 
     rep_id = as.character(rep_id),
-    session_id = as.character(session_id),
+    session_id = gsub("\\.[0-9]","", as.character(session_id)),
     repID = paste0("rep",rep_id)
   ) %>% 
   left_join(
@@ -127,7 +127,7 @@ ref_data <- ref_data %>%
     by = "rep_id" 
   ) %>% 
   left_join(
-    read_csv("cleaned_data/event_derivative.csv") %>% 
+    read_csv("cleaned_data/event_derivative2.csv") %>% 
       suppressMessages() %>% 
       mutate(
         rep_id = as.character(rep_id)

@@ -79,3 +79,84 @@ detect_false_head_movement <- function(data_dict, events = NULL,
   
   return(sus_frames)
 }
+
+
+flag_mask_size <- function(events, w = 31){
+  events %>% 
+    mutate(
+    size_z = roll_vapply(size_px, w = w, function(x){
+      out <- (x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE)
+      if(length(out) == 0){
+        return(NA)
+      } else {
+        return(out[length(out)/2+1])
+      }
+    })
+  ) %>% 
+    mutate(
+      status = ifelse(
+        is.na(size_z),
+        "unclear",
+        ifelse(size_z > 2, 
+               "too big",
+               ifelse(
+                 size_z < -2, 
+                 ifelse(out_of_frame, "out_of_frame", "too small"),
+                 "no issue"
+               ))
+      )
+    )
+}
+
+
+flag_false_cluster <- function(events, r_thresh = 100, bin_size = 50, r = 50, return_id = FALSE){
+  events <- events %>% insert_gaps()
+  move_df <- events %$% 
+    move_seq(centroid_x, centroid_y)
+  
+  candidate_seq <- move_df %>% 
+    filter(
+      r > r_thresh
+    ) %>% 
+    mutate(
+      cx1 = bin(x1, bin_size),
+      cy1 = bin(y1, bin_size)
+    ) %>% 
+    group_by(
+      cx1, cy1
+    ) %>% 
+    mutate(
+      n = n()
+    ) %>% 
+    ungroup()
+  
+  z <- candidate_seq %>% 
+    filter(n == max(n)) %>% 
+    .[1,]
+  
+  
+  i <- move_df %>% 
+    mutate(
+      sus = sqrt((x1 - z$cx1)^2 + (y1 - z$cy1)^2) < r
+    ) %>% 
+    filter(
+      sus
+    ) %>% 
+    dplyr::select(step_id) %>% 
+    unlist(use.names = FALSE)
+  
+  if(return_id){
+    return(i)
+  } else {
+    return(
+      events %>% 
+        mutate(
+          false_cluster = rank %in% i
+        )
+    )
+  }
+}
+
+
+
+
