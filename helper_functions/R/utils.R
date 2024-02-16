@@ -370,3 +370,9 @@ keep_rowname <- function(x){
   cbind("rn" = rownames(x), x)
 }
 
+lapply_name <- function(x, FUN, ...){
+  z <- lapply(x, FUN, ...)
+  names(z) <- x
+  z
+}
+

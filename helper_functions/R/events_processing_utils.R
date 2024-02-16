@@ -189,4 +189,25 @@ clean_events <- function(x,
 
 
 
+toxic_var_calc <- function(x, ref_data = get("ref_data", pos = globalenv()), hours = 12L){
+  l_conc <- ref_data %>% filter(rep_id == x) %>% .$low_diet_numeric
+  h_conc <- ref_data %>% filter(rep_id == x) %>% .$high_diet_numeric
+  
+  fetch_events(x) %>% 
+    clean_events(ref_data = ref_data) %>% 
+    filter(score > 0.9) %>% 
+    insert_gaps() %>% 
+    mutate(
+      toxic = read_value(head_x, head_y, ref_img = fetch_trt_spec(x, ref_data, quiet = TRUE), c(1000,1000))
+    ) %$%
+    roll_vapply(toxic, w = 10 * hours + 1, FUN = function(xx){
+      xx <- xx[!is.na(xx)]
+      s <- xx == 0
+      xx[s] <- l_conc
+      xx[!s] <- h_conc
+      
+      var(xx, na.rm = TRUE)
+    }) %>% 
+    mean(na.rm = TRUE)
+}
 

@@ -1,40 +1,87 @@
 m <- glmmTMB(
   RGR ~ 
     cat_pre_wt_log_scale + 
-    #I(cat_pre_wt_log_scale^2) +
-    cat_pre_wt_log_scale : (var_trt + beta) + 
-    var_trt + beta + 
+    I(cat_pre_wt_log_scale^2) +
+    #cat_pre_wt_log_scale *
+    #var_trt + beta + 
     scale(mean_toxic_conc) + 
     scale(log(area_herb+1)) + 
-    scale(sl_mean_obs)  + 
+    scale(sl_mean_obs)  +
     scale(var_toxic_12) + 
     (1|session_id),
   data = d %>% 
     filter(
       mean_trt_numeric == 1 & var_trt != "constant"
-    ) %>% 
-    filter(
-      session_id != 1
     )
 ); summary(m)
 
 
+
+z <- d %>% 
+  filter(
+    #var_trt != "constant"
+    mean_trt_numeric == 1
+  ) %>% 
+  mutate(
+    beta = ifelse(is.na(beta), "const", as.character(beta)),
+    beta_red = ifelse(as.character(beta) == 5, 1, 0),
+    beta_blue = ifelse(as.character(beta) == -5, 1, 0),
+    beta_white = ifelse(as.character(beta) == 0, 1, 0),
+    var_low = ifelse(var_trt == "var_low", 1, 0)
+  )
+
 m <- glmmTMB(
   RGR ~ 
-    var_trt + beta + 
-    (var_trt + beta) : cat_pre_wt_log_scale + 
-    cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) +  
+    has_var:(beta_red * cat_pre_wt_log_scale + beta_white * cat_pre_wt_log_scale +
+               var_high * cat_pre_wt_log_scale) +
+    has_var/(cat_pre_wt_log_scale) + #cat_pre_wt_log_scale +
+    #cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) +  
     (1|session_id),
   data = d %>% 
     filter(
-      var_trt != "constant"
+      #var_trt != "constant"
+      mean_trt_numeric == 1
     ) %>% 
-    filter(
-      !is.na(sl_mean_obs)
+    mutate(
+      beta = ifelse(is.na(beta), "const", as.character(beta)),
+      beta_red = ifelse(as.character(beta) == 5, 1, 0),
+      beta_blue = ifelse(as.character(beta) == -5, 1, 0),
+      beta_white = ifelse(as.character(beta) == 0, 1, 0),
+      var_high = ifelse(var_trt == "high_var", 1, 0)
     )
 ); summary(m)
 plot_model(m, type = "eff", terms = c("cat_pre_wt_log_scale[all]", "beta"), show.data = TRUE)
 check_model(m)
+DHARMa::simulateResiduals(m) %>% plot()
+
+
+
+plot_model(m, type = "eff", terms = c("has_var", "beta_red","cat_pre_wt_log_scale[-1,1]"))
+plot_model(m, type = "eff", terms = c("cat_pre_wt_log_scale[all]", "beta_red", "has_var"))
+
+
+m <- glmmTMB(
+  RGR ~ 
+    (var_trt + beta) * cat_pre_wt_log_scale +
+    cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) +  
+    (1|session_id),
+  data = d %>% 
+    filter(
+      var_trt != "constant" &
+      mean_trt_numeric == 1
+    ) %>% 
+    mutate(
+      beta = ifelse(is.na(beta), "const", as.character(beta)),
+      beta_red = ifelse(as.character(beta) == 5, 1, 0),
+      beta_blue = ifelse(as.character(beta) == -5, 1, 0),
+      beta_white = ifelse(as.character(beta) == 0, 1, 0),
+      var_high = ifelse(var_trt == "high_var", 1, 0)
+    )
+); summary(m)
+
+
+
+
 
 d %>% 
   filter(!is.na(beta)) %>% 
@@ -46,7 +93,7 @@ d %>%
 
 m <- glmmTMB(
   mean_toxic_conc ~ 
-    (beta + var_trt) * cat_pre_wt_log_scale  +
+    (beta + var_trt) * cat_pre_wt_log_scale  + 
     (1|session_id),
   data = d %>% 
     filter(
@@ -54,12 +101,41 @@ m <- glmmTMB(
     ) 
 ); summary(m)
 
+
+m <- glmmTMB(
+  mean_toxic ~ 
+    var_trt + (beta) * cat_pre_wt_log_scale  + 
+    (1|session_id),
+  family = beta_family(),
+  data = d %>% 
+    filter(
+      var_trt != "constant"
+    ) %>% 
+    mutate(
+      mean_toxic = adjust_prop(mean_toxic, nudge.size = 0.01)
+    )
+); summary(m)
+
+
+
+
+m <- glmmTMB(
+  var_toxic_12 ~ 
+    (beta + var_trt) + cat_pre_wt_log_scale  + 
+    (1|session_id),
+  data = d %>% 
+    filter(
+      var_trt != "constant"
+    ) 
+); summary(m)
+
+
 car::Anova(m, type = "III")
 
 
 m <- glmmTMB(
   sl_mean_obs ~ 
-    var_trt + beta + cat_pre_wt_log_scale   + #I(cat_pre_wt_log_scale^2) +
+    var_trt + (beta) * cat_pre_wt_log_scale + #I(cat_pre_wt_log_scale^2) +
     (1|session_id),
   family = Gamma(link = "log"),
   data = d %>% 
@@ -67,22 +143,23 @@ m <- glmmTMB(
       var_trt != "constant" #& !rep_id %in% problem_ids
     ) %>% 
     mutate(
-      problem = ifelse(rep_id %in% problem_ids, 1, 0)
+      #sl_kurt_obs = 6 / shape + 3
     ),
 ); summary(m) #DHARMa::simulateResiduals() %>% plot()
 
 m <- glmmTMB(
   prob_move_obs ~ 
-    (var_trt + beta) * cat_pre_wt_log_scale + #I(cat_pre_wt_log_scale^2) + 
+    (var_trt + beta) + cat_pre_wt_log_scale + #I(cat_pre_wt_log_scale^2) + 
     (1|session_id),
   data = d %>% 
     filter(
       var_trt != "constant"
-    ),
+    ) %>% 
+    filter(prob_move_obs > 0),
   beta_family(),
 ); summary(m)
 
-plot_model(m, type = "eff", terms = c("cat_pre_wt_log_scale", "beta"))
+plot_model(m, type = "eff", terms = c("cat_pre_wt_log_scale", "var_trt"))
 
 glmmTMB(
   log(area_herb+1) ~ 
@@ -98,33 +175,49 @@ glmmTMB(
 
 m <- glmmTMB(
   on_toxic ~ 
-    var_trt + beta * cat_pre_wt_log_scale +
+    (var_trt + beta * cat_pre_wt_log_scale) + 
     (1|session_id),
-  data = d %>% 
-    filter(
-      var_trt != "constant"
-    ),
+  data = d,
   family = beta_family(),
 ); summary(m)
 car::Anova(m, type = "III")
 
 m <- glmmTMB(
   toxic ~ 
-    (var_trt + beta) + cat_pre_wt_log_scale + 
-    (1|session_id),
+    var_trt + (beta) * cat_pre_wt_log_scale,
   family = gaussian(),
   data = d %>% 
     filter(
       var_trt != "constant"
+    ) %>% 
+    mutate(
+      session_id = as.factor(session_id)
     ),
 ); summary(m)
+
+
+m <- glmmTMB(
+  kappa1 ~ 
+    var_trt + beta + cat_pre_wt_log_scale,
+  family = gaussian(),
+  data = d %>% 
+    filter(
+      var_trt != "constant"
+    ) %>% 
+    mutate(
+      session_id = as.factor(session_id)
+    ),
+); summary(m)
+
+
+ddist(make_genvonmises(0.3, 0.25)) %>% plot()
 
 
 plot_model(m, type = "eff", terms = c("cat_pre_wt_log_scale", "beta"), show.data = TRUE)
 
 m <- glmmTMB(
   ava_mean_toxin ~ 
-    (var_trt + beta) + cat_pre_wt_log_scale + 
+    (var_trt + beta) * cat_pre_wt_log_scale + 
     (1|session_id),
   data = d %>% 
     filter(
@@ -135,7 +228,7 @@ m <- glmmTMB(
 
 m <- glmmTMB(
   ud_estimate ~ 
-    (var_trt + beta) + cat_pre_wt_log_scale + 
+    beta + (var_trt) * cat_pre_wt_log_scale + 
     (1|session_id),
   family = Gamma(link = "log"),
   data = d %>% 
@@ -147,8 +240,40 @@ m <- glmmTMB(
 
 d %>% 
   mutate(sl_mean = (shape * scale)) %>% 
+  ggplot(aes(x = sl_mean / 1000 * 12, y = sl_mean_obs/1000*12)) + 
+  geom_point() + 
+  geom_abline(intercept = 0, slope = 1) + 
+  scale_x_continuous(trans = "log2") + 
+  scale_y_continuous(trans = "log2") + 
+  theme_bw(base_size = 15) +
+  labs(x = "Selection free mean step length (cm)", y = "Observed mean step length (cm)")
+
+
+
+d %>% 
+  mutate(sl_kurt = 6/shape + 3) %>% 
+  ggplot(aes(x = sl_kurt, y = sl_kurt_obs)) + 
+  geom_point() + 
+  geom_abline(intercept = 0, slope = 1) + 
+  scale_x_continuous(trans = "log2") + 
+  scale_y_continuous(trans = "log2") + 
+  theme_bw(base_size = 15) +
+  labs(x = "Selection free kurt step length (cm)", y = "Observed kurt step length (cm)")
+
+
+d %>% 
+  mutate(sl_mean = (shape * scale)) %>% 
+  ggplot(aes(x = sl_mean / 1000 * 12, y = sl_mean_obs/1000*12)) + 
+  geom_point() + 
+  geom_abline(intercept = 0, slope = 1) + 
+  scale_x_continuous(trans = "log2") + 
+  scale_y_continuous(trans = "log2") 
+
+
+d %>% 
+  mutate(sl_mean = (shape * scale)) %>% 
   filter(kappa1 > 0 & kappa2 > 0) %>% 
-  ggplot(aes(x = var_trt, color = beta, y = log(sl_mean_obs), fill = beta)) + 
+  ggplot(aes(x = var_trt, color = beta, y = kappa2, fill = beta)) + 
   geom_pointrange(stat = "summary", 
                   position = position_dodge(width = 0.5),
                   color = "black") + 
@@ -442,6 +567,132 @@ m <- glmmTMB(
 
 
 
+d %>% 
+  filter(!is.na(camera_cutoff)) %>% 
+  .$rep_id %>% 
+  lapply(function(x){
+    fetch_events(x) %>% 
+      clean_events() %>% 
+      filter(score > 0.9) %>% 
+      summarise(p = sum(!is.na(head_x)) / unique(frames)) %>% 
+      unlist()
+  }) %>% 
+  do.call("c",.) -> x
+
+
+mean(x > 0.7)
+summarise_vec(x)
+hist(x)
+
+d %>% filter(var_trt!= "constant") %>% filter(is.na(var_toxic_12) & !is.na(sl_mean_obs)) %>% View()
+
+
+
+
+d2
+
+
+subm_rgr <- glmmTMB(
+  RGR ~ 
+    cat_pre_wt_log_scale + 
+    cat_pre_wt_log_scale_sq +
+    mean_toxic_conc_scale + 
+    area_herb_log_scale + 
+    sl_mean_obs_log_scale +
+    var_toxic_12_scale + 
+    (1|session_id),
+  data = d2
+); summary(subm_rgr)
+
+subm_var_toxic <- glmmTMB(
+  var_toxic_12_scale ~ 
+    beta + var_trt + cat_pre_wt_log_scale + on_toxic_logit_scale + ava_mean_toxin_scale +
+    sl_mean_obs_log_scale + 
+    (1|session_id),
+  data = d2
+); summary(subm_var_toxic)
+
+
+
+subm_sl <- glmmTMB(
+  sl_mean_obs_log_scale ~ 
+    var_trt + beta * cat_pre_wt_log_scale + on_toxic_logit_scale + 
+    (1|session_id),
+  data = d2,
+); summary(subm_sl)
+
+
+
+subm_toxin_ingested <- glmmTMB(
+  mean_toxic_conc_scale ~ 
+    beta + var_trt * cat_pre_wt_log_scale + on_toxic_logit_scale + ava_mean_toxin_scale +
+    (1|session_id),
+  data = d2 
+); summary(subm_toxin_ingested)
+
+
+subm_on_toxic <- glmmTMB(
+  on_toxic_logit_scale ~ 
+    toxic_select_scale + ava_mean_toxin_scale + 
+    (1|session_id),
+  data = d2
+); summary(subm_on_toxic)
+
+
+subm_herb <- glmmTMB(
+  area_herb_log_scale ~ 
+    (var_trt + beta) + cat_pre_wt_log_scale + on_toxic_logit_scale + ava_mean_toxin_scale +
+    (1|session_id),
+  data = d2,
+); summary(subm_herb)
+
+
+car::Anova(m, type = "III")
+
+subm_select <- glmmTMB(
+  toxic_select_scale ~ 
+    beta + var_trt*cat_pre_wt_log_scale + ava_mean_toxin_scale + 
+    (1|session_id),
+  data = d2,
+); summary(subm_select)
+
+contrast_by_pre_wt(subm_ava, "beta", type = ("trt"))
+
+
+plot_model(subm_ava, type = "eff", terms = c("cat_pre_wt_log_scale", "beta"), show.data = TRUE)
+
+subm_ava <- glmmTMB(
+  ava_mean_toxin_scale ~ 
+    var_trt + beta * cat_pre_wt_log_scale + 
+    (1|session_id),
+  data = d2,
+); summary(subm_ava)
+
+
+
+
+sem_fit <- psem(
+    subm_rgr,
+    subm_var_toxic,
+    subm_on_toxic,
+    subm_toxin_ingested,
+    subm_select,
+    subm_ava,
+    subm_herb,
+    subm_sl, 
+    data = d2
+)
+sem_summary <- summary(sem_fit)
+
+sem_summary
+
+jutila.multigroup <- multigroup(utila, group = "grazed")
+
+sem_summary <- suppressWarnings(suppressMessages(summary(sem_fit)))
+
+piecewiseSEM::stdCoefs(list(subm_on_toxic), data = d2, standardize.type = "Menard.OE")
+
+piecewiseSEM:::summary.psem
 
 
 

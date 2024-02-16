@@ -115,7 +115,7 @@ ref_data <- ref_data %>%
     )
   ) %>% 
   mutate(
-    beta = as.factor(beta), 
+    beta = as.factor(ifelse(is.na(beta), "const", beta)), 
     rep_id = as.character(rep_id),
     session_id = gsub("\\.[0-9]","", as.character(session_id)),
     repID = paste0("rep",rep_id)
@@ -127,7 +127,7 @@ ref_data <- ref_data %>%
     by = "rep_id" 
   ) %>% 
   left_join(
-    read_csv("cleaned_data/event_derivative2.csv") %>% 
+    read_csv("cleaned_data/event_derivative.csv") %>% 
       suppressMessages() %>% 
       mutate(
         rep_id = as.character(rep_id)

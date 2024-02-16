@@ -90,46 +90,46 @@ issf_fit_l <- issf_fit_l %>%
 })
 
 
-extract_temporal_var <- function(issf_fit_l, hours = 12L){
-  v <- seq_along(issf_fit_l) %>% 
-    lapply(
-      function(i){
-        has_toxic <- !all(is.na(issf_fit_l[[i]]$data$toxic))
-        if(has_toxic){
-          l_conc <- ref_data %>% filter(rep_id == names(issf_fit_l)[i]) %>% .$low_diet_numeric
-          h_conc <- ref_data %>% filter(rep_id == names(issf_fit_l)[i]) %>% .$high_diet_numeric
-          
-          
-          out <- tryCatch(
-            issf_fit_l[[i]]$data %>% 
-              filter(case) %$% 
-              roll_vapply(toxic, w = 10 * hours + 1, FUN = function(xx){
-                xx <- xx[!is.na(xx)]
-                s <- xx == 0
-                xx[s] <- l_conc
-                xx[!s] <- h_conc
-                
-                var(xx, na.rm = TRUE)
-              }) %>% 
-              mean(na.rm = TRUE) ,
-            error = function(e){
-              NA
-            }
-          )
-        } else {
-          out <- 0
-        }
-        return(out)
-      }
-    ) %>% 
-    do.call("c", .)
-  
-  out <- data.frame(names(issf_fit_l), v)
-  names(out) <- c("rep_id", paste0("var_toxic_",hours))
-  
-  
-  return(out)
-}
+# extract_temporal_var <- function(issf_fit_l, hours = 12L){
+#   v <- seq_along(issf_fit_l) %>% 
+#     lapply(
+#       function(i){
+#         has_toxic <- !all(is.na(issf_fit_l[[i]]$data$toxic))
+#         if(has_toxic){
+#           l_conc <- ref_data %>% filter(rep_id == names(issf_fit_l)[i]) %>% .$low_diet_numeric
+#           h_conc <- ref_data %>% filter(rep_id == names(issf_fit_l)[i]) %>% .$high_diet_numeric
+#           
+#           
+#           out <- tryCatch(
+#             issf_fit_l[[i]]$data %>% 
+#               filter(case) %$% 
+#               roll_vapply(toxic, w = 10 * hours + 1, FUN = function(xx){
+#                 xx <- xx[!is.na(xx)]
+#                 s <- xx == 0
+#                 xx[s] <- l_conc
+#                 xx[!s] <- h_conc
+#                 
+#                 var(xx, na.rm = TRUE)
+#               }) %>% 
+#               mean(na.rm = TRUE) ,
+#             error = function(e){
+#               NA
+#             }
+#           )
+#         } else {
+#           out <- 0
+#         }
+#         return(out)
+#       }
+#     ) %>% 
+#     do.call("c", .)
+#   
+#   out <- data.frame(names(issf_fit_l), v)
+#   names(out) <- c("rep_id", paste0("var_toxic_",hours))
+#   
+#   
+#   return(out)
+# }
 
 # mix_means <- function(x){
 #   x <- x[!is.na(x)]
@@ -208,7 +208,7 @@ z <- issf_fit_l %>%
             paste0("ud_", x)
           }
         )
-    }, cores = 8, inorder = TRUE, export_fun_only = TRUE) %>%
+    }, cores = 1, inorder = TRUE, export_fun_only = TRUE) %>%
       do.call("rbind",.)
   )
 z <- detection_report(z$rep_id) %>%
@@ -252,7 +252,7 @@ w <- w %>%
 # 
 # 
 # 
-#write_csv(w, "cleaned_data/event_derivative3.csv")
+#write_csv(w, "cleaned_data/event_derivative.csv")
 
 
 

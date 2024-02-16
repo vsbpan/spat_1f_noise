@@ -5,7 +5,21 @@ d <- ref_data %>%
   mutate(
     cat_pre_wt_log = log(cat_pre_wt),
     cat_pre_wt_log_scale = as.numeric(scale(log(cat_pre_wt))),
-    cat_size = ifelse(cat_pre_wt < median(cat_pre_wt), "small", "big")
+    cat_size = ifelse(cat_pre_wt < median(cat_pre_wt), "small", "big"),
+    cat_big = ifelse(cat_size == "big", 1, 0),
+    has_var = ifelse(var_trt != "constant", 1, 0),
+    mean_toxic_conc_scale = as.numeric(scale(mean_toxic_conc)),
+    mean_toxic_scale = as.numeric(scale(mean_toxic)),
+    area_herb_log_scale = as.numeric(scale(log(area_herb+1))),
+    var_toxic_12_scale = as.numeric(scale(var_toxic_12)),
+    on_toxic_logit_scale = as.numeric(scale(adjust_prop(on_toxic, 
+                                                        trans = "emp", 
+                                                        nudge.method = "none", 
+                                                        na.action = "ignore"))),
+    toxic_select_scale = as.numeric(scale(toxic)),
+    sl_mean_obs_log_scale = as.numeric(scale(log(sl_mean_obs))),
+    ava_mean_toxin_scale = as.numeric(scale(ava_mean_toxin)),
+    cat_pre_wt_log_scale_sq = as.numeric(scale(log(cat_pre_wt)^2))
   )
   # mutate(
   #   `toxic:start_toxicyes` = ifelse(`toxic:start_toxicyes` < -10, NA, `toxic:start_toxicyes`),
@@ -253,7 +267,8 @@ m <- glmmTMB(
   pupation_time ~ 
     (var_trt * beta) + cat_pre_wt_log_scale + 
     (1|session_id),
-  data = d, 
+  data = d %>% 
+    filter(var_trt != "constant"), 
   family = Gamma(link = "log"),
 ); summary(m)
 
@@ -342,25 +357,37 @@ coxph(
 
 m <- coxph(
   Surv(surv_time, observed_dead) ~ 
-    var_trt + (beta) * cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) + 
+    var_trt + beta + cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) + 
     strata(session_id), 
   data = d %>% 
-    filter(var_trt != "constant")
+    filter(var_trt != "constant") %>% 
+    mutate(
+      beta = as.factor(as.character(beta))
+    )
 );summary(m)
+
+cox.zph(m)
+drop1(m, test = "Chisq")
+
 
 m <- glmmTMB(
   time_to_eclosure ~ 
-    var_trt + beta * cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) +
+    var_trt + beta * cat_pre_wt_log_scale +
     (1|session_id),
-  data = d, 
+  data = d %>% 
+    filter(var_trt != "constant"), 
   family = Gamma(link = "log"),
 ); summary(m)
 
 m <- glmmTMB(
   eclosed ~ 
-    #var_trt + beta + cat_pre_wt_log_scale +
+    var_trt + beta + cat_pre_wt_log_scale +
     (1|session_id),
-  data = d, 
+  data = d%>% 
+    filter(var_trt != "constant") %>% 
+    mutate(
+      eclosed = ifelse(deformed_adult == 1, 0, eclosed)
+    ), 
   family = binomial(),
 ); summary(m)
 
@@ -370,9 +397,11 @@ m <- glmmTMB(
     var_trt + beta * cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) + 
     #var_toxic_12 + mean_toxic_conc + cat_pre_wt_log_scale + 
     (1|session_id),
-  data = d, 
+  data = d %>% 
+    filter(var_trt != "constant"), 
   family = Gamma(link = "log"),
 ); summary(m)
+
 plot_model(m , type = "eff", terms = c("cat_pre_wt[all]", "beta")) + 
   scale_y_log10()
 
