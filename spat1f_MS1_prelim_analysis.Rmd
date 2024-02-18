@@ -692,6 +692,12 @@ contrast_by_pre_wt(subm_sl2, "cat_pre_wt_log_scale")$emmeans %>%
 knitr::include_graphics("graphs/joined_SEM.png")
 ```
 
+## SEM forest plot
+
+```{r}
+knitr::include_graphics("graphs/SEM_forest.png")
+```
+
 
 # Some demo plots {.tabset}
 ## Example spectra
