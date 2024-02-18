@@ -87,6 +87,8 @@ summary_psem <- function (object, ..., basis.set = NULL, direction = NULL, inter
   l
 }
 
+
+
 ```
 
 
@@ -567,7 +569,7 @@ subm_ava <- glmmTMB(
 
 ## d-separation test
 
-```{r echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+```{r echo=TRUE, message=FALSE, warning=FALSE, include=TRUE}
 sem_fit <- psem(
     subm_rgr,
     subm_var_toxic,
@@ -580,8 +582,11 @@ sem_fit <- psem(
     var_toxic_12_scale %~~% on_toxic,
     data = d2
 )
-sem_summary <- suppressWarnings(suppressMessages(summary_psem(sem_fit)))
+sem_summary <- suppressWarnings(suppressMessages(summary_psem(sem_fit, .progressBar = FALSE)))
 
+# Standardize via latent linear method
+sem_summary <- append_std_coef(sem_summary, 
+                               round(fixef(subm_on_toxic)$cond[-1] * 1 / sqrt(var(predict(subm_on_toxic)) + pi^2/3), digits = 4))
 ```
 
 ```{r}
@@ -610,8 +615,7 @@ knitr::kable(
 )
 
 
-# Latent theoretic standarized coefficient of beta regression 
-fixef(subm_on_toxic)$cond[-1] * 1 / sqrt(var(predict(subm_on_toxic)) + pi^2/3)
+
 ```
 
 ### Post hoc contrast
@@ -683,19 +687,10 @@ contrast_by_pre_wt(subm_sl2, "cat_pre_wt_log_scale")$emmeans %>%
 
 ## SEM plots
 
-```{r}
-
-knitr::include_graphics("graphs/small_cat_SEM.png")
-
-```
-
 
 ```{r}
-
-knitr::include_graphics("graphs/large_cat_SEM.png")
-
+knitr::include_graphics("graphs/joined_SEM.png")
 ```
-
 
 
 # Some demo plots {.tabset}
