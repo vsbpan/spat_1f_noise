@@ -35,3 +35,13 @@ for (j in seq_along(sem_fit_boot)){
 out_list_d <- out_list %>% 
   do.call("rbind", .)
 #write_csv(out_list_d, "cleaned_data/SEM_sim.csv")
+
+
+
+
+
+
+
+
+
+
