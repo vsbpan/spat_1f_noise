@@ -37,4 +37,3 @@ out_list_d <- out_list %>%
 #write_csv(out_list_d, "cleaned_data/SEM_sim.csv")
 
 
-

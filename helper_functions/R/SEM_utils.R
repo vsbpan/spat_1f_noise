@@ -148,7 +148,7 @@ SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, 
   if(!is.na(null_to_NA(exclude))){
     sem_coef <- sem_coef %>% 
       filter(
-      !grepl(paste0(c("cat_pre_wt", exclude),collapse = "|"),predictor)
+      !grepl(paste0(c("cat_pre_wt", as.character(exclude)),collapse = "|"),predictor)
     )
   }
   
