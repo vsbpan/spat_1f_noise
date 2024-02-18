@@ -12,18 +12,26 @@ by_data <- expand.grid("var" = c("beta_red", "beta_white", "var_high"),
 
 names(sem_fit$data)
 
-out <- pb_par_lapply(seq_len(nrow(by_data)), function(i, by_data, og_set, sem_fit_boot){
-  v <- sem_fit_boot %>% 
-    lapply(function(x){
-      SEM_pred_coef(x, 
-                    var = by_data[i,"var"],
-                    target = "RGR_scale", 
-                    cat_size = by_data[i,"cat_size"],
-                    exclude = by_data[i,"exclude"],
-                    only = by_data[i,"only"],
-                    og_set = og_set) 
-    }) %>% 
+out_list <- list()
+for (j in seq_along(sem_fit_boot)){
+  cat(sprintf("\nProcessing boot %s\n", j))
+  v <- pb_par_lapply(seq_len(nrow(by_data)), 
+                     function(i, by_data, og_set, sem_fit_booti){
+                       SEM_pred_coef(sem_fit_booti, 
+                                     var = by_data[i,"var"],
+                                     target = "RGR_scale", 
+                                     cat_size = by_data[i,"cat_size"],
+                                     exclude = by_data[i,"exclude"],
+                                     only = by_data[i,"only"],
+                                     og_set = og_set) 
+                     }, cores = 1, 
+                     by_data = by_data, 
+                     og_set = og_set, 
+                     sem_fit_booti = sem_fit_boot[[j]]) %>% 
     do.call("c", .)
-  data.frame(by_data[i,], "val" = v)
-}, cores = 6 , by_data = by_data, og_set = og_set, sem_fit_boot = sem_fit_boot)
+  out_list[[j]] <- data.frame(by_data, "val" = v)
+}
 
+out_list_d <- out_list %>% 
+  do.call("rbind", .)
+#write_csv(out_list_d, "cleaned_data/SEM_sim.csv")
