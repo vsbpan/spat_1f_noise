@@ -111,13 +111,16 @@ dzigamma <- function (x, p, shape, scale = 1/rate, rate, log = FALSE) {
 
 # General wrapper for amt_dist type object for getting density function
 ddist <- function(dist, x_max = 1500, len = 100, return_x = TRUE){
-  dist_name <- dist$name
-  if(dist_name == "vonmises" | dist_name == "genvonmises"){
-    x <- seq(-pi, pi, len = len)
-  }
-  if(dist_name == "gamma" | dist_name == "lnorm"){
-    x <- seq(0, x_max, len = len)
-  } else {
+
+  f <- function(dist){
+    dist_name <- dist$name
+    if(dist_name == "vonmises" | dist_name == "genvonmises"){
+      x <- seq(-pi, pi, len = len)
+    }
+    if(dist_name == "gamma" | dist_name == "lnorm"){
+      x <- seq(0, x_max, len = len)
+    }
+    
     d <- do.call(
       paste0("d",dist_name),
       c(
@@ -125,19 +128,37 @@ ddist <- function(dist, x_max = 1500, len = 100, return_x = TRUE){
         dist$params
       )
     )
+    
+    d[!is.finite(d)] <- NA_real_
+    
+    if(return_x){
+      data.frame("x" = x, "density" = d)
+    }
   }
   
-  d[!is.finite(d)] <- NA_real_
-  
-  if(return_x){
-    data.frame("x" = x, "density" = d)
+  if(!any(class(dist) %in% c("ta_distr", "sl_distr","amt_distr"))){
+    lapply(dist, function(x){
+      f(x)
+    })
+  } else {
+    f(dist)
   }
+  
 }
 
 # General wrapper for amt_dist type object for getting random number generation
 rdist <- function(dist, n, ...){
   dots <- as.list(match.call(expand.dots = TRUE))[-c(1:3)]
-  do.call(paste0("r", dist$name), c(list(n = n), dist$params, dots))
+  if(!any(class(dist) %in% c("ta_distr", "sl_distr","amt_distr"))){
+    lapply(
+      dist,
+      function(x){
+        do.call(paste0("r", x$name), c(list(n = n), x$params, dots)) 
+      }
+    ) 
+  } else {
+    do.call(paste0("r", dist$name), c(list(n = n), dist$params, dots)) 
+  }
 }
 
 # kth moment of absolute value of genvonmises dist

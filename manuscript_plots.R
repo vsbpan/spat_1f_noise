@@ -1,10 +1,28 @@
 
 
-g_bind <- ggarrange(g1, g2 + labs(y = "", fill = "Variation", color = "Variation"), 
-          g3 + theme(legend.position = "none"), 
-          g4 + labs(y = "")  + theme(legend.position = "none"), 
-          align = "v", heights = c(1,0.8), labels = "AUTO", label.x = 0.1, label.y = c(0.85,0.85, 1, 1))
-ggsave("graphs/figure2.png",g_bind, dpi = 600, width = 6.5, height = 6.5)
+g_bind <- ggarrange(
+  g2 + 
+    labs(fill = "Variation", color = "Variation", x = "Pre-weight (g)"), 
+  NULL,
+  g1 + 
+    labs(y = "", x = "Pre-weight (g)") + 
+    theme(plot.background = element_rect(fill='transparent', colour = "transparent")),  
+  g4 + 
+    theme(legend.position = "none") + 
+    scale_x_discrete(breaks = c("high_var","low_var"), label = c("high", "low")), 
+  NULL,
+  g3 + labs(y = "", x = "Pre-weight (g)")  + 
+    theme(legend.position = "none") + 
+    theme(plot.background = element_rect(fill='transparent', colour = "transparent")), 
+  align = "v", 
+  heights = c(1,0.8), 
+  widths = c(1, -0.1, 1, 1,-0.1, 1),
+  ncol = 3, nrow = 2, 
+  labels = c("a", "", "b", "c", "", "d"), 
+  label.x = 0.15, 
+  label.y = c(0.85,0,0.85, 1,0, 1)
+); g_bind
+#ggsave("graphs/perfromance_plot.png",g_bind, dpi = 600, width = 6.5, height = 6.5, bg = "white")
 
 
 
@@ -40,7 +58,7 @@ sem_sim_d %>%
   ) +
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   stat_pointinterval(
-    position = "dodge", stroke = 2
+    position = position_dodge(width = 0.7), stroke = 2
   ) + 
   scale_x_discrete(label = rev(c("Total", "Var. toxin", "Mean toxin","Step length","Consumption"))) +
   coord_flip() + 
@@ -61,7 +79,7 @@ sem_sim_d %>%
       ) %>% 
       ungroup() %>% 
       mutate(
-        sig = lower & upper < 0 | lower & upper > 0,
+        sig = (lower < 0 & upper < 0) | (lower > 0 & upper > 0),
         star = ifelse(sig, "*", "ns")
       ) %>% 
       group_by(var) %>% 
@@ -70,7 +88,7 @@ sem_sim_d %>%
       ),
     aes(label = star, y = max_val * 1.3, fill = cat_size, color = NULL),
     size = 4,
-    position = position_dodge(width = 1)
+    position = position_dodge(width = 0.7)
   ) + 
   geom_text(
     data = sem_sim_d %>% 
@@ -81,7 +99,7 @@ sem_sim_d %>%
       ) %>% 
       ungroup() %>% 
       mutate(
-        sig = lower & upper < 0 | lower & upper > 0,
+        sig = (lower < 0 & upper < 0) | (lower > 0 & upper > 0),
         star = ifelse(sig, "*", "ns")
       ) %>% 
       group_by(var) %>% 
@@ -91,15 +109,25 @@ sem_sim_d %>%
     aes(label = star, y = max_val * 1.4, group = cat_size, color = NULL),
     alpha = 0,
     size = 4,
-    position = position_dodge(width = 1)
+    position = position_dodge(width = 0.7)
   ) + 
-  scale_y_continuous(labels = fancy_linear) -> g3
+  scale_y_continuous(labels = fancy_linear) -> g3;g3
 
 
-#ggsave("graphs/SEM_forest.png", g3, width = 8, height = 6, dpi = 600)
+ggsave("graphs/SEM_forest.png", g3, width = 8, height = 6, dpi = 600)
 
 
 
 
-
+sem_sim_d %>% 
+  group_by(var,cat_size,exclude,only) %>% 
+  summarise(
+    lower = quantile(val, probs = 0.025),
+    upper = quantile(val, probs = 0.975)
+  ) %>% 
+  ungroup() %>% 
+  mutate(
+    sig = (lower < 0 & upper < 0) | (lower > 0 & upper > 0),
+    star = ifelse(sig, "*", "ns")
+  ) %>% View()
 

@@ -361,6 +361,7 @@ ud_area <- function(x, y, level_ud = 0.95,conf = 0.95){
 # Uses fitted issf_fit object to do simulation. If use_observed = TRUE, then the raw data used to fit the model is used instead for simulation. 
 iterate_random_steps <- function(start, issf_fit, 
                                  n = 100, 
+                                 index = 1,
                                  paired = FALSE, 
                                  use_observed = FALSE,
                                  r_thresh = attr(issf_fit$data, "r_thresh")){
@@ -368,12 +369,12 @@ iterate_random_steps <- function(start, issf_fit,
   out.list[[1]] <- start
   
   if(use_observed){
-    ra <- filter(o$data, case & !is.na(r) & !is.na(theta_rel))$theta_rel
-    rr <- filter(o$data, case & !is.na(r) & !is.na(theta_rel))$r
+    ra <- filter(issf_fit$data, case & !is.na(r) & !is.na(theta_rel))$theta_rel
+    rr <- filter(issf_fit$data, case & !is.na(r) & !is.na(theta_rel))$r
     r_thresh <- NULL
   } else {
-    ra <- rdist(issf_fit$ta_updated, 10^5)
-    rr <- rdist(issf_fit$sl_updated, 10^5)
+    ra <- rdist(issf_fit$ta_updated, 10^5)[[index]]
+    rr <- rdist(issf_fit$sl_updated, 10^5)[[index]]
   }
   
   
