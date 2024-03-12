@@ -2,7 +2,7 @@ library(tidyverse)
 library(herbivar)
 library(foreach)
 library(doSNOW)
-source("helper_functions/image_utils.R")
+source("spat1f/image_utils.R")
 
 
 trt_design_data <- read_csv("raw_data/example_trt_spectra_meta.csv")

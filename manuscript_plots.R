@@ -230,7 +230,7 @@ sem_sim_d %>%
 
 #### Methods figure insets ####
 
-source("helper_functions/init_analysis.R")
+source("spat1f/init_analysis.R")
 
 
 fetch_trt_meta() %>% 

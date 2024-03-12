@@ -1,4 +1,4 @@
-source("helper_functions/init.R")
+source("spat1f/init.R")
 
 
 source_dir <- "D:/time_lapse_export"

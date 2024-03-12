@@ -29,7 +29,7 @@ knitr::opts_chunk$set(
 ```{r, message=FALSE, warning=FALSE}
 library(survival)
 library(piecewiseSEM)
-source("helper_functions/init_analysis.R")
+source("spat1f/init_analysis.R")
 ```
 
 ## Handy functions not in spat1f

@@ -1,4 +1,4 @@
-source("helper_functions/init_analysis.R")
+source("spat1f/init_analysis.R")
 # 
 # 
 # data("radish")

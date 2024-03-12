@@ -21,7 +21,15 @@ Imports:
     Rcpp(>= 1.0.8),
     RcppArmadillo,
     amt,
-    survival
+    survival,
+    imagerExtra
+Suggests:
+    piecewiseSEM,
+    jsonlite,
+    sjPlot,
+    performance,
+    tidybayes,
+    ggpubr
 LinkingTo: 
     Rcpp,
     RcppArmadillo 

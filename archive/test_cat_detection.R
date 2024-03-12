@@ -2,9 +2,9 @@ library(tidyverse)
 library(herbivar)
 library(foreach)
 library(doSNOW)
-source("helper_functions/file_mgmt.R")
-source("helper_functions/image_utils.R")
-source("helper_functions/utils.R")
+source("spat1f/file_mgmt.R")
+source("spat1f/image_utils.R")
+source("spat1f/utils.R")
 herbivar::pre_cmp_fun()
 
 src_root <- "processed_feed"

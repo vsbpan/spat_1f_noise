@@ -3,7 +3,7 @@ library(sjPlot)
 library(performance)
 library(tidybayes)
 library(glmmTMB)
-source("helper_functions/init.R")
+source("spat1f/init.R")
 
 
 

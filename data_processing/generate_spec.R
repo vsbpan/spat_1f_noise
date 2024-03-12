@@ -1,7 +1,7 @@
 #### Set up ####
 ## This script is the work flow for generating treatment spectra, saving them, and writing helper image guide.  
 
-source("helper_functions/init.R")
+source("spat1f/init.R")
 
 
 #### Generate spectra list by treatment groups ####
