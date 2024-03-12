@@ -127,7 +127,7 @@ SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, 
         Estimate
       ),
       Predictor = gsub(":cat_pre_wt_log_scale","",Predictor),
-      std_est = ifelse(Predictor %in% c("var_high","beta_red","beta_white"), 
+      std_est = ifelse(Predictor %in% c("var_high","beta_red","beta_white","beta_numeric_scale"), 
                        Estimate,
                        std_est),
       response = Response,
@@ -152,12 +152,6 @@ SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, 
     )
   }
   
-  if(!is.na(null_to_NA(only))){
-    sem_coef <- sem_coef %>% 
-      filter(
-        !(response == target & predictor != only)
-      )
-  }
   sem_coef <- as.data.frame(sem_coef)
   
   l <- sem_coef %>% 
@@ -169,6 +163,11 @@ SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, 
     l <- recursive_split(l, sem_coef = sem_coef, target = target)
   }
   
+  if(!is.na(null_to_NA(only))){
+    l <- keep(l, function(x){
+      any(only %in% (path_vars(x)))
+    })
+  }
   
   l %>% 
     lapply(function(x){
@@ -178,7 +177,7 @@ SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, 
 }
 
 
-bootSEM <- function(x, nboot = 10, cores = 1){
+bootSEM <- function(x, nboot = 10, cores = 1, silent = FALSE){
   pb_par_lapply(seq_len(nboot), function(i, sem_fit){
     data <- sem_fit$data
     newdata <- slice_sample(data, replace = TRUE, n = nrow(data))
@@ -189,11 +188,13 @@ bootSEM <- function(x, nboot = 10, cores = 1){
       }
     ) %>% 
       as.psem()
-  }, sem_fit = x, cores = cores, inorder = FALSE)
+  }, sem_fit = x, cores = cores, inorder = FALSE, silent = silent)
 }
 
 
-
+path_vars <- function(l){
+  unique(do.call("c",lapply(l, function(x){c(x$response, x$predictor)})))
+}
 
 
 

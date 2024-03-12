@@ -77,7 +77,7 @@ emmeans::emmeans(m,
 
 
 
-ID <- 50
+ID <- 93
 
 d <- fetch_events(ID) %>%
   clean_events(ref_data = ref_data) %>%
@@ -110,6 +110,7 @@ out <- issf(
     toxic + 
     (cos_theta_pi + cos_2theta) +
     (sl + logsl) +
+    #logsl + logslsq + 
     strata(step_id),
   data = d,
   shape_estimator = c("logsl"),
@@ -117,32 +118,23 @@ out <- issf(
   kappa1_estimator = "cos_theta_pi",
   kappa2_estimator = "cos_2theta"
 )
-
+out
 
 reload()
 
-d %>% filter(case) %>% .$r %>% log %>% hist(nclass = 50)
-rdist(out$sl, 1000) %>% log() %>% hist(nclass = 50)
 
-ddist((out$sl))
-debug(ddist)
+d %>% filter(case) %>% .$r %>% loghist(nclass = 20)
+d %>% filter(case) %>% .$r %>% log() %>% hist(nclass = 20)
+
+
+d %>% filter(case) %>% .$r %>% log %>% hist(nclass = 50)
+rdist(out$sl_updated, 10000)[[1]] %>% log() %>% hist(nclass = 50)
+
 
 creat_start(500, 500, 0) %>% 
   iterate_random_steps(issf_fit = out, n = 1000) %>% 
   plot_track(x2, y2)
 
-
-
-
-
-
 creat_start(500, 500, 0) %>% 
-  iterate_random_steps(issf_fit = out, n = 1000, paired = FALSE, use_observed = TRUE) %>% 
+  iterate_random_steps(issf_fit = out, n = 3000, paired = TRUE, use_observed = TRUE) %>% 
   plot_track(x2, y2)
-
-
-
-
-
-
-

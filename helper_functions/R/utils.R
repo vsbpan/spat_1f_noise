@@ -32,7 +32,9 @@ frame_time <- function(x, fps){
 # lapply() with progress bar and parallel support. 
 pb_par_lapply <- function(x, FUN, cores = 1, ..., 
                           loop_text = "Processing",
-                          inorder = TRUE, export_fun_only = TRUE){
+                          silent = FALSE,
+                          inorder = TRUE, 
+                          export_fun_only = TRUE){
   if(is.list(x)){
     indf <- function(x,i){
       x[[i]]
@@ -48,7 +50,9 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
   if(!has_clust && (is.null(cores) || is.na(cores) || cores <= 1 || isFALSE(cores))){
     n <- length(x)
     out <- lapply(seq_along(x), FUN = function(i){
-      cat(sprintf("\r%s %d of %d",loop_text,i, n))
+      if(!silent){
+        cat(sprintf("\r%s %d of %d",loop_text,i, n))
+      }
       FUN(indf(x, i), ...)
     })
   } else {
@@ -92,7 +96,9 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
       .final = invisible,
       .options.snow = list(
         progress = function(n) {
-          cat(sprintf("\r%s %d of %d",loop_text, n, length(indices)))
+          if(!silent){
+            cat(sprintf("\r%s %d of %d",loop_text, n, length(indices)))
+          }
         }
       ),
       .packages = pkg

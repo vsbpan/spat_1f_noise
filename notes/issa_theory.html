@@ -11,7 +11,7 @@
 
 <meta name="author" content="Vincent Pan" />
 
-<meta name="date" content="2024-01-26" />
+<meta name="date" content="2024-02-20" />
 
 <title>iSSA notes</title>
 
@@ -1540,11 +1540,13 @@ border-radius: 0px;
 
 <h1 class="title toc-ignore">iSSA notes</h1>
 <h4 class="author">Vincent Pan</h4>
-<h4 class="date">January 26, 2024</h4>
+<h4 class="date">February 20, 2024</h4>
 
 </div>
 
 
+<div id="ugggh" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Ugggh</h1>
 <p>For the distribution of turn angles <span class="math inline">\(\theta\)</span>, we consider a special case of the
 the generalized von Mises distribution (Gatto and Jammalamadaka 2007)
 which has the density function,</p>
@@ -1630,20 +1632,38 @@ free turn angle}} \ + \\
 &amp; \underbrace{\alpha_{\text{stratum(i)}}}_{\text{Step matching}}
 \end{align}
 \]</span></p>
+<p>Inverse gamma distribution with Levy(c) as a special case fo
+invGamma(0.5, c/2):</p>
+<p><span class="math display">\[
+P(l;\alpha, \beta) = \frac{\beta^{\alpha}}{\Gamma(\alpha)}l^{-\alpha-1}
+\exp(-\frac{\beta}{l})
+\]</span></p>
+<p><span class="math display">\[
+\ln(P(l;c)) \propto (-\alpha-1) \ln(l) -\beta \ l^{-1}
+\]</span></p>
+</div>
+<div id="defunct" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Defunct</h1>
+<p><span class="math inline">\(P(l \geq l^*)\)</span> is a function of
+<span class="math inline">\(l\)</span>.</p>
 <p>Instead of a zigamma distribution, a better approximation of the data
-generating process is a zeroed truncated gamma distribution (hereafter
-as zTG). <span class="math inline">\(l^*\)</span> correspond to the
-minimum threshold of step length to be considered as movement.</p>
+generating process is a zero censored gamma distribution (hereafter as
+zCG). <span class="math inline">\(l^*\)</span> correspond to the minimum
+threshold of step length to be considered as movement.</p>
 <p><span class="math display">\[
 P(l; l^*, k, q) =
 \begin{cases}
-G(l^*; k, q) &amp; \text{for } l &lt; l^* \\
-(1-G(l^*; k, q)) \frac{l^{k-1} \exp(-l/q)}{q^k \Gamma(k)} &amp;
-\text{for } l \geq l^*
+G(l^*; k, q) &amp; \text{for } l \leq l^* \\
+(1-G(l^*; k, q))\frac{l^{k-1} \exp(-l/q)}{q^k \Gamma(k)} &amp; \text{for
+} l &gt; l^*
 \end{cases}
 \]</span> <span class="math display">\[
-G(l; k, q) = \int_{l}^{\infty} \frac{l^{k-1} \exp(-l/q)}{q^k \Gamma(k)}
+G(l; k, q) = \int_{0}^{l} \frac{l^{k-1} \exp(-l/q)}{q^k \Gamma(k)}
 \]</span></p>
+<p><span class="math display">\[
+\ln(P(l; l^*, k, q)) \propto (k-1) \ \ln(l) - \frac{1}{q} l
+\]</span></p>
+</div>
 
 
 

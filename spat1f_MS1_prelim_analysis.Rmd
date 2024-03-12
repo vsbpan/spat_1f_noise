@@ -139,7 +139,10 @@ d2 <- d %>%
     beta_white = ifelse(as.character(beta) == 0, 1, 0),
     beta_red_cat_pre_wt_log_scale = beta_red * cat_pre_wt_log_scale,
     beta_white_cat_pre_wt_log_scale = beta_white * cat_pre_wt_log_scale,
-    var_high_cat_pre_wt_log_scale = var_high * cat_pre_wt_log_scale
+    var_high_cat_pre_wt_log_scale = var_high * cat_pre_wt_log_scale,
+    beta_numeric_scale = as.numeric(scale(as.numeric(beta))),
+    select_scale = toxic_select_scale * -1, 
+    ava_qual_scale = as.numeric(scale(1 - ava_mean_toxin))
   )
 
 ```
@@ -474,9 +477,9 @@ subm_rgr <- glmmTMB(
 ```{r}
 subm_var_toxic <- glmmTMB(
   var_toxic_12_scale ~ 
-    beta_red + beta_white + var_high + 
+    beta_numeric_scale + var_high + 
     sl_mean_obs_log_scale + 
-    toxic_select_scale + 
+    select_scale + 
     (1|session_id),
   data = d2
 ); summary(subm_var_toxic)
@@ -489,9 +492,9 @@ subm_var_toxic <- glmmTMB(
 ```{r}
 subm_sl <- glmmTMB(
   sl_mean_obs_log_scale ~ 
-    var_high + (beta_red + beta_white) + cat_pre_wt_log_scale + 
+    var_high + beta_numeric_scale + cat_pre_wt_log_scale + 
     cat_pre_wt_log_scale_sq +
-    on_toxic + ava_mean_toxin_scale + 
+    on_toxic + ava_qual_scale + 
     (1|session_id),
   data = d2,
 ); summary(subm_sl)
@@ -504,8 +507,8 @@ subm_sl <- glmmTMB(
 ```{r}
 subm_toxin_ingested <- glmmTMB(
   mean_toxic_conc_scale ~ 
-    beta_red + beta_white + var_high * cat_pre_wt_log_scale + 
-    on_toxic + toxic_select_scale + cat_pre_wt_log_scale_sq + 
+    beta_numeric_scale + var_high * cat_pre_wt_log_scale + 
+    on_toxic + cat_pre_wt_log_scale_sq + select_scale + 
     (1|session_id),
   data = d2 
 ); summary(subm_toxin_ingested)
@@ -519,7 +522,7 @@ subm_toxin_ingested <- glmmTMB(
 
 subm_on_toxic <- glmmTMB(
   on_toxic ~ 
-    toxic_select_scale + ava_mean_toxin_scale  + 
+    select_scale + ava_qual_scale  + 
     (1|session_id),
   family = beta_family(),
   data = d2
@@ -533,7 +536,7 @@ subm_on_toxic <- glmmTMB(
 ```{r}
 subm_herb <- glmmTMB(
   area_herb_log_scale ~ 
-    var_high + beta_red + beta_white + cat_pre_wt_log_scale + 
+    var_high + beta_numeric_scale + cat_pre_wt_log_scale + 
     sl_mean_obs_log_scale + 
     (1|session_id),
   data = d2,
@@ -546,9 +549,9 @@ subm_herb <- glmmTMB(
 
 ```{r}
 subm_select <- glmmTMB(
-  toxic_select_scale ~ 
-    beta_red + beta_white + var_high * cat_pre_wt_log_scale + 
-    ava_mean_toxin_scale + 
+  select_scale ~ 
+    beta_numeric_scale + var_high * cat_pre_wt_log_scale + 
+    ava_qual_scale + 
     (1|session_id),
   data = d2,
 ); summary(subm_select)
@@ -559,8 +562,8 @@ subm_select <- glmmTMB(
 
 ```{r}
 subm_ava <- glmmTMB(
-  ava_mean_toxin_scale ~ 
-    var_high + (beta_red + beta_white) * cat_pre_wt_log_scale + 
+  ava_qual_scale ~ 
+    var_high + beta_numeric_scale * cat_pre_wt_log_scale + 
     (1|session_id),
   data = d2,
 ); summary(subm_ava)
@@ -629,60 +632,10 @@ contrast_by_pre_wt(subm_select, "var_high", "trt")
 ```
 
 ```{r}
-contrast_by_pre_wt(subm_ava, "beta_red", "trt")
-```
-
-```{r}
-contrast_by_pre_wt(subm_ava, "beta_white", "trt")
-
-```
-
-```{r}
-subm_rgr2 <- glmmTMB(
-  RGR_scale ~ 
-    cat_pre_wt_log_scale + 
-    I(cat_pre_wt_log_scale^2) +
-    mean_toxic_conc_scale + 
-    area_herb_log_scale + 
-    sl_mean_obs_log_scale +
-    var_toxic_12_scale + 
-    (1|session_id),
-  data = d2
-)
-
-contrast_by_pre_wt(subm_rgr2, "cat_pre_wt_log_scale")$emmeans %>% 
-  as.data.frame() %>% 
-  mutate(Z = emmean / SE, P = pnorm(abs(Z), lower.tail = FALSE)*2)
-```
-```{r}
-subm_toxin_ingested2 <- glmmTMB(
-  mean_toxic_conc_scale ~ 
-    beta_red + beta_white + var_high * cat_pre_wt_log_scale + 
-    on_toxic + toxic_select_scale + I(cat_pre_wt_log_scale^2) + 
-    (1|session_id),
-  data = d2 
-)
-
-
-contrast_by_pre_wt(subm_toxin_ingested2, "cat_pre_wt_log_scale")$emmeans %>% 
-  as.data.frame() %>% 
-  mutate(Z = emmean / SE, P = pnorm(abs(Z), lower.tail = FALSE)*2)
-```
-
-
-```{r}
-subm_sl2 <- glmmTMB(
-  sl_mean_obs_log_scale ~ 
-    var_high + (beta_red + beta_white) + cat_pre_wt_log_scale + 
-    I(cat_pre_wt_log_scale^2) +
-    on_toxic + ava_mean_toxin_scale +
-    (1|session_id),
-  data = d2,
-)
-
-contrast_by_pre_wt(subm_sl2, "cat_pre_wt_log_scale")$emmeans %>% 
-  as.data.frame() %>% 
-  mutate(Z = emmean / SE, P = pnorm(abs(Z), lower.tail = FALSE)*2)
+emmeans::emtrends(subm_ava, 
+                 ~ beta_numeric_scale | cat_pre_wt_log_scale, 
+                 var = "beta_numeric_scale", 
+                 at = list(cat_pre_wt_log_scale = c(-2,2)))
 ```
 
 ## SEM plots

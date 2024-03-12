@@ -368,6 +368,22 @@ plot_track_overlay <- function(events = NULL, repID = NULL, ref_data = get("ref_
     scale_fill_viridis_d(option = "mako")
 }
 
+loghist <- function(x, ...){
+  x <- log(x)
+  p <- hist(x, plot = FALSE, ...)
+  data.frame(
+    "x" = exp(p$mids),
+    "p" = p$counts / length(x)
+  ) %>% 
+    ggplot(aes(x = x, y = p)) + 
+    geom_col() + 
+    scale_y_continuous(trans = "log10") + 
+    theme_bw(base_size = 15) + 
+    scale_x_continuous(trans = "log10") + 
+    labs(x = "x", y = "P(x)")
+}
+
+
 fancy_linear <- function(l) {
   # turn in to character string in scientific notation
   l <- format(l, scientific = FALSE)

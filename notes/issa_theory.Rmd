@@ -13,6 +13,7 @@ output:
     theme: default
 ---
 
+# Ugggh
 
 For the distribution of turn angles $\theta$, we consider a special case of the the generalized von Mises distribution (Gatto and Jammalamadaka 2007) which has the density function,
 
@@ -81,10 +82,36 @@ y \sim \ & \text{Bernouli}(p) \\
 $$
 
 
+Inverse gamma distribution with Levy(c) as a special case fo invGamma(0.5, c/2): 
+
+$$
+P(l;\alpha, \beta) = \frac{\beta^{\alpha}}{\Gamma(\alpha)}l^{-\alpha-1} \exp(-\frac{\beta}{l})
+$$
+
+$$
+\ln(P(l;c)) \propto (-\alpha-1) \ln(l) -\beta \ l^{-1}
+$$
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Defunct
+
+
+$P(l \geq l^*)$ is a function of $l$. 
 
 Instead of a zigamma distribution, a better approximation of the data generating process is a zero censored gamma distribution (hereafter as zCG). $l^*$ correspond to the minimum threshold of step length to be considered as movement.
 
