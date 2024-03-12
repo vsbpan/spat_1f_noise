@@ -97,16 +97,48 @@ The custom code written for this project are bundled as a pseudo simulated packa
 * `prediction_evaluator.R` code for evaluating the performance of Mask-R-CNN
 
 
+### Data
 
 
+* `raw_data/1_f_noise_experiment data_Jan_31_2024.csv` Final experimental data (some of the variables were not analyzed in manuscript 1)
+    * **rep_id**: caterpillar ID / replication ID
+    * **beta**: the spectral exponent used to generate the treatment spectrum
+    * **syn_id**: the treatment spectrum ID that maps to `raw_data/trt_spectra_meta/master_trt_meta.csv`
+    * **cam_id**: camera ID
+    * **arena_id**: arena ID
+    * **mean_trt**: mean xanthotoxin dose in the diet 
+    * **var_trt**: variation treatment
+    * **low_diet**: xanthotoxin dose in the low dose diet
+    * **high_diet**: xanthotoxin dose in the high dose diet
+    * **assemble_date**: diet landscape assembly date in mm-dd-YYYY
+    * **date_start**: date of experiment start (when the caterpillar is placed on treatment diet) in mm-dd-YYYY
+    * **time_start**: time of experiment start in HH:MM
+    * **cat_pre_wt**: caterpillar pre-experimental weight in grams
+    * **date_end_camera**: date when the experiment ended in mm-dd-YYYY. 
+    * **time_end_camera**: time when the experiment ended in HH:MM. 
+    * **cat_post_wt**: caterpillar weight at the time when the experiment ended. 
+    * **cat_dead_cam_end**: 1 (TRUE) or 0 (FALSE) the caterpillar died within five days. 
+    * **pupation_date**: date when caterpillar begun to spin for eventual pupation in mm-dd-YYYY
+    * **pupal_weight**: the weight of the melanized pupa in grams
+    * **pupated_cam_end**: 1 (TRUE) or 0 (FALSE) the caterpillar begun to spin within five days.
+    * **eclosure_date**: date when the moth emerged from the pupa in mm-dd-YYYY
+    * **sex**: male or female moth
+    * **death_date**: date when the caterpillar died in mm-dd-YYYY
+    * **deformed_adult**: 1 (TRUE) or 0 (FALSE) whether the adult had deformed wings or body
+    * **notes**: misc notes
+    * **temperature**: temperature of the room at which the experiment was done in Celsius. 
+    * **session_id**: experimental session ID
+    * **error**: 1 (TRUE) or 0 (FALSE) a fatal error occurred for the replication that warrants its removal from analyses. Reason written for when TRUE. 
+    * **premature_camera_end**: whether the camera stopped taking pictures before the end of the experiment. 
+    * **camera_cutoff**: the time (seconds) limit after which the time lapse photos are no longer relevant (e.g. because the caterpillar died).
 
 
+* `raw_data/trt_spectra_meta/master_trt_meta.csv` treatment spectra metadata
+    * **syn_id**	the treatment spectrum ID
+    * **syn_date** system time when the spectrum was generated
+    * **spec_A1 -- spec_L12** whether the spectrum should have a high (1) or low (0) xanthotoxin diet at the corresponding coordinate. 
 
-
-
-
-
-
+<img src="demo/rep_id49.jpg" alt="Example of printed template for diet landscape assembly" style="width:400px"/>
 
 
 
