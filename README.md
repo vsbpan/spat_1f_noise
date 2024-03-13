@@ -7,7 +7,7 @@ This repo hosts code for image processing and data analysis for an INTERN funded
 
 
 
-![**Manuscript 1 methods figure**](demo/methods_figure.png)
+![**Manuscript 1 methods figure**](demo/methods_figure.jpg)
 
 Summary of the data processing pipeline that derives measures of herbivore movement and feeding behavior that may explain differential herbivore performance. Lighter squares represent diet tiles that contain a higher concentration of xanthotoxins. A layer of red luster dust was sprayed on top of the diet to delineate eaten and uneaten diet. 
 
