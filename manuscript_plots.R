@@ -295,3 +295,35 @@ g <- fetch_trt_spec(81) %>%
 # ggsave("graphs/methods_figure/rep81_tracks.jpg", g, width = 7.5, height = 8, dpi = 600)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+img1 <- fast_load_image("graphs/methods_figure/processed_rep81__cam20_s0_rank1.jpg")
+img2 <- fast_load_image("graphs/methods_figure/processed_rep81__cam20_s441162_rank1225.jpg")
+mask <- (fetch_data_dict(81)[1225] %>% get_mask())[[1]]
+
+hue_diff <- (HUE(img1) - HUE(img2)) 
+hue_diff2 <- hue_diff
+hue_diff2[imager::grow(mask, x = 20)] <- quantile(hue_diff2, probs = 0.1)
+spe_img <- hue_diff2 %>% imagerExtra::SPE(lamda = 0.001,range = c(0,1))
+thr_img <- spe_img %>% threshold2(thr = "otsu")
+img_final <- thr_img %>% shrink(10)
+
+
+jpeg(paste0("graphs/methods_figure/", "herbivory_detection", ".jpg"), width = 15, height = 10, units = "cm", res = 600)
+plot.imlist(imlist(img2, HUE(img2), hue_diff,
+                   spe_img, as.cimg(thr_img), as.cimg(img_final)), 
+            main.panel = c("Raw image", "HUE", "Delta HUE censored",
+                           "SPE enhanced", "Otsu thresholded", "Eroded final"), 
+            axes = FALSE, interpolate = FALSE)
+dev.off()
