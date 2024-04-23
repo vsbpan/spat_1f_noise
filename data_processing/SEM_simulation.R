@@ -12,9 +12,25 @@ by_data <- expand.grid("var" = c("beta_numeric_scale", "var_high"),
                        "target" = c("RGR_scale"),
                        "only" = c("sl_mean_obs_log_scale", "area_herb_log_scale", 
                                   "mean_toxic_conc_scale", "var_toxic_12_scale", 
-                                  "ava_mean_toxin_scale", "select_scale"), 
+                                  "select_scale"), 
                        "cat_size" = c(-2, 2), 
-                       "exclude" = c(NA))
+                       "exclude" = c(NA)) %>% 
+  rbind(
+    expand.grid("var" = c("beta_numeric_scale", "var_high"),
+                "target" = c("sl_mean_obs_log_scale", "area_herb_log_scale", 
+                             "mean_toxic_conc_scale", "var_toxic_12_scale", 
+                             "select_scale"),
+                "only" = NA, 
+                "cat_size" = c(-2, 2), 
+                "exclude" = c(NA)),
+    expand.grid("var" = c("sl_mean_obs_log_scale", "area_herb_log_scale", 
+                          "mean_toxic_conc_scale", "var_toxic_12_scale", 
+                          "select_scale"),
+                "target" = "RGR_scale",
+                "only" = NA, 
+                "cat_size" = c(-2, 2), 
+                "exclude" = c(NA))
+  )
 
 out_list <- pb_par_lapply(
   1:200,

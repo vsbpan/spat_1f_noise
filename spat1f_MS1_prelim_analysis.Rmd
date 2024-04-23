@@ -508,7 +508,7 @@ subm_sl <- glmmTMB(
 subm_toxin_ingested <- glmmTMB(
   mean_toxic_conc_scale ~ 
     beta_numeric_scale + var_high * cat_pre_wt_log_scale + 
-    on_toxic + cat_pre_wt_log_scale_sq + select_scale + 
+    on_toxic + cat_pre_wt_log_scale_sq + select_scale +  
     (1|session_id),
   data = d2 
 ); summary(subm_toxin_ingested)
@@ -519,7 +519,6 @@ subm_toxin_ingested <- glmmTMB(
 ### Mean time on toxin
 
 ```{r}
-
 subm_on_toxic <- glmmTMB(
   on_toxic ~ 
     select_scale + ava_qual_scale  + 
@@ -558,7 +557,7 @@ subm_select <- glmmTMB(
 ```
 
 
-### Toxin availability
+### Neighborhood diet quality
 
 ```{r}
 subm_ava <- glmmTMB(

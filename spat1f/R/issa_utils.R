@@ -314,6 +314,19 @@ update_distr <- function(x,
   return(x)
 }
 
+# Simulate available steps from updated sl and ta distributions
+resample_ava_steps <- function(model, n = 1L){
+  model$data %>%
+    filter(case) %>% 
+    dplyr::select(step_id, x1, x2, y1, y2, theta_abs, r, theta_rel) %>% 
+    add_random_steps(n = n,
+                     sl_distr = model$sl_updated[[1]],
+                     ta_distr = model$ta_updated[[1]]
+    ) %>%
+    flag_invalid_steps(remove = TRUE)
+}
+
+
 
 # Internal function for resampling data in refitting issf in two shot estimation of zigamma. Currently defunct bc zigamma support is mostly removed.  
 resample_data <- function(object, n = NULL, remove_invalid = FALSE){

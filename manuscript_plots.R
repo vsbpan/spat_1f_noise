@@ -1,4 +1,9 @@
 library(tidybayes)
+source("spat1f/init.R")
+
+
+
+
 
 g_bind <- ggarrange(
   g2 + 
@@ -113,7 +118,7 @@ sem_sim_d %>%
   scale_y_continuous(labels = fancy_linear) -> g3;g3
 
 
-ggsave("graphs/SEM_forest.png", g3, width = 6, height = 5.5, dpi = 600)
+ggsave("graphs/SEM_forest.png", g3, width = 6.5, height = 5.5, dpi = 600)
 
 
 
@@ -137,6 +142,10 @@ ggsave("graphs/SEM_forest.png", g3, width = 6, height = 5.5, dpi = 600)
 
 
 sem_sim_d <- read_csv("cleaned_data/SEM_sim2.csv")
+sem_sim_d %>% 
+  group_by(var, target, only, cat_size) %>% 
+  do(as.data.frame(t(summarise_vec(.$val)))) %>% 
+  View()
 
 
 sem_sim_d <- sem_sim_d %>% 
@@ -306,7 +315,7 @@ g <- fetch_trt_spec(81) %>%
 
 
 
-
+#### Herbivory mask processing figure #####
 
 img1 <- fast_load_image("graphs/methods_figure/processed_rep81__cam20_s0_rank1.jpg")
 img2 <- fast_load_image("graphs/methods_figure/processed_rep81__cam20_s441162_rank1225.jpg")
@@ -327,3 +336,71 @@ plot.imlist(imlist(img2, HUE(img2), hue_diff,
                            "SPE enhanced", "Otsu thresholded", "Eroded final"), 
             axes = FALSE, interpolate = FALSE)
 dev.off()
+
+
+
+
+
+
+#### Generalized von Mises Distribution plot #####
+
+
+x <- fetch_events(81) %$%
+  move_seq(head_x, head_y) %>% 
+  .$theta_rel %>% 
+  na.omit() %>% 
+  as.vector()
+
+grid <- seq(-pi, pi, len = 30)
+
+data.frame(
+  "x" = nearest_bin(x, grid)
+) %>% 
+  group_by(x) %>% 
+  tally() %>% 
+  mutate(
+    p = n / sum(n)
+  ) %>% 
+  ggplot(
+    aes(x = x, y = p / mean(diff(grid)))
+  ) + 
+  geom_col(
+   fill = "steelblue", color = "navy" 
+  ) + 
+  geom_line(
+    data = ddist(fit_genvonmises(x)),
+    aes(x = x, y = density),
+    size = 2, 
+    color = "tomato"
+  ) +
+  geom_line(
+    data = data.frame(
+      "x" = grid, 
+      "density" = as.vector(circular::dvonmises(x = grid, 
+                                                mu = -pi, 
+                                                kappa = amt::fit_distr(x-pi, "vonmises")$params$kappa))
+    ),
+    size = 2,
+    aes(x = x, y = density),
+    color = "black",
+    linetype = "dashed"
+  ) + 
+  theme_bw(base_size = 15) + 
+  scale_x_continuous(breaks = c(-pi, -pi/2, 0, pi/2, pi), 
+                     labels = c(expression(-pi), expression(-pi/2), 0, expression(pi/2), expression(pi)) 
+  ) + 
+  labs(x = "Turn angles (radians)", y = "Density") -> g
+
+ggsave("graphs/generalized_von_mises_fit.png",g, dpi = 600)
+
+
+
+
+
+
+
+
+
+
+
+

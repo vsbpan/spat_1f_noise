@@ -272,3 +272,60 @@ w %>%
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+get_ava_neighborhood_quality <- function(model, ID, .ref_data, n = 100L){
+  resample_ava_steps(model, n = 100L) %>% 
+    mutate(
+      toxic = read_value(x2, y2, c(1000, 1000),
+                         ref_img = fetch_trt_spec(ID, .ref_data = .ref_data, quiet = TRUE))
+    ) %>% 
+    group_by(step_id) %>% 
+    summarise(
+      ava_neighborhood_qual = (1 - mean(toxic))
+    ) %>% 
+    summarise(
+      ava_neighborhood_qual = mean(ava_neighborhood_qual)
+    ) %>% 
+    unlist() %>% 
+    unname()
+}
+
+
+
+get_ava_neighborhood_quality(m, 6, ref_data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

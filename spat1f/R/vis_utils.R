@@ -187,7 +187,7 @@ marginal_effects <- function(model, terms, n = 300, ci = 0.95){
   
   predictor_frame <- insight::get_data(model)
   yname <- insight::find_response(model)
-  predictor_frame <-predictor_frame[,!names(predictor_frame) %in% yname]
+  predictor_frame <-predictor_frame[,!names(predictor_frame) %in% yname, drop = FALSE]
   
   rand_names <- insight::find_random(model)$random
   var_names <- names(predictor_frame)
