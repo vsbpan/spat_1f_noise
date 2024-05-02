@@ -3,7 +3,7 @@
 # Print method for COCO_Json
 print.COCO_Json <- function(x){
   cat(sprintf("COCO annotation with %s images\n", nrow(x$images)))
-  cat(sprintf("things: %s", x$categories["name"]))
+  cat(sprintf("things: %s", paste0(x$categories[,"name"], collapse = ", ")))
 }
 
 
@@ -273,6 +273,10 @@ merge_COCO <- function(...){
     return(x)
   })
   
+  nimg <- do.call("c", lapply(dots, function(x){
+    nrow(x$images)
+  }))
+  dots <- dots[nimg > 0]
   
   categories <- lapply(seq_along(dots), function(i, x){
     o <- x[[i]]$categories

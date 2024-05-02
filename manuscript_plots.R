@@ -306,7 +306,16 @@ g <- fetch_trt_spec(81) %>%
 
 
 
+fetch_image(81, rank = 100) %>% 
+  plot()
 
+fetch_trt_spec(81) %>% 
+  flip_xy() %>% 
+  resize(1000, 1000) %>% 
+  imdraw(fetch_image(81, rank = 223), ., opacity = 0.05) %>% 
+  plot()
+
+plot(fetch_data_dict(81)[223], add = TRUE)
 
 
 
