@@ -6,7 +6,10 @@ using namespace Rcpp;
 double iouC(arma::mat img1, arma::mat img2) {
   double i = arma::accu(img1 && img2);
   double u = arma::accu(img1 || img2);
-  double iou = i / u;
+  double iou = 0; 
+  if(u > 0){
+    iou = i / u;
+  }
   return iou;
 }
 

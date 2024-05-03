@@ -215,6 +215,8 @@ import_COCO <- function(x){
   i <- out$annotations[,"num_keypoints"]
   out$annotations[is.na(i),"num_keypoints"] <- 0
   
+  # Not sure why some images with annotations has zero when exported from COCO annotator.
+  # Set all as 1 for now, as detectron2 seems to be able to distinguish images with / without annotations. 
   out$images$num_annotations <- 1
   
   

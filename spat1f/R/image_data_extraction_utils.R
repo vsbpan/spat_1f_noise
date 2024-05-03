@@ -241,7 +241,7 @@ polygon_centroid <- function(poly){
 
 # Validate polygon to have only positive area
 validate_polygon <- function(poly){
-  poly <- poly[!is.na(poly[,1]) & !is.na(poly[,2]), ]
+  poly <- poly[!is.na(poly[,1]) & !is.na(poly[,2]), , drop = FALSE]
   
   if(is.null(poly)){
     return(NULL)

@@ -1,7 +1,7 @@
 mask_evaluator <- function(prediction, ground_truth, IOU_thresh = c(0.5, 0.75, 0.9), size_range = NULL){
   
   if(!is.null(size_range)){
-    mask_size_vec <- mask_area(prediction)
+    mask_size_vec <- mask_area(ground_truth)
     subset_i <- is_between(mask_size_vec, size_range)
     prediction <- prediction[subset_i]
     ground_truth <- ground_truth[subset_i]
@@ -81,7 +81,7 @@ keypoint_evaluator <- function(prediction, ground_truth,
   keypoints <- keypoints[o]
   k <- k[o]
   
-  mask_size_vec <- mask_area(prediction)
+  mask_size_vec <- mask_area(ground_truth)
   if(!is.null(size_range)){
     subset_i <- is_between(mask_size_vec, size_range)
     prediction <- prediction[subset_i]
@@ -137,7 +137,7 @@ keypoint_OKS <- function(kp1, kp2, s2, k, ground_truth_flag){
   
   n <- sum(has_lab)
   
-  if(n == 0){
+  if(n == 0 || s2 == 0){
     oks <- 0
   } else {
     oks <- sum(exp(-(dist)^2 / (s2 * 2 * k^2)) * has_lab) / n 
@@ -163,12 +163,13 @@ polygon_IOU <- function(poly, poly2){
   a1 <- mask_area(poly)
   a2 <- mask_area(poly2)
   i <- mask_insersectC(polygon2mask(poly)[,,1,1], polygon2mask(poly2)[,,1,1])
-  iou <- i / (a1 + a2 - i)
+  a <- (a1 + a2 - i)
+  iou <- ifelse(a > 0, i / a, 0)
   return(iou)
 }
 
 
-#pkgbuild::compile_dll("helper_functions/src/")
+#pkgbuild::compile_dll("spat1f/src/")
 mask_IOU <- function(img, img2, na.rm = FALSE, use_C = TRUE){
   if(is.null(img) | is.null(img2)){
     return(NA)
@@ -176,7 +177,9 @@ mask_IOU <- function(img, img2, na.rm = FALSE, use_C = TRUE){
   if(use_C){
     iouC(img[,,1,1], img2[,,1,1])
   } else {
-    mask_intersection_area(img, img2, na.rm) / mask_union_area(img, img2, na.rm) 
+    a <- mask_union_area(img, img2, na.rm)
+    i <- mask_intersection_area(img, img2, na.rm)
+    return(ifelse(a > 0, i / a, 0))
   }
 }
 
@@ -265,7 +268,7 @@ bbox_IOU <- function(bbox1, bbox2){
   area_I <- (x_right - x_left) * (y_bottom - y_top)
   area_union <- bbox_area(bbox1) + bbox_area(bbox2) - area_I
   
-  return(area_I / area_union)
+  return(ifelse(area_union > 0, area_I / area_union, 0))
 }
 
 
