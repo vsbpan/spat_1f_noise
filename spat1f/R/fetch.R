@@ -149,7 +149,9 @@ fetch_repID <- function(has = c("inference", "processed", "raw",
 }
 
 # Fetch image with file rank and repID or `data_dict`
-fetch_image <- function(x, rank = NULL, time = NULL, transform = TRUE){
+# Launch the image stored on the computer using system default image viewer (outside of R) if 'native = FALSE'
+fetch_image <- function(x, rank = NULL, time = NULL, transform = TRUE, 
+                        native = TRUE, type = c("processed", "raw")){
   if(!is.data_dict(x)){
     x <- fetch_data_dict(x)
   }
@@ -160,12 +162,35 @@ fetch_image <- function(x, rank = NULL, time = NULL, transform = TRUE){
   
   fm <- get_file_meta(x)
   
-  fp <- fm[fm$rank == rank, "file_path"]
+  type <- match.arg(type)
+  
+  if(type == "processed"){
+    fp <- fm[fm$rank == rank, "file_path"]
+  } else if(type == "raw"){
+    fns <- list.files(paste0("time_lapse_feed/", "rep", repID_clean(x)), 
+               full.names = TRUE, recursive = FALSE)
+    
+    if(is.null(time)){
+      time <- rank2time(x, rank)
+    }
+    
+    fp <- fns[file_time(fns) == time]
+    
+  }
+  
   stopifnot(length(fp) == 1)
+  
+  
   if(!file.exists(fp)){
     stop(sprintf("File does not exist on this machine: %s", basename(fp)))
   } else {
-    fast_load_image(fp, transform = transform)
+    if(native){
+      return(fast_load_image(fp, transform = transform))
+    } else {
+      cmd <- sprintf(r"{start %s}", fp)
+      shell(cmd)
+      return(invisible(NULL))
+    }
   }
 }
 

@@ -2,8 +2,11 @@
 # Set up generic
 # Print method for COCO_Json
 print.COCO_Json <- function(x){
-  cat(sprintf("COCO annotation with %s images\n", nrow(x$images)))
-  cat(sprintf("things: %s", x$categories["name"]))
+  cat(sprintf("COCO annotation with %s images and %s annotations\n", 
+              nrow(x$images),
+              nrow(x$annotations)
+              ))
+  cat(sprintf("things: %s", paste0(x$categories[,"name"], collapse = ", ")))
 }
 
 
@@ -46,7 +49,7 @@ as.Json.data_dict <- function(x){
   fmeta <- get_file_meta(x)
   n <- nrow(fmeta)
   #empty_df <- data.frame(row.names = seq_len(n))
-  empty_list <- vector(mode = "list", length = n)
+  #empty_list <- vector(mode = "list", length = n)
   empty_list_list <- lapply(seq_len(n), function(x) vector(mode = "list", length = 0))
   
   img_id <- sprintf("1%s%04d",
@@ -135,7 +138,7 @@ as.Json.data_dict <- function(x){
     #"dataset_id" = as.integer(1)
   )
   
-  images$category_ids <- empty_list
+  images$category_ids <- empty_list_list
   images$events <- empty_list_list
   images$annotating <- empty_list_list
   #images$metadata <- empty_df
@@ -204,9 +207,17 @@ registerS3method(genname = "print",
                  method = print.COCO_Json)
 
 
-
+# Read in COCO format .json file and parse as COCO_jason object
 import_COCO <- function(x){
   out <- jsonlite::fromJSON(x) %>% as.Json()
+  
+  
+  i <- out$annotations[,"num_keypoints"]
+  out$annotations[is.na(i),"num_keypoints"] <- 0
+  
+  out$images$num_annotations <- 1
+  
+  
   attr(out, "mtime") <- file.mtime(x) %>% 
     as.character() %>% 
     gsub("\\..*", "", .)
@@ -214,19 +225,20 @@ import_COCO <- function(x){
   return(out)
 }
 
+# Export COCO_json as COCO format .json file
 export_COCO <- function(x, path){
   stopifnot(is.COCO(x))
   jsonlite::write_json(x, path, pretty = TRUE)
 }
 
+# Sample COCO annotations
 sample_COCO <- function(x, size){
   stopifnot(is.COCO(x))
   n <- nrow(x$images)
   s <- sample(seq_len(n), size, replace = FALSE)
+  fns <- x$images$file_name[s,]
   
-  x$images <- x$images[s,]
-  x$annotations <- x$annotations[s,]
-  
+  subset_COCO(x, fns[s])
   return(x)
 }
 
@@ -235,27 +247,24 @@ subset_COCO <- function(x, file_name){
   stopifnot(is.COCO(x))
   i <- x$images$file_name %in% file_name
   x$images <- x$images[i, ]
-  x$annotations <- x$annotations[i, ]
+  ids <- x$images[,"id"]
+  x$annotations <- x$annotations[x$annotations$image_id %in% ids, ]
   return(x)
 }
 
+# Split COCO annotations into test, train, and validation datasets and output list of COCO_json
 split_COCO <- function(x, test, val = 0){
   stopifnot(is.COCO(x))
   n <- nrow(x$images)
+  fns <- x$images$file_name
   s_val <- sample(seq_len(n), round(n * val), replace = FALSE)
   s_test <- sample(seq_len(n)[-s_val], round(n * test), replace = FALSE)
+  s_train <- seq_len(n)[-c(s_val, s_test)]
   
-  val <- x
-  val$images <- x$images[s_val,]
-  val$annotations <- x$annotations[s_val,]
   
-  test <- x
-  test$images <- x$images[s_test,]
-  test$annotations <- x$annotations[s_test,]
-  
-  train <- x
-  train$images <- x$images[-c(s_test, s_val),]
-  train$annotations <- x$annotations[-c(s_test, s_val),]
+  train <- subset_COCO(x, fns[s_train])
+  test <- subset_COCO(x, fns[s_test])
+  val <- subset_COCO(x, fns[s_val])
   
   return(list(
     "train" = train, 
@@ -264,15 +273,21 @@ split_COCO <- function(x, test, val = 0){
   ))
 }
 
+
+# Merge COCO_json objects. Columns are filled with NA if missing. 
 merge_COCO <- function(...){
   dots <- as.list(match.call())[-1]
-  
+  current_env <- parent.frame(n = 1)
   dots <- lapply(dots, function(x){
-    x <- eval(x)
+    x <- eval(x, envir = current_env)
     stopifnot(is.COCO(x))
     return(x)
   })
   
+  nimg <- do.call("c", lapply(dots, function(x){
+    nrow(x$images)
+  }))
+  dots <- dots[nimg > 0]
   
   categories <- lapply(seq_along(dots), function(i, x){
     o <- x[[i]]$categories
@@ -285,6 +300,9 @@ merge_COCO <- function(...){
   
   annotations <- lapply(seq_along(dots), function(i, x){
     o <- x[[i]]$annotations
+    if(nrow(o) == 0){
+      return(NULL)
+    }
     rownames(o) <- paste0(i,"_",rownames(o))
     o
   }, x = dots) %>% 
@@ -317,19 +335,66 @@ merge_COCO <- function(...){
   return(out)
 }
 
-
+# Set new root path for coco_Json object
 set_new_path <- function(x, path_root){
   stopifnot(is.COCO(x))
   x$images$path <- paste0(path_root, "/", x$images$file_name)
   return(x)
 }
 
+# check if the object is COCO_Json
 is.COCO <- function(x){
  inherits(x, "COCO_Json") 
 }
 
 
 
+# Reformat the target COCO_Json object such that only columns in the reference object are selected
+force_format_COCO <- function(target_COCO, reference_COCO){
+  stopifnot(is.COCO(target_COCO), is.COCO(reference_COCO))
+  
+  target_COCO$images <- target_COCO$images %>%
+    dplyr::select(any_of(names(reference_COCO$images))) %>%
+    as.data.frame()
+  target_COCO$categories <- target_COCO$categories %>%
+    dplyr::select(any_of(names(reference_COCO$categories))) %>%
+    as.data.frame()
+  target_COCO$annotations <- target_COCO$annotations %>%
+    dplyr::select(any_of(names(reference_COCO$annotations))) %>%
+    as.data.frame()
+  return(target_COCO)
+}
+
+# Remove annotations from COCO_Json object
+wipe_annotations_COCO <- function(x){
+  stopifnot(is.COCO(x))
+  
+  #n <- length(x$annotations$bbox)
+  #empty_list_list <- lapply(seq_len(n), function(x) vector(mode = "list", length = 0))
+  
+  x$images$num_annotations <- 0
+  #x$annotations$num_keypoints <- 0
+  #x$annotations$bbox <- empty_list_list
+  #x$annotations$keypoints <- empty_list_list
+  #x$annotations$segmentation <- empty_list_list
+  nms <- names(x$annotations)
+  x$annotations <- data.frame(matrix(ncol = length(nms), nrow = 0)) %>% 
+    append_name(nms)
+  return(x)
+}
 
 
-
+# Take a reference COCO_Json object, wipe the annotations, and append any that is found in manual_COCO. 
+update_manual_COCO <- function(reference_COCO, manual_COCO){
+  stopifnot(is.COCO(manual_COCO), is.COCO(reference_COCO))
+  
+  empty_COCO <- subset_COCO(reference_COCO, 
+                            setdiff(reference_COCO$images$file_name,
+                                    manual_COCO$images$file_name)
+  )
+  empty_COCO <- wipe_annotations_COCO(empty_COCO) 
+  
+  
+  out <- merge_COCO(force_format_COCO(manual_COCO, reference_COCO), empty_COCO)
+  return(out)
+}
