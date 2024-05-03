@@ -49,6 +49,7 @@ fit_list <- pb_par_lapply(
         case ~
           toxic +
           (cos_theta_pi + cos_2theta) +
+          sl:start_toxic + logsl:start_toxic + 
           (sl + logsl) + 
           strata(step_id)
       )

@@ -68,6 +68,9 @@ add_random_steps <- function(
       "y2" = y1 + r * sin(theta + theta_abs),
       "case" = FALSE
     )
+    
+    out <- cbind(out, data[rep(i, n), !names(data) %in% names(out), drop = FALSE])
+    
     return(out)
   }) %>% 
     do.call("rbind", .)
