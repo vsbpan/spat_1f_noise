@@ -1,13 +1,8 @@
 source("spat1f/init.R")
 
-IDs <- fetch_repID()
-
 inf_fn <- list.files("raw_data/inferences/", full.names = TRUE)
 
 inf_fn
-
-list.files("cleaned_data/data_dicts/")
-problem_ids_2 <- c("37", "65", "84", "87", "115", "140")
 overwrite <- TRUE
 
 # pb_par_lapply(
@@ -24,6 +19,11 @@ overwrite <- TRUE
 #     }
 #   }, cores = 8, inorder = FALSE, export_fun_only = TRUE, overwrite = overwrite
 # )
+
+
+
+
+problem_ids_2 <- c("37", "65", "84", "87", "115", "140")
 
 pb_par_lapply(fetch_repID("data_dict"),
     function(x, overwrite, problem_ids_2){
