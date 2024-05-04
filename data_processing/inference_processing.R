@@ -22,8 +22,8 @@ overwrite <- TRUE
 
 
 
-
-problem_ids_2 <- c("37", "65", "84", "87", "115", "140")
+problem_ids_2 <- c()
+# problem_ids_2 <- c("37", "65", "84", "87", "115", "140")
 
 pb_par_lapply(fetch_repID("data_dict"),
     function(x, overwrite, problem_ids_2){
@@ -32,9 +32,9 @@ pb_par_lapply(fetch_repID("data_dict"),
     if(file.exists(save_path) && !overwrite){
         return(NULL)
     } else {
-      if(!x %in% problem_ids_2){
-        return(NULL)
-      }
+      # if(!x %in% problem_ids_2){
+      #   return(NULL)
+      # }
       l <- fetch_data_dict(x)
       d <- get_data(l)
       d <- d %>%
