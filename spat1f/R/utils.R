@@ -6,12 +6,19 @@ hms_runtime <- function(x){
   cat(sprintf("\nRuntime %02d:%02d:%02d\n", h,m,s))
 }
 
-# Format seconds into nice H:S:M format 
+# Format seconds into nice H:M:S format 
 hms_format <- function(x){
   h <- floor(x / 3600)
   m <- floor((x - h * 3600) / 60)
   s <- floor(x - h * 3600 - m * 60)
   return(sprintf("%02d:%02d:%02d", h,m,s))
+}
+
+# Format seconds into nice H:M format
+hm_format <- function(x){
+  h <- floor(x / 3600)
+  m <- round((x - h * 3600) / 60)
+  return(sprintf("%02d:%02d", h,m))
 }
 
 # Format counts in a nice way

@@ -7,7 +7,7 @@ source("spat1f/init.R")
 
 
 
-ref_data <- suppressMessages(read_csv("raw_data/1_f_noise_experiment data_Jan_31_2024.csv"))
+ref_data <- suppressMessages(read_csv("raw_data/11_f_noise_experiment data_May_03_2024.csv"))
 today <- as.character("2024-01-31")#Sys.Date()
 problem_ids <- c("2","6","7", "9", "10","11", "20","28", "85", "113", "146")
 

@@ -1,3 +1,4 @@
+# Wrapper for computing challenge metrics for binary masks
 mask_evaluator <- function(prediction, ground_truth, IOU_thresh = c(0.5, 0.75, 0.9), size_range = NULL){
   
   if(!is.null(size_range)){
@@ -28,7 +29,7 @@ mask_evaluator <- function(prediction, ground_truth, IOU_thresh = c(0.5, 0.75, 0
   invisible(out)
 }
 
-
+# Compute challenge metrics from similarity scores and whether ground truth and prediction exists for each instance
 .evaluator_calc <- function(score, thresh, pred_exist, gt_exist, thresh_name = NULL){
   if(is.null(thresh_name)){
     thresh_name <- "score"
@@ -67,7 +68,7 @@ mask_evaluator <- function(prediction, ground_truth, IOU_thresh = c(0.5, 0.75, 0
 }
 
 
-
+# Nice wrapper for keypoint evaluation
 keypoint_evaluator <- function(prediction, ground_truth, 
                                k = c(100, 1000, 100), # From visually assessing a sample whether this is reliable for distinguishing false positive and true positive.
                                keypoints = c("head", "middle", "tail"), 
@@ -124,7 +125,7 @@ keypoint_evaluator <- function(prediction, ground_truth,
   invisible(out)
 }
 
-
+# Object keypoint similarity score
 keypoint_OKS <- function(kp1, kp2, s2, k, ground_truth_flag){
   has_lab <- as.numeric(ground_truth_flag > 0)
   
@@ -145,7 +146,7 @@ keypoint_OKS <- function(kp1, kp2, s2, k, ground_truth_flag){
   return(oks)
 }
 
-
+# Mask union area
 mask_union_area <- function(img, img2, na.rm = FALSE){
   stopifnot(all.equal(dim(img), dim(img2)))
   stopifnot(dim(img)[3] == 1)
@@ -153,12 +154,14 @@ mask_union_area <- function(img, img2, na.rm = FALSE){
 }
 
 # Defunct function mostly for testing
+# Mask intersection area
 mask_intersection_area <- function(img, img2, na.rm = FALSE){
   stopifnot(all.equal(dim(img), dim(img2)))
   stopifnot(dim(img)[3] == 1)
   sum(as.pixset(img) & as.pixset(img2), na.rm = na.rm)
 }
 
+# Compute IoU from polygons
 polygon_IOU <- function(poly, poly2){
   a1 <- mask_area(poly)
   a2 <- mask_area(poly2)
@@ -168,7 +171,7 @@ polygon_IOU <- function(poly, poly2){
   return(iou)
 }
 
-
+# Compute IoU from masks
 #pkgbuild::compile_dll("spat1f/src/")
 mask_IOU <- function(img, img2, na.rm = FALSE, use_C = TRUE){
   if(is.null(img) | is.null(img2)){
@@ -183,6 +186,7 @@ mask_IOU <- function(img, img2, na.rm = FALSE, use_C = TRUE){
   }
 }
 
+# Bounding box area default method
 bbox_area.default <- function(x, ...){
   if(is.null(x)){
     return(0)
@@ -191,6 +195,7 @@ bbox_area.default <- function(x, ...){
   prod(abs(z[1,] - z[2,]))
 }
 
+# Bounding box area for data_dict
 bbox_area.data_dict <- function(x, ...){
   get_bbox(x) %>% 
     lapply(bbox_area.default) %>% 
@@ -198,11 +203,12 @@ bbox_area.data_dict <- function(x, ...){
     unname()
 }
 
-
+# Generic method
 bbox_area <- function(x, ...){
   UseMethod("bbox_area")
 }
 
+# S3 methods registration
 registerS3method(genname = "bbox_area", 
                  class = "default", 
                  method = bbox_area.default)
@@ -211,7 +217,7 @@ registerS3method(genname = "bbox_area",
                  class = "data_dict", 
                  method = bbox_area.data_dict)
 
-
+# Default method for mask area
 mask_area.default <- function(x, ...){
   if(is.null(x)){
     return(0)
@@ -224,13 +230,14 @@ mask_area.default <- function(x, ...){
   }
 }
 
+# Polygon area calculation engine
 .polygon_area <- function(x){
   spatstat.utils::Area.xypolygon(
     list("x" = rev(x[,1]), "y" = rev(x[,2]))
   )
 }
 
-
+# Mask area method for data_dict
 mask_area.data_dict <- function(x, ...){
     lapply(get_polygon(x), function(p){
       mask_area.default(p)
@@ -239,11 +246,12 @@ mask_area.data_dict <- function(x, ...){
     unname()
 }
 
-
+# Mask area generic
 mask_area <- function(x, ...){
   UseMethod("mask_area")
 }
 
+# Mask area S3 registration
 registerS3method(genname = "mask_area", 
                  class = "default", 
                  method = mask_area.default)
@@ -253,7 +261,7 @@ registerS3method(genname = "mask_area",
                  method = mask_area.data_dict)
 
 
-
+# Compute IoU for two bounding boxes
 bbox_IOU <- function(bbox1, bbox2){
   
   x_left = max(bbox1[1], bbox2[1])
