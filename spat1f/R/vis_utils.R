@@ -307,7 +307,9 @@ unscalelog <- function(logx){
 
 
 
-plot_track_overlay <- function(events = NULL, repID = NULL, ref_data = get("ref_data", envir = globalenv())){
+plot_track_overlay <- function(events = NULL, repID = NULL, 
+                               ref_data = get("ref_data", envir = globalenv()), 
+                               score_thresh = 0.9){
   
   if(is.null(repID)){
     repID <- na.omit(unique(events$repID))
@@ -332,9 +334,10 @@ plot_track_overlay <- function(events = NULL, repID = NULL, ref_data = get("ref_
   
   if(is.null(events)){
     events <- fetch_events(repID) %>%
-      clean_events() %>%
-      filter(score > 0.9) %>%
-      insert_gaps()
+      clean_events(insert_gaps = TRUE, 
+                   score_thresh = score_thresh, 
+                   ref_data = ref_data, 
+                   keep_sus = FALSE)
   }
   
   events <- events %>% 

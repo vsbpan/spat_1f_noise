@@ -52,9 +52,59 @@ keypoint_evaluator(pred, gt)
 mask_evaluator(pred, gt)
 
 
-
+# Overall detection report from the Mask-R-CNN with score thresh of 0.3 and no error flagged
 detection_report(fetch_repID())
 
 
+# Percent of frames flagged as false head movement
+out <- lapply(
+  fetch_repID()[1:149], function(x){
+    z <- fetch_events(x) %>% 
+      clean_events(insert_gaps = FALSE, score_thresh = 0.9, keep_sus = TRUE)
+    mean(z$is_sus)
+  }
+) %>% 
+  do.call("c", .)
+
+summarise_vec(out)
 
 
+# Percent of frames flagged as implausible mask size
+out <- lapply(
+  fetch_repID()[1:149], function(x){
+    z <- fetch_events(x) %>% 
+      clean_events(insert_gaps = FALSE, score_thresh = 0.9, keep_sus = TRUE)
+    mean(z$status %in% c("too small", "too big"))
+  }
+) %>% 
+  do.call("c", .)
+
+summarise_vec(out)
+
+
+# Percent of frames flagged as false cluster
+out <- lapply(
+  fetch_repID()[1:149], function(x){
+    z <- fetch_events(x) %>% 
+      clean_events(insert_gaps = FALSE, score_thresh = 0.9, keep_sus = TRUE)
+    mean(z$false_cluster)
+  }
+) %>% 
+  do.call("c", .)
+
+summarise_vec(out)
+
+
+
+
+# Percent positive detection
+out <- lapply(
+  fetch_repID()[1:149], function(x){
+    z <- fetch_events(x) %>% 
+      clean_events(insert_gaps = TRUE, score_thresh = 0.9, keep_sus = FALSE)
+    mean(!z$is_gap)
+  }
+) %>% 
+  do.call("c", .)
+
+summarise_vec(out)

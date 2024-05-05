@@ -165,6 +165,8 @@ inherit_theta <- function(theta, r){
 # Clean events by throwing out frames beyond the camera cutoff and sus frames. 
 clean_events <- function(x, 
                          ref_data = get("ref_data", envir = globalenv()), 
+                         score_thresh = 0.9,
+                         insert_gaps = TRUE,
                          keep_sus = FALSE){
   repID <- unique(repID_clean(x$repID))
   stopifnot(length(repID) == 1)
@@ -184,6 +186,18 @@ clean_events <- function(x,
         !status %in% c("too big", "too small") & !false_cluster
       )
   }
+  
+  if(!is.null(score_thresh)){
+    x <- x %>% filter(score >= score_thresh)
+  }
+  
+  if(insert_gaps){
+    if(nrow(x) < 2){
+      return(x)
+    }
+    x <- insert_gaps(x)
+  }
+  
   return(x)
 }
 

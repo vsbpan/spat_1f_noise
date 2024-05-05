@@ -84,9 +84,19 @@ move_files_pb <- function (from_dir, to_dir, file_names, pb = FALSE){
   }
 }
 
+# Check if path is relative to current working directory
+is_relative_path <- function(x){
+  !grepl(getwd(), x)
+}
+
+
 # Append working directory to the path
 abs_path <- function(x){
-  paste(getwd(),x, sep = "/")
+  if(is_relative_path(x)){
+    paste(getwd(),x, sep = "/") 
+  } else {
+    x
+  }
 }
 
 # Remove rank from file name
