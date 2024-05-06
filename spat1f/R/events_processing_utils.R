@@ -34,6 +34,24 @@ rad2degree <- function(theta){
 # Calculate step length and turn angle. step lengths smaller than r_thresh are considered none movement, causing the turn angle of that step to be NA
 move_seq <- function(x,y, r_thresh = 1, inherit.theta = FALSE){ 
   stopifnot(length(x) == length(y))
+  
+  if(length(x) < 2){
+    dim_names <- c(
+      "step_id",
+      "r",
+      "r_threshed",
+      "theta_abs",
+      "theta_rel",
+      "x1","x2", "y1", "y2"
+    )
+    return(
+      data.frame(matrix(nrow = 0, 
+                        ncol = length(dim_names), 
+                        dimnames = list(NULL, 
+                                        dim_names)))
+    )
+  }
+  
   out <- lapply(seq_len(length(x) - 1), function(i){
     delta_x <- x[i] - x[i+1]
     delta_y <- y[i] - y[i+1]
@@ -82,7 +100,6 @@ trt_meta_as_list <- function(df){
 
 
 # Insert gaps of NAs at positions where a photo is expected
-# A bit buggy
 insert_gaps <- function(df, frame_id = frame_id, expected_gap = 360){
   if("is_gap" %in% names(df)){
     df <- df %>% filter(!is_gap)
@@ -90,7 +107,7 @@ insert_gaps <- function(df, frame_id = frame_id, expected_gap = 360){
   
   .expose_columns_interal()
   
-  time <- file_time(frame_id)
+  time <- c(file_time(frame_id), expected_gap * -1) # Append a negative time photo to ensure that there is always a beginning without NA at the same time
   time_grid <- 360 * (seq_len((diff(round(range(time) / expected_gap)) +1)) - 1)
   o <- order(time)
   df <- df[o,]
@@ -109,10 +126,12 @@ insert_gaps <- function(df, frame_id = frame_id, expected_gap = 360){
   }, g = g) %>% 
     do.call("rbind",.)
   
+  out <- out[-1, ] # Drop the negative time photo
   rownames(out) <- NULL
   out[is.na(out$frame_id),"frame_id"] <- paste0("gap", 
                                                 seq_len(sum(g)), 
-                                                "__s", time_grid[is.na(out$frame_id)])
+                                                "__s", 
+                                                time_grid[which(is.na(out$frame_id))])
   out$is_gap <- grepl("gap", out$frame_id)
   return(out)
 }
@@ -202,26 +221,4 @@ clean_events <- function(x,
 }
 
 
-
-toxic_var_calc <- function(x, ref_data = get("ref_data", pos = globalenv()), hours = 12L){
-  l_conc <- ref_data %>% filter(rep_id == x) %>% .$low_diet_numeric
-  h_conc <- ref_data %>% filter(rep_id == x) %>% .$high_diet_numeric
-  
-  fetch_events(x) %>% 
-    clean_events(ref_data = ref_data) %>% 
-    filter(score > 0.9) %>% 
-    insert_gaps() %>% 
-    mutate(
-      toxic = read_value(head_x, head_y, ref_img = fetch_trt_spec(x, ref_data, quiet = TRUE), c(1000,1000))
-    ) %$%
-    roll_vapply(toxic, w = 10 * hours + 1, FUN = function(xx){
-      xx <- xx[!is.na(xx)]
-      s <- xx == 0
-      xx[s] <- l_conc
-      xx[!s] <- h_conc
-      
-      var(xx, na.rm = TRUE)
-    }) %>% 
-    mean(na.rm = TRUE)
-}
 

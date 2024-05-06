@@ -1,4 +1,4 @@
-source("spat1f/init.R")
+source("spat1f/init_analysis.R")
 
 ##### testing data #####
 # Load mask-RCNN inference
