@@ -374,15 +374,17 @@ NaN_to_NA <- function(x){
   ifelse(is.nan(x), NA, x)
 }
 
-
+# Handy function for parsing concentration
 parse_conc <- function(x){
   as.numeric(gsub(" mg/g","", x))
 }
 
+# Set rowname as the first column
 keep_rowname <- function(x){
   cbind("rn" = rownames(x), x)
 }
 
+# lapply() but with names(z) <- x
 lapply_name <- function(x, FUN, ...){
   z <- lapply(x, FUN, ...)
   names(z) <- x

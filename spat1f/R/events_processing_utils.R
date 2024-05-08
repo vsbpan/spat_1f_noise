@@ -176,7 +176,7 @@ inherit_theta <- function(theta, r){
 }
 
 
-# Clean events by throwing out frames beyond the camera cutoff and sus frames. 
+# Clean events by throwing out frames beyond the camera cutoff, flagged errors, low scoring detections, and inserting gaps where needed. 
 clean_events <- function(x, 
                          ref_data = get("ref_data", envir = globalenv()), 
                          score_thresh = 0.7,

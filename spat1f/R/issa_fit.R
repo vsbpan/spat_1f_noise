@@ -1,3 +1,4 @@
+# Nice wrapper for fitting generalized von Mises distribution using ML. 
 fit_genvonmises <- function(x, 
                             method = c("Nelder-Mead", "BFGS", "nlminb", "nlm"),
                             init = c(1, 0.5),
@@ -52,7 +53,7 @@ fit_genvonmises <- function(x,
   
 }
 
-
+# Update generalized von Mises params using fitted betas from ISSA
 update_genvonmises <- function(dist, beta_cos_theta_pi, beta_cos_2theta){
   stopifnot(length(beta_cos_theta_pi) == length(beta_cos_2theta))
   lapply(seq_along(beta_cos_theta_pi), function(i){
@@ -167,10 +168,12 @@ fit_zigamma <- function(x,
 #   make_zigamma(dist$params$p, new_shape, new_scale)
 # }
 
+# Standardized wrapper for fitting gamma distribution
 fit_gamma <- function(x){
   amt::fit_distr(x, "gamma")
 }
 
+# Update gamma distribution params using fitted betas from ISSA
 update_gamma <- function(dist, beta_sl, beta_log_sl){
   stopifnot(length(beta_sl) == length(beta_log_sl))
   lapply(seq_along(beta_sl), function(i){
@@ -179,10 +182,12 @@ update_gamma <- function(dist, beta_sl, beta_log_sl){
   
 }
 
+# Standardized wrapper for fitting lognormal distribution
 fit_lnorm <- function(x){
   amt::fit_distr(x, "lnorm")
 }
 
+# Update lognormal distribution params using fitted betas from ISSA
 update_lnorm <- function(dist, beta_log_sl, beta_log_sl_sq){
   stopifnot(length(beta_log_sl) == length(beta_log_sl_sq))
   lapply(seq_along(beta_log_sl), function(i){
@@ -190,6 +195,7 @@ update_lnorm <- function(dist, beta_log_sl, beta_log_sl_sq){
   })
 }
 
+# Update vonmises distribution params using fitted betas from ISSA
 update_vonmises <- function(dist, beta_cos_ta){
   lapply(seq_along(beta_cos_ta), function(i){
     amt::update_vonmises(
@@ -200,28 +206,28 @@ update_vonmises <- function(dist, beta_cos_ta){
 }
 
 
-comp_dist <- function(x){
-  ln_fit <- amt:::fit_distr(x, "lnorm")
-  gamma_fit <- amt:::fit_distr(x, "gamma")
-  
-  d_ln <- do.call(
-    paste0("d",ln_fit$name),
-    c(
-      list(x), 
-      ln_fit$params
-    )
-  )
-  d_gamma <- do.call(
-    paste0("d", gamma_fit$name),
-    c(
-      list(x), 
-      gamma_fit$params
-    )
-  )
-  out <- c("gamma" = sum(log(d_gamma)), "lnorm" = sum(log(d_ln)))
-  out <- c(out, "delta_AIC" = unname(diff(out)))
-  c(out, "lnorm_wins" = out["delta_AIC"] > 0)
-}
+# comp_dist <- function(x){
+#   ln_fit <- amt:::fit_distr(x, "lnorm")
+#   gamma_fit <- amt:::fit_distr(x, "gamma")
+#   
+#   d_ln <- do.call(
+#     paste0("d",ln_fit$name),
+#     c(
+#       list(x), 
+#       ln_fit$params
+#     )
+#   )
+#   d_gamma <- do.call(
+#     paste0("d", gamma_fit$name),
+#     c(
+#       list(x), 
+#       gamma_fit$params
+#     )
+#   )
+#   out <- c("gamma" = sum(log(d_gamma)), "lnorm" = sum(log(d_ln)))
+#   out <- c(out, "delta_AIC" = unname(diff(out)))
+#   c(out, "lnorm_wins" = out["delta_AIC"] > 0)
+# }
 
 
 

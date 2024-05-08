@@ -1,3 +1,4 @@
+# For each element of list, apply split_df_list() if the response is not the target. Move the split children lists to the parent level
 recursive_split <- function(l, sem_coef, target){
   lapply(
     l,
@@ -18,7 +19,7 @@ recursive_split <- function(l, sem_coef, target){
     unlist(recursive = FALSE)
 }
 
-
+# For each row of data.frame, split out as list
 split_df_list <- function(x, append = NULL){
   rownames(x) <- NULL
   x <- apply(x, 1, function(z){
@@ -32,7 +33,7 @@ split_df_list <- function(x, append = NULL){
   return(x)
 }
 
-
+# Move the child list elements up to the parent level if there is only one parent. i.e. kill redundant parent. 
 drop_list <- function(x){
   n <- length(x)
   if(n == 1){
@@ -43,7 +44,7 @@ drop_list <- function(x){
 }
 
 
-
+# Iteratively apply drop_list() to x so that all redundant parents are removed. 
 drop_list_iter <- function(x){
   n <- length(x)
   while(n == 1){
@@ -54,7 +55,7 @@ drop_list_iter <- function(x){
 }
 
 
-
+# Fetch from a list only the models
 model_list <- function(x){
   purrr::keep(
     x, 
@@ -64,7 +65,7 @@ model_list <- function(x){
   )
 }
 
-
+# Append the standardized coefficient with coef if the std.estiamte is missing for the specificed response
 append_std_coef <- function(x, response, coef){
   i <- which(x$coefficients$Response == response & x$coefficients$Std.Estimate == "-")
   coef <- coef[match(x$coefficients$Predictor[i],names(coef))]
@@ -72,7 +73,7 @@ append_std_coef <- function(x, response, coef){
   return(x)
 }
 
-
+# Same as append_std_coef(), but with coef directly
 append_std_coef2 <- function(x, response, coef){
   i <- which(x$Std.Estimate == "-" & x$Response == response)
   coef <- coef[match(x$Predictor[i],names(coef))]
@@ -80,11 +81,13 @@ append_std_coef2 <- function(x, response, coef){
   return(x)
 }
 
+# Fix the "" column name that gives dplyr errors
 fix_coef_name <- function(x){
   names(x)[names(x) == ""] <- "star"
   x
 }
 
+# Find paths that are significant 
 find_significant_pairs <- function(x, p = 0.05){
   x %>%
     fix_coef_name() %>% 
@@ -99,12 +102,14 @@ find_significant_pairs <- function(x, p = 0.05){
     unique()
 }
 
+# Compute the sd_yhat from observed empirical method
 .obs_emp_sd_yhat <- function(x){
   pred <- predict(x, type = "response")
   R2 <- cor(insight::get_response(x), pred)^2
   return(sqrt(var(pred)/R2))
 }
 
+# Compute the correct sd_y depending on whether the distribution is gaussian or not 
 get_sd_y <- function(x, family){
   if(family != "gaussian"){
     out <- sd(insight::get_response(x), na.rm = TRUE)
@@ -114,7 +119,7 @@ get_sd_y <- function(x, family){
   return(out)
 }
 
-
+# A modified version of summary.psem()
 summary_psem <- function (object, ..., 
                           no_standardize_x = NULL,
                           basis.set = NULL, direction = NULL, interactions = FALSE, 
@@ -176,7 +181,13 @@ summary_psem <- function (object, ...,
 
 
 
-
+#' @title Predict coefficients from a psem object. 
+#' @param var name of the origin variable name for which the effect is to be calculated for
+#' @param target the target response variable
+#' @param cat_size the size of the caterpillar for interaction terms
+#' @param og_set set of valid paths to compute from
+#' @param exclude a vector of variable names for which the corresponding node would be removed in calculation. Ignored if set to NA. 
+#' @param only a vector of variable names for which the indirect effects must go through. Ignored if set to NA. 
 SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, only = NA){
   
   sem_coef <- suppressWarnings(coefs(sem_fit)) %>% 
@@ -276,7 +287,7 @@ SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, 
     do.call("sum",.)
 }
 
-
+# Bootstrap resample each dataset in a psem object, then refit each submodel. 
 bootSEM <- function(x, nboot = 10, cores = 1, silent = FALSE){
   pb_par_lapply(seq_len(nboot), function(i, sem_fit){
     data <- sem_fit$data
@@ -291,7 +302,7 @@ bootSEM <- function(x, nboot = 10, cores = 1, silent = FALSE){
   }, sem_fit = x, cores = cores, inorder = FALSE, silent = silent)
 }
 
-
+# Find the variables in a SEM list that has been splitted with split_df_list()
 path_vars <- function(l){
   unique(do.call("c",lapply(l, function(x){c(x$response, x$predictor)})))
 }

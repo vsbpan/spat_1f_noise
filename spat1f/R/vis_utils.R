@@ -300,6 +300,7 @@ marginal_effects <- function(model, terms, n = 300, ci = 0.95){
   return(new_data)
 }
 
+# Handly function to back transform log scale variables
 unscalelog <- function(logx){
   function(z) {
     exp(mean(logx, na.rm = TRUE) + sd(logx, na.rm = TRUE) * z)
@@ -307,10 +308,10 @@ unscalelog <- function(logx){
 }
 
 
-
+# Plot track and treatment spec together
 plot_track_overlay <- function(events = NULL, repID = NULL, 
                                ref_data = get("ref_data", envir = globalenv()), 
-                               score_thresh = 0.9){
+                               score_thresh = 0.7){
   
   if(is.null(repID)){
     repID <- na.omit(unique(events$repID))
@@ -372,6 +373,7 @@ plot_track_overlay <- function(events = NULL, repID = NULL,
     scale_fill_viridis_d(option = "mako")
 }
 
+# Make log-log histogram
 loghist <- function(x, ...){
   x <- log(x)
   p <- hist(x, plot = FALSE, ...)

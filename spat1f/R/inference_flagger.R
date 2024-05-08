@@ -1,4 +1,4 @@
-# Computer the mask IOU, comparing with n frames ago
+# Compute the mask IOU, comparing with n frames ago
 move_IOU <- function(data_dict, frames, n = 1, cores = 1, text = "Processing IOU of mask"){
   f <- function(i, data_dict){
     polyl <- get_polygon(data_dict[c(i,i-1)])
@@ -22,6 +22,7 @@ move_IOU <- function(data_dict, frames, n = 1, cores = 1, text = "Processing IOU
   return(do.call("c", iou))
 }
 
+# Check if head moved based on if distance is greater than head_thresh
 head_moved <- function(events, head_thresh = 10){
   head_r <- move_seq(events$head_x, events$head_y)$r
   moved_head <- head_r > head_thresh
@@ -29,6 +30,7 @@ head_moved <- function(events, head_thresh = 10){
   c(NA, moved_head) # No way of checking first frame
 }
 
+# Stage 1 of false head movement detection using head_moved
 .false_move_stage1 <- function(events, 
                                target_moved,
                                cen_thresh = 10){
@@ -39,6 +41,7 @@ head_moved <- function(events, head_thresh = 10){
   as.logical(target_moved * !moved_centroid) 
 }
 
+# Stage 2 of false head movement detection using the more computationally expensive move_IOU()
 .false_move_stage2 <- function(data_dict, target_moved, 
                                frames, iou_thresh = 0.5, n = 1, 
                                cores = 1, text = "Verifying suspicious frames:"){
@@ -48,6 +51,8 @@ head_moved <- function(events, head_thresh = 10){
   frames[as.logical(target_moved[frames] * !(mask_moved))]
 }
 
+
+# Wrapper for detecting false head movement stage 1 & 2. 
 detect_false_head_movement <- function(data_dict, events = NULL, 
                                        head_thresh = 10,
                                        cen_thresh = 10, 
@@ -81,6 +86,7 @@ detect_false_head_movement <- function(data_dict, events = NULL,
 }
 
 
+# Flag mask size Z score using a window of 31 
 flag_mask_size <- function(events, w = 31){
   events %>% 
     mutate(
@@ -108,7 +114,7 @@ flag_mask_size <- function(events, w = 31){
     )
 }
 
-
+# Flag false cluster (long distance movement to the same location)
 flag_false_cluster <- function(events, r_thresh = 100, bin_size = 50, r = 50, return_id = FALSE){
   events <- events %>% insert_gaps()
   move_df <- events %$% 

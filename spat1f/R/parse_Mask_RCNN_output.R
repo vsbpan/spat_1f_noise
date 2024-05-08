@@ -335,7 +335,7 @@ as.data_dict.COCO_Json <- function(x, ...){
   parse_inference(inf_data, mode = "evaluate")
 }
 
-
+# Turn something into data_dict
 as.data_dict <- function(x, ...){
   UseMethod("as.data_dict")
 }
@@ -347,7 +347,7 @@ registerS3method(genname = "as.data_dict",
 
 
 
-
+# Concentrate data_dict
 c.data_dict <- function(x, ...){
   args <- lapply(as.list(substitute(list(...)))[-1L], 
                  function(x){
