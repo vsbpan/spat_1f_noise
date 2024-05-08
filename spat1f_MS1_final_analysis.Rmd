@@ -56,39 +56,6 @@ check_mod <- function(model){
 }
 
 
-summary_psem <- function (object, ..., basis.set = NULL, direction = NULL, interactions = FALSE, 
-                          conserve = FALSE, conditioning = FALSE, add.claims = NULL, 
-                          standardize = "scale", standardize.type = "latent.linear", 
-                          test.statistic = "F", test.type = "II", intercepts = FALSE, 
-                          AIC.type = "loglik", .progressBar = TRUE) 
-{
-  name <- deparse(match.call()$object)
-  call <- paste(piecewiseSEM:::listFormula(object), collapse = "\n  ")
-  dTable <- dSep(object, basis.set, direction, interactions, 
-                 conserve, conditioning, .progressBar)
-  Cstat <- fisherC(dTable, add.claims, direction, interactions, 
-                   conserve, conditioning, .progressBar)
-  #ChiSq <- LLchisq(object, basis.set, direction, interactions, 
-  #                 conserve)
-  AIC <- AIC_psem(object, AIC.type, add.claims, direction, 
-                  interactions, conserve, conditioning, .progressBar)
-  coefficients <- coefs(object, standardize, standardize.type, 
-                        test.statistic, test.type, intercepts)
-  R2 <- rsquared(object)
-  R2[, which(sapply(R2, is.numeric))] <- round(R2[, which(sapply(R2, 
-                                                                 is.numeric))], 2)
-  if (length(dTable) > 0) 
-    dTable[, which(sapply(dTable, is.numeric))] <- round(dTable[, 
-                                                                which(sapply(dTable, is.numeric))], 4)
-  l <- list(name = name, call = call, dTable = dTable, ChiSq = NULL, 
-            Cstat = Cstat, AIC = AIC, coefficients = coefficients, 
-            R2 = R2)
-  class(l) <- "summary.psem"
-  l
-}
-
-
-
 ```
 
 
@@ -584,6 +551,7 @@ sem_fit <- psem(
 )
 sem_summary <- suppressWarnings(suppressMessages(
   summary_psem(sem_fit, 
+               no_standardize_x =  c("var_high","beta_red","beta_white"),
                .progressBar = FALSE, 
                direction = "ava_qual -> RGR_scale")
   ))
@@ -591,10 +559,21 @@ sem_summary <- suppressWarnings(suppressMessages(
 # Standardize via observed-empirical method
 sem_summary <- append_std_coef(sem_summary, 
                                resp = "on_toxic",
-                               round(obs_emp_std(subm_on_toxic), digits = 4))
+                               round(obs_emp_std(
+                                 subm_on_toxic,
+                                 no_standardize_x =  c("var_high",
+                                                       "beta_red",
+                                                       "beta_white")
+                                 ), digits = 4))
+
 sem_summary <- append_std_coef(sem_summary, 
                                resp = "ava_qual", 
-                               round(obs_emp_std(subm_ava), digits = 4))
+                               round(obs_emp_std(
+                                 subm_ava,
+                                 no_standardize_x =  c("var_high",
+                                                       "beta_red",
+                                                       "beta_white")
+                                 ),digits = 4))
 ```
 
 ```{r}

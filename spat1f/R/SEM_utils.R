@@ -99,6 +99,83 @@ find_significant_pairs <- function(x, p = 0.05){
     unique()
 }
 
+.obs_emp_sd_yhat <- function(x){
+  pred <- predict(x, type = "response")
+  R2 <- cor(insight::get_response(x), pred)^2
+  return(sqrt(var(pred)/R2))
+}
+
+get_sd_y <- function(x, family){
+  if(family != "gaussian"){
+    out <- sd(insight::get_response(x), na.rm = TRUE)
+  } else {
+    out <- .obs_emp_sd_yhat(x)
+  }
+  return(out)
+}
+
+
+summary_psem <- function (object, ..., 
+                          no_standardize_x = NULL,
+                          basis.set = NULL, direction = NULL, interactions = FALSE, 
+                          conserve = FALSE, conditioning = FALSE, add.claims = NULL, 
+                          standardize = "scale", standardize.type = "latent.linear", 
+                          test.statistic = "F", test.type = "II", intercepts = FALSE, 
+                          AIC.type = "loglik", .progressBar = TRUE) 
+{
+  name <- deparse(match.call()$object)
+  call <- paste(piecewiseSEM:::listFormula(object), collapse = "\n  ")
+  dTable <- dSep(object, basis.set, direction, interactions, 
+                 conserve, conditioning, .progressBar)
+  Cstat <- fisherC(dTable, add.claims, direction, interactions, 
+                   conserve, conditioning, .progressBar)
+  #ChiSq <- LLchisq(object, basis.set, direction, interactions, 
+  #                 conserve)
+  AIC <- AIC_psem(object, AIC.type, add.claims, direction, 
+                  interactions, conserve, conditioning, .progressBar)
+  coefficients <- coefs(object, standardize, standardize.type, 
+                        test.statistic, test.type, intercepts)
+  R2 <- rsquared(object)
+  R2[, which(sapply(R2, is.numeric))] <- round(R2[, which(sapply(R2, 
+                                                                 is.numeric))], 2)
+  if (length(dTable) > 0) 
+    dTable[, which(sapply(dTable, is.numeric))] <- round(dTable[, 
+                                                                which(sapply(dTable, is.numeric))], 4)
+  l <- list(name = name, call = call, dTable = dTable, ChiSq = NULL, 
+            Cstat = Cstat, AIC = AIC, coefficients = coefficients, 
+            R2 = R2)
+  class(l) <- "summary.psem"
+  l$coefficients <- fix_coef_name(l$coefficients)
+  
+  if(!is.null(no_standardize_x)){
+    mod_list_resp <- do.call("c",lapply(model_list(object), insight::find_response))
+    
+    sd_y <- do.call("c",lapply(model_list(object), 
+                               function(x){
+                                 get_sd_y(x, family = insight::get_family(x)$family)
+                               }))
+    
+    l$coefficients <- l$coefficients %>% 
+      left_join(
+        data.frame(
+          "Response" = mod_list_resp,
+          "sd_y" = sd_y
+        ),
+        by = "Response"
+      ) %>% 
+      mutate(
+        Std.Estimate = ifelse(Predictor %in% no_standardize_x, 
+                              Estimate / sd_y, 
+                              Std.Estimate)
+      ) %>% 
+      dplyr::select(-sd_y)
+  }
+  
+  return(l)
+}
+
+
+
 
 SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, only = NA){
   
@@ -106,7 +183,11 @@ SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, 
     as.data.frame()
   sem_coef <- fix_coef_name(sem_coef)
   mod_list_resp <- do.call("c",lapply(model_list(sem_fit), insight::find_response))
-  
+
+  sd_y <- do.call("c",lapply(model_list(sem_fit), 
+                     function(x){
+                       get_sd_y(x, family = insight::get_family(x)$family)
+                     }))
   
   sem_coef <- append_std_coef2(sem_coef, 
                                resp = "on_toxic",
@@ -118,6 +199,16 @@ SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, 
                                round(obs_emp_std(
                                  model_list(sem_fit)[[which(mod_list_resp == "ava_qual")]]
                                ), digits = 4))
+  
+  sem_coef <- sem_coef %>% 
+    left_join(
+      data.frame(
+        "Response" = mod_list_resp,
+        "sd_y" = sd_y
+      ),
+      by = "Response"
+    )
+  
 
   sem_coef <- sem_coef %>%
     filter(
@@ -135,8 +226,9 @@ SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, 
         Estimate
       ),
       Predictor = gsub(":cat_pre_wt_log_scale","",Predictor),
-      std_est = ifelse(Predictor %in% c("var_high","beta_red","beta_white","beta_numeric_scale"), 
-                       Estimate,
+      std_est = ifelse(Predictor %in% c("var_high","beta_red",
+                                        "beta_white","beta_numeric_scale"), 
+                       round(Estimate / sd_y, digits = 4),
                        std_est),
       response = Response,
       predictor = Predictor
@@ -205,12 +297,12 @@ path_vars <- function(l){
 }
 
 # Observed-empirical approach to standardization from Grace et al. 2018
-obs_emp_std <- function(model){
-  pred <- predict(model, type = "response")
-  R2 <- cor(insight::get_response(model), pred)^2
-  sd_yhat <- sqrt(var(pred)/R2)
+obs_emp_std <- function(model, no_standardize_x =  c("var_high","beta_red","beta_white")){
+  sd_yhat <- .obs_emp_sd_yhat(model)
   beta <- fixef(model)$cond[-1]
   sd_x <- sqrt(apply(insight::get_modelmatrix(model)[, names(beta), drop = FALSE], 2, var))
+  sd_x <- ifelse(names(beta) %in% no_standardize_x, 1, sd_x)
+  
   return(
     beta * sd_x /  sd_yhat
   )
