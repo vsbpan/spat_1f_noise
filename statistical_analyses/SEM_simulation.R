@@ -31,7 +31,7 @@ by_data <- expand.grid("var" = c("beta_numeric_scale", "var_high"),
   )
 
 out_list <- pb_par_lapply(
-  1:10,
+  1:500,
   function(j, sem_fit, by_data, og_set){
     sem_fit_booti <- bootSEM(sem_fit, nboot = 1, cores = 1, silent = TRUE)[[1]]
     v <- lapply(seq_len(nrow(by_data)), function(i){
