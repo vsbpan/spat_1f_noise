@@ -81,6 +81,10 @@ d <- ref_data %>%
                                                         na.action = "ignore"))),
     select_scale = as.numeric(scale(less_toxic)),
     ava_qual_scale = as.numeric(scale(ava_qual)),
+    ava_qual_logit_scale = as.numeric(scale(adjust_prop(ava_qual, 
+                                                        trans = "emp", 
+                                                        nudge.method = "none", 
+                                                        na.action = "ignore"))),
     sl_mean_obs_log_scale = as.numeric(scale(log(sl_mean_obs))),
     cat_pre_wt_log_scale_sq = as.numeric(scale(log(cat_pre_wt)^2)),
     RGR_scale = as.numeric(scale(RGR)), 
@@ -443,9 +447,11 @@ subm_rgr <- glmmTMB(
 ```{r}
 subm_var_toxic <- glmmTMB(
   var_toxic_12_scale ~ 
-    beta_numeric_scale + var_high + 
+    beta_numeric_scale + 
+    var_high + 
     sl_mean_obs_log_scale + 
-    select_scale + ava_qual + 
+    select_scale + 
+    ava_qual_logit_scale + 
     (1|session_id),
   data = d2
 ); summary(subm_var_toxic)
@@ -458,7 +464,11 @@ subm_var_toxic <- glmmTMB(
 ```{r}
 subm_sl <- glmmTMB(
   sl_mean_obs_log_scale ~ 
-    beta_numeric_scale + on_toxic + var_high + ava_qual * cat_pre_wt_log_scale + 
+    beta_numeric_scale + 
+    on_toxic_logit_scale + 
+    var_high * cat_pre_wt_log_scale + 
+    ava_qual_logit_scale + 
+    cat_pre_wt_log_scale + 
     cat_pre_wt_log_scale_sq + 
     (1|session_id),
   data = d2,
@@ -472,8 +482,10 @@ subm_sl <- glmmTMB(
 ```{r}
 subm_toxin_ingested <- glmmTMB(
   mean_toxic_conc_scale ~ 
-    beta_numeric_scale + var_high * cat_pre_wt_log_scale + 
-    on_toxic + cat_pre_wt_log_scale_sq +  
+    beta_numeric_scale + 
+    var_high * cat_pre_wt_log_scale + 
+    on_toxic_logit_scale + 
+    cat_pre_wt_log_scale_sq +  
     (1|session_id),
   data = d2 
 ); summary(subm_toxin_ingested)
@@ -485,10 +497,10 @@ subm_toxin_ingested <- glmmTMB(
 
 ```{r}
 subm_on_toxic <- glmmTMB(
-  on_toxic ~ 
-    select_scale + ava_qual  + 
+  on_toxic_logit_scale ~ 
+    select_scale + ava_qual_logit_scale  + 
     (1|session_id),
-  family = beta_family(),
+  family = gaussian(),
   data = d2
 ); summary(subm_on_toxic)
 
@@ -514,7 +526,7 @@ subm_herb <- glmmTMB(
 subm_select <- glmmTMB(
   select_scale ~ 
     beta_numeric_scale + var_high * cat_pre_wt_log_scale + 
-    ava_qual + 
+    ava_qual_logit_scale + 
     (1|session_id),
   data = d2,
 ); summary(subm_select)
@@ -525,10 +537,10 @@ subm_select <- glmmTMB(
 
 ```{r}
 subm_ava <- glmmTMB(
-  ava_qual ~ 
+  ava_qual_logit_scale ~ 
     var_high + beta_numeric_scale * cat_pre_wt_log_scale + 
     (1|session_id),
-  family = beta_family(link = "logit"),
+  family = gaussian(),
   data = d2,
 ); summary(subm_ava)
 
@@ -546,34 +558,33 @@ sem_fit <- psem(
     subm_ava,
     subm_herb,
     subm_sl, 
-    var_toxic_12_scale %~~% on_toxic,
+    var_toxic_12_scale %~~% on_toxic_logit_scale,
     data = d2
 )
 sem_summary <- suppressWarnings(suppressMessages(
   summary_psem(sem_fit, 
-               no_standardize_x =  c("var_high","beta_red","beta_white"),
-               .progressBar = FALSE, 
-               direction = "ava_qual -> RGR_scale")
+               no_standardize_x =  c("var_high","beta_red","beta_white"), 
+               .progressBar = FALSE)
   ))
 
 # Standardize via observed-empirical method
-sem_summary <- append_std_coef(sem_summary, 
-                               resp = "on_toxic",
-                               round(obs_emp_std(
-                                 subm_on_toxic,
-                                 no_standardize_x =  c("var_high",
-                                                       "beta_red",
-                                                       "beta_white")
-                                 ), digits = 4))
-
-sem_summary <- append_std_coef(sem_summary, 
-                               resp = "ava_qual", 
-                               round(obs_emp_std(
-                                 subm_ava,
-                                 no_standardize_x =  c("var_high",
-                                                       "beta_red",
-                                                       "beta_white")
-                                 ),digits = 4))
+# sem_summary <- append_std_coef(sem_summary, 
+#                                resp = "on_toxic",
+#                                round(obs_emp_std(
+#                                  subm_on_toxic,
+#                                  no_standardize_x =  c("var_high",
+#                                                        "beta_red",
+#                                                        "beta_white")
+#                                  ), digits = 4))
+# 
+# sem_summary <- append_std_coef(sem_summary, 
+#                                resp = "ava_qual", 
+#                                round(obs_emp_std(
+#                                  subm_ava,
+#                                  no_standardize_x =  c("var_high",
+#                                                        "beta_red",
+#                                                        "beta_white")
+#                                  ),digits = 4))
 ```
 
 ```{r}
