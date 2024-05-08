@@ -1,4 +1,4 @@
-source("helper_functions/init.R")
+source("spat1f/init.R")
 #sem_fit_boot <- bootSEM(sem_fit, nboot = 200, cores = 8)
 #saveRDS(sem_fit_boot, "invisible/sem_fit_boot.rds")
 sem_fit_boot <- readRDS("invisible/sem_fit_boot.rds")

@@ -73,8 +73,8 @@ append_std_coef <- function(x, response, coef){
 }
 
 
-append_std_coef2 <- function(x, coef){
-  i <- which(x$Std.Estimate == "-")
+append_std_coef2 <- function(x, response, coef){
+  i <- which(x$Std.Estimate == "-" & x$Response == response)
   coef <- coef[match(x$Predictor[i],names(coef))]
   x$Std.Estimate[i] <- coef
   return(x)
@@ -105,12 +105,20 @@ SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, 
   sem_coef <- suppressWarnings(coefs(sem_fit)) %>% 
     as.data.frame()
   sem_coef <- fix_coef_name(sem_coef)
+  mod_list_resp <- do.call("c",lapply(model_list(sem_fit), insight::find_response))
+  
   
   sem_coef <- append_std_coef2(sem_coef, 
-                               round(fixef(sem_fit[[3]])$cond[-1] * 
-                                       1 / sqrt(var(predict(sem_fit[[3]])) + 
-                                                  pi^2/3), digits = 4))
-  
+                               resp = "on_toxic",
+                               round(obs_emp_std(
+                                 model_list(sem_fit)[[which(mod_list_resp == "on_toxic")]]
+                               ), digits = 4))
+  sem_coef <- append_std_coef2(sem_coef, 
+                               resp = "ava_qual",
+                               round(obs_emp_std(
+                                 model_list(sem_fit)[[which(mod_list_resp == "ava_qual")]]
+                               ), digits = 4))
+
   sem_coef <- sem_coef %>%
     filter(
       !grepl("~~",Predictor) 

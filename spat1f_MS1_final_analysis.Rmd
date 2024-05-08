@@ -639,6 +639,11 @@ contrast_by_pre_wt(subm_select, "var_high", "trt")
 ```
 
 ```{r}
+contrast_by_pre_wt(subm_herb, "var_high", "trt")
+```
+
+
+```{r}
 emmeans::emtrends(subm_ava, 
                  ~ beta_numeric_scale | cat_pre_wt_log_scale, 
                  var = "beta_numeric_scale", 
