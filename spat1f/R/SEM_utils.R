@@ -65,8 +65,8 @@ model_list <- function(x){
 }
 
 
-append_std_coef <- function(x, coef){
-  i <- which(x$coefficients$Std.Estimate == "-")
+append_std_coef <- function(x, response, coef){
+  i <- which(x$coefficients$Response == response & x$coefficients$Std.Estimate == "-")
   coef <- coef[match(x$coefficients$Predictor[i],names(coef))]
   x$coefficients$Std.Estimate[i] <- coef
   return(x)
@@ -196,5 +196,14 @@ path_vars <- function(l){
   unique(do.call("c",lapply(l, function(x){c(x$response, x$predictor)})))
 }
 
-
-
+# Observed-empirical approach to standardization from Grace et al. 2018
+obs_emp_std <- function(model){
+  pred <- predict(model, type = "response")
+  R2 <- cor(insight::get_response(model), pred)^2
+  sd_yhat <- sqrt(var(pred)/R2)
+  beta <- fixef(model)$cond[-1]
+  sd_x <- sqrt(apply(insight::get_modelmatrix(model)[, names(beta), drop = FALSE], 2, var))
+  return(
+    beta * sd_x /  sd_yhat
+  )
+}

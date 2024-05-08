@@ -4,7 +4,7 @@ library(amt)
 
 # Fit a bunch of issf and store them in a list
 fit_list <- pb_par_lapply(
-  unname(unlist(id_list)),
+  unname(unlist(id_list))[!unname(unlist(id_list)) %in% problem_ids],
   function(i, ref_data){
     ID <- i
     d <- fetch_events(ID) %>% # Get mask-R-CNN instances
@@ -13,12 +13,12 @@ fit_list <- pb_par_lapply(
       filter(!is.na(r)) # throw out steps where r is NA
     
     # Throw out trials with too few observations to be useful
-    if(length(d$r) < 10 | length(na.omit(d$theta_rel)) < 10){
+    if(length(d$r) < 30 | length(na.omit(d$theta_rel)) < 30){
       return(NULL)
     } else {
       d <- d %>%
         add_random_steps(n = 100L, # Simulate random available steps
-                         sl_distr = fit_lnorm(.$r), # Fit lognormal step length dist
+                         sl_distr = fit_gamma(.$r), # Fit gamma step length dist
                          ta_distr = fit_genvonmises(.$theta_rel) # Generalized von Mises turn angle dist
         ) %>%
         flag_invalid_steps(remove = TRUE) %>% # Throw out any random step that is outside of the arena
@@ -40,19 +40,19 @@ fit_list <- pb_par_lapply(
         case ~
           less_toxic + # Habitat selection estimation
           (cos_theta_pi + cos_2theta) + # Turn angle update 
-          (logslsq + logsl) + # step length update
+          (sl + logsl) + # step length update
           strata(step_id) # Stratify be step ID
       )
     } else {
       mod_form <- formula(
         case ~
           (cos_theta_pi + cos_2theta) +
-          (logslsq + logsl) +
+          (sl + logsl) +
           strata(step_id)
       )
     }
     
-    out <- issf(
+    out <- issf( # Fit the issf
       mod_form,
       data = d,
       shape_estimator = c("logsl"),
@@ -69,11 +69,12 @@ fit_list <- pb_par_lapply(
   cores = 8,
   inorder = TRUE
 )
-names(fit_list) <- unname(unlist(id_list))
+names(fit_list) <- unname(unlist(id_list))[!unname(unlist(id_list)) %in% problem_ids]
 
 fit_list
 
-# saveRDS(object = c(fit_list), "invisible/issf_fit_list.rds")
+saveRDS(object = c(fit_list), "invisible/issf_fit_list.rds")
+rm("fit_list")
 
 issf_fit_l <- readRDS("invisible/issf_fit_list.rds")
 
@@ -86,15 +87,17 @@ issf_fit_l <- issf_fit_l %>%
 
 
 
-i <- 1:3
+i <- seq_along(issf_fit_l)
 
-extract_ava_neighborhood_quality(issf_fit_l[i], 
+# Extract data from fitted models
+res <- extract_ava_neighborhood_quality(issf_fit_l[i], 
                              .ref_data = ref_data, 
                              n = 100) %>% 
   left_join(
     extract_temporal_var(names(issf_fit_l)[i], 
                          hours = 12L, 
-                         .ref_data = ref_data),
+                         .ref_data = ref_data, 
+                         cores = 6),
     by = "rep_id"
   ) %>% 
   left_join(
@@ -102,13 +105,13 @@ extract_ava_neighborhood_quality(issf_fit_l[i],
     by = "rep_id"
   ) %>% 
   left_join(
-    extract_mean_on_toxic(names(issf_fit_l)[i], .ref_data = ref_data),
+    extract_mean_on_toxic(names(issf_fit_l)[i], .ref_data = ref_data, cores = 6),
     by = "rep_id"
   ) %>% 
   left_join(
-    extract_obs_move_summary(issf_fit_l[i]),
+    extract_obs_move_summary(names(issf_fit_l)[i], cores = 6),
     by = "rep_id"
   )
 
-
+# write_csv(res, "cleaned_data/event_derivative.csv")
 

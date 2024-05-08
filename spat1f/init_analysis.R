@@ -7,10 +7,11 @@ source("spat1f/init.R")
 
 
 
-ref_data <- suppressMessages(read_csv("raw_data/1_f_noise_experiment data_May_03_2024.csv"))
-today <- as.character("2024-05-03")#Sys.Date()
-problem_ids <- c("2","6","7", "9", "10","11", "20","28", "85", "113", "146")
-
+ref_data <- suppressMessages(
+  read_csv("raw_data/1_f_noise_experiment data_May_03_2024.csv", progress = FALSE)
+  )
+today <- as.character("2024-05-03") #Sys.Date()
+problem_ids <- c("85", "4", "15", "13", "11", "28", "6", "9", "10", "14") # Throw out reps with problematic detections
 
 ref_data <- ref_data %>% 
   filter(!is.na(cat_dead_cam_end)) %>% 
@@ -121,13 +122,13 @@ ref_data <- ref_data %>%
     repID = paste0("rep",rep_id)
   ) %>% 
   left_join(
-    read_csv("cleaned_data/consumption_mask_derivative.csv") %>% 
+    read_csv("cleaned_data/consumption_mask_derivative.csv", progress = FALSE) %>% 
       suppressMessages() %>% 
       mutate(rep_id = as.character(rep_id)), 
     by = "rep_id" 
   ) %>% 
   left_join(
-    read_csv("cleaned_data/event_derivative.csv") %>% 
+    read_csv("cleaned_data/event_derivative.csv", progress = FALSE) %>% 
       suppressMessages() %>% 
       mutate(
         rep_id = as.character(rep_id)
@@ -161,11 +162,7 @@ ref_data <- ref_data %>%
                        # censor at pupation date bc not sure when they died. 
                        as.numeric(as.difftime(pupation_date - date_start, units = "d"))
     )
-  ) 
-
-
-
-ref_data
+  )
 
 
 id_list <- list("var" = ref_data %>% 

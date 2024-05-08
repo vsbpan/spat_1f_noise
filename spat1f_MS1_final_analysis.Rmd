@@ -1,0 +1,717 @@
+---
+title: "1/f Noise Project Manuscript 1 Final Analysis"
+author: "Vincent Pan"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc_float: true
+    toc: true 
+    toc_depth: 2 
+    number_sections: true
+    code_folding: show
+    highlight: tango
+    theme: default
+---
+
+# Setup {.tabset}
+
+```{r include=FALSE}
+knitr::opts_chunk$set(
+  eval = TRUE, 
+  warning = FALSE, 
+  message = FALSE, 
+  comment = NA
+)
+```
+
+## Load libraries
+
+```{r, message=FALSE, warning=FALSE}
+library(survival)
+library(piecewiseSEM)
+source("spat1f/init_analysis.R")
+```
+
+## Handy functions not in spat1f
+
+```{r}
+trend_by_pre_wt <- function(model, term){
+  emmeans::emtrends(model, var = "cat_pre_wt_log_scale", specs = term) %>% 
+  pairs()
+}
+
+contrast_by_pre_wt <- function(model, term, type = c("pairwise", "trt.vs.ctrl"), at = c(-2, 2)){
+  type <- match.arg(type)
+  f <- as.formula(sprintf("%s ~ %s | cat_pre_wt_log_scale", type, term))
+  emmeans::emmeans(model, 
+                 f, 
+                 var = term, 
+                 at = list(cat_pre_wt_log_scale = at))
+}
+
+check_mod <- function(model){
+ DHARMa::simulateResiduals(model) %>% 
+    plot()
+  performance::posterior_predictive_check(model)
+}
+
+
+summary_psem <- function (object, ..., basis.set = NULL, direction = NULL, interactions = FALSE, 
+                          conserve = FALSE, conditioning = FALSE, add.claims = NULL, 
+                          standardize = "scale", standardize.type = "latent.linear", 
+                          test.statistic = "F", test.type = "II", intercepts = FALSE, 
+                          AIC.type = "loglik", .progressBar = TRUE) 
+{
+  name <- deparse(match.call()$object)
+  call <- paste(piecewiseSEM:::listFormula(object), collapse = "\n  ")
+  dTable <- dSep(object, basis.set, direction, interactions, 
+                 conserve, conditioning, .progressBar)
+  Cstat <- fisherC(dTable, add.claims, direction, interactions, 
+                   conserve, conditioning, .progressBar)
+  #ChiSq <- LLchisq(object, basis.set, direction, interactions, 
+  #                 conserve)
+  AIC <- AIC_psem(object, AIC.type, add.claims, direction, 
+                  interactions, conserve, conditioning, .progressBar)
+  coefficients <- coefs(object, standardize, standardize.type, 
+                        test.statistic, test.type, intercepts)
+  R2 <- rsquared(object)
+  R2[, which(sapply(R2, is.numeric))] <- round(R2[, which(sapply(R2, 
+                                                                 is.numeric))], 2)
+  if (length(dTable) > 0) 
+    dTable[, which(sapply(dTable, is.numeric))] <- round(dTable[, 
+                                                                which(sapply(dTable, is.numeric))], 4)
+  l <- list(name = name, call = call, dTable = dTable, ChiSq = NULL, 
+            Cstat = Cstat, AIC = AIC, coefficients = coefficients, 
+            R2 = R2)
+  class(l) <- "summary.psem"
+  l
+}
+
+
+
+```
+
+
+
+## Quick cleaning
+
+```{r}
+# Main data.frame for analyses
+d <- ref_data %>% 
+  filter(error == 0) %>% 
+  mutate(
+    cat_pre_wt_log = log(cat_pre_wt),
+    cat_pre_wt_log_scale = as.numeric(scale(log(cat_pre_wt))),
+    cat_size = ifelse(cat_pre_wt < median(cat_pre_wt), "small", "big"),
+    has_var = ifelse(var_trt != "constant", 1, 0),
+    mean_toxic_conc_scale = as.numeric(scale(mean_toxic_conc)),
+    mean_toxic_scale = as.numeric(scale(mean_toxic)),
+    area_herb_log_scale = as.numeric(scale(log(area_herb+1))),
+    var_toxic_12_scale = as.numeric(scale(var_toxic_12)),
+    on_toxic_logit_scale = as.numeric(scale(adjust_prop(on_toxic, 
+                                                        trans = "emp", 
+                                                        nudge.method = "none", 
+                                                        na.action = "ignore"))),
+    select_scale = as.numeric(scale(less_toxic)),
+    ava_qual_scale = as.numeric(scale(ava_qual)),
+    sl_mean_obs_log_scale = as.numeric(scale(log(sl_mean_obs))),
+    cat_pre_wt_log_scale_sq = as.numeric(scale(log(cat_pre_wt)^2)),
+    RGR_scale = as.numeric(scale(RGR)), 
+    sl_mean_pred = shape * scale
+  )
+
+# Subset of data.frame for SEM
+d2 <- d %>% 
+  filter(
+    var_trt != "constant"
+  ) %>% 
+  filter(
+    !is.na(area_herb_log_scale) & 
+      !is.na(var_toxic_12_scale) & 
+      !is.na(mean_toxic_conc_scale) &
+    !is.na(on_toxic_logit_scale) &
+     !is.na(select_scale) &
+      !is.na(ava_qual_scale) &
+     !is.na(sl_mean_obs) &
+      !is.na(RGR)) %>% 
+  mutate(
+    var_high = ifelse(var_trt == "high_var", 1, 0),
+    beta_red = ifelse(as.character(beta) == 5, 1, 0),
+    beta_white = ifelse(as.character(beta) == 0, 1, 0),
+    beta_red_cat_pre_wt_log_scale = beta_red * cat_pre_wt_log_scale,
+    beta_white_cat_pre_wt_log_scale = beta_white * cat_pre_wt_log_scale,
+    var_high_cat_pre_wt_log_scale = var_high * cat_pre_wt_log_scale,
+    beta_numeric_scale = as.numeric(scale(as.numeric(beta)))
+  )
+
+```
+
+
+
+# Herbivore Performance
+
+## RGR {.tabset}
+
+### Model summary
+```{r}
+rgr_m <- glmmTMB(
+  RGR ~ 
+    (var_trt + beta) * cat_pre_wt_log_scale +
+    I(cat_pre_wt_log_scale^2) +  # residual plot show significant non-linearity
+    (1|session_id),
+  data = d %>% 
+    filter(
+      var_trt != "constant"
+    ) 
+); summary(rgr_m)
+
+
+car::Anova(rgr_m, type = "III")
+
+```
+
+### Post-hoc contrasts
+
+```{r}
+trend_by_pre_wt(rgr_m, "var_trt")
+contrast_by_pre_wt(rgr_m, "var_trt")
+
+trend_by_pre_wt(rgr_m, "beta")
+contrast_by_pre_wt(rgr_m, "beta")
+```
+
+
+### Misc stats
+```{r}
+r2(rgr_m, tolerance = 10^-10)
+```
+
+
+### Check model
+```{r}
+check_mod(rgr_m)
+```
+
+
+### Plot
+```{r}
+g1 <- marginal_effects(rgr_m, terms = c("cat_pre_wt_log_scale","beta")) %>% 
+  ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = yhat)) + 
+  geom_ribbon(aes(ymax = upper, ymin = lower, fill = beta), alpha = 0.2) + 
+  geom_line(aes(color = beta), linewidth = 2) + 
+  geom_point(
+    data = rgr_m$frame,
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = RGR, color = beta),
+    size = 3, alpha = 0.8
+  ) + 
+  theme_bw(base_size = 15) + 
+  theme(legend.position = "top") +
+  scale_x_continuous(trans = "log10", labels = fancy_scientific) +
+  scale_color_brewer(type = "qual", aesthetics = c("fill","color")) + 
+  labs(x = "Cat pre-weight (g)", y = expression(RGR~(hour^-1)),
+       color = expression(beta), fill = expression(beta))
+
+g2 <- marginal_effects(rgr_m, terms = c("cat_pre_wt_log_scale","var_trt")) %>% 
+  ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = yhat)) + 
+  geom_ribbon(aes(ymax = upper, ymin = lower, fill = var_trt), alpha = 0.2) + 
+  geom_line(aes(color = var_trt), linewidth = 2) + 
+  geom_point(
+    data = rgr_m$frame,
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = RGR, color = var_trt),
+    size = 3, alpha = 0.8
+  ) + 
+  theme_bw(base_size = 15) + 
+  scale_x_continuous(trans = "log10", labels = fancy_scientific) +
+  theme(legend.position = "top") +
+  scale_color_discrete(type = c("navy","skyblue"), 
+                       aesthetics = c("fill","color"), 
+                       label = c("High", "Low")) + 
+  labs(x = "Cat pre-weight (g)", y = expression(RGR~(hour^-1)),
+       color = "Variation", fill = "Variation")
+
+
+ggarrange(g1, g2 + labs(y = ""))
+```
+
+
+## Time to pupation {.tabset}
+
+### Model summary
+```{r}
+pupt_m_full <- glmmTMB(
+  time_to_pupation ~ 
+    (var_trt + beta) * cat_pre_wt_log_scale + 
+    I(cat_pre_wt_log_scale^2) + # Residuals show significant non-linearity
+    (1|session_id),
+  data = d %>% 
+    filter(var_trt != "constant"), 
+  family = Gamma(link = "log"),
+); summary(pupt_m_full)
+
+car::Anova(pupt_m_full, type = "III")
+
+pupt_m <- glmmTMB(
+  time_to_pupation ~ 
+    var_trt + beta * cat_pre_wt_log_scale + 
+    I(cat_pre_wt_log_scale^2) + # Residuals show significant non-linearity
+    (1|session_id),
+  data = d %>% 
+    filter(var_trt != "constant"), 
+  family = Gamma(link = "log"),
+); summary(pupt_m)
+
+car::Anova(pupt_m, type = "III")
+
+
+
+```
+
+### Post-hoc contrasts
+
+```{r}
+contrast_by_pre_wt(pupt_m, "var_trt")
+
+trend_by_pre_wt(pupt_m, "beta")
+contrast_by_pre_wt(pupt_m, "beta")
+```
+
+
+### Misc stats
+```{r}
+r2(pupt_m, tolerance = 10^-10)
+```
+
+
+### Check model
+```{r}
+check_mod(pupt_m)
+```
+
+
+### Plot
+```{r}
+g3 <- marginal_effects(pupt_m, terms = c("cat_pre_wt_log_scale","beta")) %>% 
+  ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = yhat)) + 
+  geom_ribbon(aes(ymax = upper, ymin = lower, fill = beta), alpha = 0.2) + 
+  geom_line(aes(color = beta), linewidth = 2) + 
+  geom_point(
+    data = pupt_m$frame,
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = time_to_pupation, color = beta),
+    size = 3, alpha = 0.8
+  ) + 
+  theme_bw(base_size = 15) + 
+  theme(legend.position = "top") +
+  scale_y_continuous(trans = "log2") +
+  scale_x_continuous(trans = "log10", labels = fancy_scientific) +
+  scale_color_brewer(type = "qual", aesthetics = c("fill","color")) + 
+  labs(x = "Cat pre-weight (g)", y = "Time to pupation (days)",
+       color = expression(beta), fill = expression(beta))
+
+g4 <- marginal_effects(pupt_m, terms = c("var_trt")) %>% 
+  ggplot(aes(x = var_trt, y = yhat)) + 
+  geom_point(
+    data = pupt_m$frame,
+    aes(x = var_trt, y = time_to_pupation, color = var_trt),
+    position = position_jitter(width = 0.2),
+    size = 3, alpha = 0.8
+  ) + 
+  geom_pointrange(
+    aes(ymax = upper, ymin = lower), 
+    color = "black",
+    size = 1, linewidth = 2, shape = 1,
+  ) +
+  theme_bw(base_size = 15) + 
+  scale_y_continuous(trans = "log2") +
+  theme(legend.position = "top") +
+  scale_color_discrete(type = c("navy","skyblue"), 
+                       aesthetics = c("color"), 
+                       label = c("High", "Low")) + 
+  labs(x = "Variation", y = "Time to pupation (days)",
+       color = "Variation")
+
+
+ggarrange(g3, g4 + labs(y = ""))
+```
+
+## Eclosure {.tabset}
+
+### Model summary
+```{r}
+eclosure_m_full <- glmmTMB(
+  eclosed ~ 
+    (var_trt + beta) * cat_pre_wt_log_scale + 
+    (1|session_id),
+  data = d %>% 
+    filter(var_trt != "constant"), 
+  family = binomial(link = "logit"),
+); summary(eclosure_m_full)
+
+car::Anova(eclosure_m_full, type = "III")
+
+eclosure_m <- glmmTMB(
+  eclosed ~ 
+    (var_trt + beta) + cat_pre_wt_log_scale + 
+    (1|session_id),
+  data = d %>% 
+    filter(var_trt != "constant"), 
+  family = binomial(link = "logit"),
+); summary(eclosure_m)
+
+car::Anova(eclosure_m, type = "II")
+
+
+
+```
+
+### Post-hoc contrasts
+
+```{r}
+
+```
+
+
+### Misc stats
+```{r}
+r2(eclosure_m, tolerance = 10^-10)
+```
+
+
+### Check model
+```{r}
+check_mod(eclosure_m)
+```
+
+
+### Plot
+```{r}
+
+```
+
+
+
+## Survival {.tabset}
+
+### Model summary
+```{r}
+surv_m_full <- coxph(
+  Surv(surv_time, observed_dead) ~ 
+    (var_trt + beta) * cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) +
+    strata(session_id),
+  data = d %>% 
+    filter(var_trt != "constant") %>% 
+    mutate(
+      beta = as.factor(as.character(beta))
+    ),
+); summary(surv_m_full)
+
+drop1(surv_m_full, test = "Chisq")
+
+surv_m <- coxph(
+  Surv(surv_time, observed_dead) ~ 
+    (var_trt + beta) + cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) + 
+    strata(session_id),
+  data = d %>% 
+    filter(var_trt != "constant") %>% 
+    mutate(
+      beta = as.factor(as.character(beta))
+    ),
+); summary(surv_m)
+
+drop1(surv_m, test = "Chisq")
+
+
+
+```
+
+### Post-hoc contrasts
+
+```{r}
+
+```
+
+
+### Misc stats
+```{r}
+r2(surv_m, tolerance = 10^-10)
+```
+
+
+### Check model
+```{r}
+cox.zph(surv_m)
+```
+
+
+### Plot
+```{r}
+
+```
+
+
+
+
+# Structural Equation Model
+
+## Sub-models {.tabset}
+
+### RGR
+
+```{r}
+subm_rgr <- glmmTMB(
+  RGR_scale ~ 
+    cat_pre_wt_log_scale + 
+    cat_pre_wt_log_scale_sq +
+    mean_toxic_conc_scale + 
+    area_herb_log_scale + 
+    sl_mean_obs_log_scale + 
+    var_toxic_12_scale +
+    (1|session_id),
+  data = d2
+); summary(subm_rgr)
+```
+
+
+### Variance in toxin (12 hour)
+
+```{r}
+subm_var_toxic <- glmmTMB(
+  var_toxic_12_scale ~ 
+    beta_numeric_scale + var_high + 
+    sl_mean_obs_log_scale + 
+    select_scale + ava_qual +
+    (1|session_id),
+  data = d2
+); summary(subm_var_toxic)
+
+```
+
+
+### Mean step length
+
+```{r}
+subm_sl <- glmmTMB(
+  sl_mean_obs_log_scale ~ 
+    var_high * cat_pre_wt_log_scale + beta_numeric_scale + 
+    cat_pre_wt_log_scale_sq +
+    on_toxic + ava_qual + 
+    (1|session_id),
+  data = d2,
+); summary(subm_sl)
+
+```
+
+
+### Mean toxin ingested
+
+```{r}
+subm_toxin_ingested <- glmmTMB(
+  mean_toxic_conc_scale ~ 
+    beta_numeric_scale + var_high * cat_pre_wt_log_scale + 
+    on_toxic + cat_pre_wt_log_scale_sq +  
+    (1|session_id),
+  data = d2 
+); summary(subm_toxin_ingested)
+
+```
+
+
+### Mean time on toxin
+
+```{r}
+subm_on_toxic <- glmmTMB(
+  on_toxic ~ 
+    select_scale + ava_qual  + 
+    (1|session_id),
+  family = beta_family(),
+  data = d2
+); summary(subm_on_toxic)
+
+```
+
+
+### Area consumption
+
+```{r}
+subm_herb <- glmmTMB(
+  area_herb_log_scale ~ 
+    beta_numeric_scale + var_high * cat_pre_wt_log_scale + 
+    sl_mean_obs_log_scale + 
+    (1|session_id),
+  data = d2,
+); summary(subm_herb)
+
+```
+
+
+### Toxin selection
+
+```{r}
+subm_select <- glmmTMB(
+  select_scale ~ 
+    beta_numeric_scale + var_high * cat_pre_wt_log_scale + 
+    ava_qual + 
+    (1|session_id),
+  data = d2,
+); summary(subm_select)
+```
+
+
+### Neighborhood diet quality
+
+```{r}
+subm_ava <- glmmTMB(
+  ava_qual ~ 
+    var_high + beta_numeric_scale * cat_pre_wt_log_scale + 
+    (1|session_id),
+  family = beta_family(link = "logit"),
+  data = d2,
+); summary(subm_ava)
+
+```
+
+## d-separation test
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, include=TRUE}
+sem_fit <- psem(
+    subm_rgr,
+    subm_var_toxic,
+    subm_on_toxic,
+    subm_toxin_ingested,
+    subm_select,
+    subm_ava,
+    subm_herb,
+    subm_sl, 
+    var_toxic_12_scale %~~% on_toxic,
+    data = d2
+)
+sem_summary <- suppressWarnings(suppressMessages(
+  summary_psem(sem_fit, 
+               .progressBar = FALSE, 
+               direction = "ava_qual -> RGR_scale")
+  ))
+
+# Standardize via observed-empirical method
+sem_summary <- append_std_coef(sem_summary, 
+                               resp = "on_toxic",
+                               round(obs_emp_std(subm_on_toxic), digits = 4))
+sem_summary <- append_std_coef(sem_summary, 
+                               resp = "ava_qual", 
+                               round(obs_emp_std(subm_ava), digits = 4))
+```
+
+```{r}
+sem_summary$Cstat
+```
+
+
+```{r}
+knitr::kable(sem_summary$dTable)
+```
+
+## Model summary {.tabset}
+
+### Model stats
+
+```{r}
+sem_summary$ChiSq
+sem_summary$AIC
+sem_summary$R2
+```
+
+### Standardized coefficients
+```{r}
+knitr::kable(
+  cbind(sem_summary$coefficients,"arrow_size"=(abs(as.numeric(sem_summary$coefficients$Std.Estimate))*10))
+)
+
+
+
+```
+
+### Post hoc contrast
+
+```{r}
+contrast_by_pre_wt(subm_toxin_ingested, "var_high", "trt")
+```
+
+```{r}
+contrast_by_pre_wt(subm_select, "var_high", "trt")
+```
+
+```{r}
+emmeans::emtrends(subm_ava, 
+                 ~ beta_numeric_scale | cat_pre_wt_log_scale, 
+                 var = "beta_numeric_scale", 
+                 at = list(cat_pre_wt_log_scale = c(-2,2)))
+```
+
+## SEM plots
+
+
+```{r}
+knitr::include_graphics("graphs/joined_SEM.png")
+```
+
+## SEM forest plot
+
+```{r}
+knitr::include_graphics("graphs/SEM_forest.png")
+```
+
+
+# Some demo plots {.tabset}
+## Example spectra
+
+```{r}
+fetch_trt_meta() %>% 
+  mutate(beta = gsub("beta|_.*","",syn_id)) %>% 
+  arrange(beta) %>% 
+  group_by(beta) %>% 
+  slice_sample(n = 5) %>% 
+  trt_meta_as_list() %>% 
+  plot.imlist(main.panel = c(rep("beta = -5", 5), rep("beta = 0", 5), rep("beta = 5", 5)))
+```
+
+
+
+## Mask-R-CNN output
+
+```{r}
+par(mfrow=c(1,2))
+fetch_image(21, rank = 10) %>% plot(main = "Cropped image")
+fetch_data_dict(21) %>% plot(frame = 10, main = "Mask-R-CNN prediction")
+dev.off()
+```
+
+
+```{r}
+fetch_data_dict(55) %>% plot(frame = 10, main = "Another Mask-R-CNN prediction example")
+```
+
+
+## Movement tracks
+```{r}
+ggarrange(
+  plot_track_overlay(repID = 45),
+  plot_track_overlay(repID = 46),
+  plot_track_overlay(repID = 49),
+  plot_track_overlay(repID = 61),
+  common.legend = FALSE, ncol = 2, nrow = 2, legend = "right"
+)
+```
+
+## Herbivory mask
+
+```{r}
+fast_load_image("invisible/consumption_mask/55.jpg") %>% 
+  plot()
+```
+
+
+
+# Session Info
+
+```{r}
+sessionInfo()
+```
+

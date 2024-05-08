@@ -1,6 +1,6 @@
 # Fetch treatment spectra meta data stored on computer
 fetch_trt_meta <- function(path = "raw_data/trt_spectra_meta/master_trt_meta.csv"){
-  suppressMessages(read_csv(path))
+  suppressMessages(read_csv(path, progress = FALSE))
 }
 
 # Fetch treatment spectra using repID. 
@@ -61,7 +61,7 @@ fetch_events <- function(repID, append_detection_summary = TRUE, src_dir = "clea
   path <- paste0(src_dir, "/rep",repID,".csv")
   
   if(file.exists(path)){
-    out <- suppressMessages(read_csv(path))
+    out <- suppressMessages(read_csv(path, progress = FALSE))
     if(append_detection_summary){
       s <- summary(
         fetch_data_dict(repID)) %>% 

@@ -169,7 +169,8 @@ plot_track <- function(data, x, y, type = c("track", "density")){
   .expose_columns_interal()
   type <- match.arg(type, several.ok = TRUE)
   
-  g <- ggplot(data, aes(x = x, y = y))
+  g <- ggplot(data, aes(x = x, y = y)) +
+    coord_cartesian(xlim = c(0, 1000), ylim = c(0, 1000))
   
   if("density" %in% type){
     g <- g + geom_density_2d_filled()

@@ -1,5 +1,5 @@
 # Wrapper for computing challenge metrics for binary masks
-mask_evaluator <- function(prediction, ground_truth, IOU_thresh = c(0.5, 0.75, 0.9), size_range = NULL){
+mask_evaluator <- function(prediction, ground_truth, IOU_thresh = c(0.5, 0.75, 0.9), size_range = NULL, cores = 1){
   
   if(!is.null(size_range)){
     mask_size_vec <- mask_area(ground_truth)
@@ -9,10 +9,14 @@ mask_evaluator <- function(prediction, ground_truth, IOU_thresh = c(0.5, 0.75, 0
   }
   
   
-  z <- lapply(seq_along(prediction), function(i){
+  z <- pb_par_lapply(seq_along(prediction), function(i, prediction, ground_truth){
     polygon_IOU(get_polygon(prediction[i])[[1]],
              get_polygon(ground_truth[i])[[1]])
-  }) %>% 
+  }, 
+  prediction = prediction,
+  ground_truth = ground_truth,
+  cores = cores, 
+  inorder = TRUE) %>% 
     do.call("c",.)
   pred_exist <- lapply(get_polygon(prediction), function(x){
     !any(is_null_na(x))
@@ -95,8 +99,6 @@ keypoint_evaluator <- function(prediction, ground_truth,
     kp1 <- map(prediction[i], "keypoints")[[1]]
     kp2 <- map(ground_truth[i], "keypoints")[[1]]
     s2 <- mask_size_vec[i] # Mask size
-    
-    
     
     pred_exist <- !is.null(kp1)
     gt_exist <- !is.null(kp2)

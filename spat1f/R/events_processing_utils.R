@@ -108,31 +108,26 @@ insert_gaps <- function(df, frame_id = frame_id, expected_gap = 360){
   .expose_columns_interal()
   
   time <- c(file_time(frame_id), expected_gap * -1) # Append a negative time photo to ensure that there is always a beginning without NA at the same time
-  time_grid <- 360 * (seq_len((diff(round(range(time) / expected_gap)) +1)) - 1)
+  time_grid <- 360 * (seq_len((diff(round(range(time) / expected_gap)) + 1)) - 1)
   o <- order(time)
   df <- df[o,]
   g <- ((diff(time[o]) - expected_gap) / expected_gap) %>% 
     round()
   g <- pmax(c(g, 0), 0)
-  
-  
-  
-  empty_row <- as.data.frame(matrix(rep(NA, ncol(df)), 
-                                    nrow = 1, ncol = ncol(df), 
-                                    dimnames = list(NULL, names(df))))
-  
-  out <- lapply(seq_along(g), function(i, g){
-    rbind(df[i,], empty_row[rep(TRUE, g[i]),])
+
+  index <- lapply(seq_along(g), function(i, g){
+    c(i, rep(1, g[i]))
   }, g = g) %>% 
-    do.call("rbind",.)
+    do.call("c",.)
   
-  out <- out[-1, ] # Drop the negative time photo
+  out <- df[index,][-1, ] # Drop the negative time photo
   rownames(out) <- NULL
-  out[is.na(out$frame_id),"frame_id"] <- paste0("gap", 
-                                                seq_len(sum(g)), 
-                                                "__s", 
-                                                time_grid[which(is.na(out$frame_id))])
-  out$is_gap <- grepl("gap", out$frame_id)
+  is_gap <- is.na(out$frame_id)
+  out$is_gap <- is_gap
+  out[is_gap,"frame_id"] <- paste0("gap", 
+                                   seq_len(sum(g)), 
+                                   "__s", 
+                                   time_grid[which(is_gap)])
   return(out)
 }
 
@@ -184,7 +179,7 @@ inherit_theta <- function(theta, r){
 # Clean events by throwing out frames beyond the camera cutoff and sus frames. 
 clean_events <- function(x, 
                          ref_data = get("ref_data", envir = globalenv()), 
-                         score_thresh = 0.9,
+                         score_thresh = 0.7,
                          insert_gaps = TRUE,
                          keep_sus = FALSE){
   repID <- unique(repID_clean(x$repID))

@@ -3,6 +3,7 @@ source("spat1f/init.R")
 
 
 
+#### Performance plot #####
 
 
 g_bind <- ggarrange(
@@ -32,12 +33,11 @@ g_bind <- ggarrange(
 
 
 
+#### SEM supplement simulation plot #####
 
 
 
 sem_sim_d <- read_csv("cleaned_data/SEM_sim.csv")
-
-
 
 
 sem_sim_d <- sem_sim_d %>% 
@@ -406,10 +406,18 @@ ggsave("graphs/generalized_von_mises_fit.png",g, dpi = 600)
 
 
 
+#### Predicted vs Observed step length #####
 
 
+d %>% 
+  ggplot(aes(x = sl_mean_obs / (1000 / 12), y = sl_mean_pred / (1000 / 12))) + 
+  scale_x_continuous(trans = "log10") + 
+  scale_y_continuous(trans = "log10") + 
+  geom_abline(slope = 1, size = 1) + 
+  labs(y = "Selection free mean step length (cm)", 
+       x = "Observed mean step length (cm)") + 
+  geom_point(size = 3, alpha = 0.5, color = "steelblue") + 
+  theme_bw(base_size = 15)
 
 
-
-
-
+cor(log(d$sl_mean_obs),log(d$sl_mean_pred), "complete")^2

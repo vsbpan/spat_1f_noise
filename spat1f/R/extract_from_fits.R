@@ -25,7 +25,24 @@
   l_conc <- .ref_data %>% filter(rep_id == x) %>% .$low_diet_numeric
   h_conc <- .ref_data %>% filter(rep_id == x) %>% .$high_diet_numeric
   
-  fetch_events(x) %>% 
+  roll_vapply2 <- function(x, w, FUN){
+    n <- length(x)
+    
+    if(n < w){
+      return(rep(NA_real_, n))
+    }
+    
+    i <- seq_len(n)
+    out <- rep(NA, n)
+    FUN <- match.fun(FUN)
+    s <- seq.int(0, w - 1)
+    for(k in seq_len(n - w + 1)){
+      out[k] <- FUN(x[s + k])
+    }
+    return(out)
+  }
+  
+  fetch_events(x, append_detection_summary = FALSE) %>% 
     clean_events(ref_data = .ref_data) %>% 
     mutate(
       toxic = read_value(head_x, head_y, 
@@ -34,7 +51,7 @@
                                                   quiet = TRUE), 
                          c(1000,1000))
     ) %$%
-    roll_vapply(toxic, w = 10 * hours + 1, FUN = function(xx){
+    roll_vapply2(toxic, w = 10 * hours, FUN = function(xx){
       xx <- xx[!is.na(xx)]
       s <- xx == 0
       xx[s] <- l_conc
@@ -52,7 +69,7 @@
 .get_mean_on_toxic_engine <- function(repID, 
                                       .ref_data = get("ref_data", pos = globalenv())){
   x <- repID
-  fetch_events(x) %>% 
+  fetch_events(x, append_detection_summary = FALSE) %>% 
     clean_events(ref_data = .ref_data) %>% 
     mutate(
       toxic = read_value(head_x, head_y, 
@@ -66,7 +83,7 @@
 
 
 # Internal function that takes a fitted issf model and extract the observed step length and turn angle summaries
-.get_obs_move_summary_engine <- function(model, .ref_data, probes = c("mean", "Kurt")) {
+.get_obs_move_summary_engine <- function(repID, .ref_data, probes = c("mean", "Kurt")) {
   outer_named_vec <- function(x){
     rn <- x[,1, drop = TRUE]
     cn <- colnames(x)[-1]
@@ -76,8 +93,9 @@
     return(out)
   }
   
-  model$data %>% 
-    filter(case) %>% 
+  fetch_events(repID, append_detection_summary = FALSE) %>% 
+    clean_events(ref_data = .ref_data) %$%
+    move_seq(head_x , head_y) %>% 
     dplyr::select(r, theta_rel) %>% 
     gather(key = type, value = val) %>% 
     mutate(type = ifelse(type == "r", "sl", "ta")) %>% 
@@ -131,16 +149,18 @@ extract_ava_neighborhood_quality <- function(issf_fit_l,
 # Nice wrapper for `.get_temporal_var_engine()` with repIDs as input
 extract_temporal_var <- function(repIDs, 
                                  .ref_data = get("ref_data", pos = globalenv()), 
-                                 hours = 12L){
+                                 hours = 12L,
+                                 cores = 1){
   v <- repIDs %>%
-    lapply(
+    pb_par_lapply(
       function(x, .ref_data, hours){
-        cat(sprintf("Processing repID = %s             \r", 
+        cat(sprintf("\tProcessing repID = %s             \r", 
                     x))
         .get_temporal_var_engine(x, .ref_data = .ref_data, hours = hours)
       }, 
       .ref_data = .ref_data,
-      hours = hours
+      hours = hours,
+      cores = cores
     ) %>% 
     do.call("c", .)
   
@@ -152,15 +172,17 @@ extract_temporal_var <- function(repIDs,
 
 # Nice wrapper for `.get_mean_on_toxic_engine()` with repIDs as input
 extract_mean_on_toxic <- function(repIDs, 
-                                  .ref_data = get("ref_data", pos = globalenv())){
+                                  .ref_data = get("ref_data", pos = globalenv()),
+                                  cores = 1){
   v <- repIDs %>%
-    lapply(
+    pb_par_lapply(
       function(x, .ref_data){
-        cat(sprintf("Processing repID = %s             \r", 
+        cat(sprintf("\tProcessing repID = %s             \r", 
                     x))
         .get_mean_on_toxic_engine(x, .ref_data = .ref_data)
       }, 
-      .ref_data = .ref_data
+      .ref_data = .ref_data,
+      cores = cores
     ) %>% 
     do.call("c", .)
   
@@ -188,28 +210,30 @@ exract_model_coef <- function(issf_fit_l){
 }
 
 # Nice wrapper for `.get_obs_move_summary_engine()` with repIDs as input
-extract_obs_move_summary <- function(issf_fit_l, 
+extract_obs_move_summary <- function(repIDs, 
                                      .ref_data = get("ref_data", pos = globalenv()), 
-                                     probes =c("mean", "Kurt")){
-  v <- seq_along(issf_fit_l) %>%
-    lapply(
-      function(i, issf_fit_l, .ref_data, probes){
-        id <- names(issf_fit_l)[i]
-        cat(sprintf("Processing repID = %s, %s of %s             \r", 
+                                     probes = c("mean", "Kurt"), 
+                                     cores = 1){
+  v <- seq_along(repIDs) %>%
+    pb_par_lapply(
+      function(i, repIDs, .ref_data, probes){
+        id <- repIDs[i]
+        cat(sprintf("\tProcessing repID = %s, %s of %s             \r", 
                     id, 
                     i,
-                    length(issf_fit_l)))
-        .get_obs_move_summary_engine(issf_fit_l[[i]], 
+                    length(repIDs)))
+        .get_obs_move_summary_engine(id, 
                                      .ref_data = .ref_data, 
                                      probes = probes)
       }, 
-      issf_fit_l = issf_fit_l,
+      repIDs = repIDs,
       .ref_data = .ref_data,
-      probes = probes
+      probes = probes,
+      cores = cores
     ) %>% 
     do.call("rbind", .)
   
-  out <- data.frame("rep_id" = names(issf_fit_l), v)
+  out <- data.frame("rep_id" = repIDs, v)
   
   return(out)
 }
