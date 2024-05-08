@@ -37,7 +37,7 @@ g_bind <- ggarrange(
 
 
 
-sem_sim_d <- read_csv("cleaned_data/SEM_sim.csv")
+sem_sim_d <- read_csv("cleaned_data/SEM_sim_node_removal.csv")
 
 
 sem_sim_d <- sem_sim_d %>% 
@@ -79,7 +79,7 @@ sem_sim_d %>%
       group_by(var,cat_size,exclude,only) %>% 
       summarise(
         lower = quantile(val, probs = 0.025),
-        upper = quantile(val, probs = 0.97)
+        upper = quantile(val, probs = 0.975)
       ) %>% 
       ungroup() %>% 
       mutate(
@@ -141,99 +141,99 @@ ggsave("graphs/SEM_forest.png", g3, width = 6.5, height = 5.5, dpi = 600)
 
 
 
-sem_sim_d <- read_csv("cleaned_data/SEM_sim2.csv")
+sem_sim_d <- read_csv("cleaned_data/SEM_sim_hypotheses.csv")
 sem_sim_d %>% 
   group_by(var, target, only, cat_size) %>% 
   do(as.data.frame(t(summarise_vec(.$val)))) %>% 
   View()
 
 
-sem_sim_d <- sem_sim_d %>% 
-  mutate(
-    exclude = ifelse(is.na(exclude), "total", exclude),
-    only = ifelse(is.na(only), "total", only),
-    cat_size = factor(ifelse(cat_size < 0, "small", "large"), 
-                      level = rev(c("small", "large"))),
-    only = factor(only, 
-                  level = rev(c("var_toxic_12_scale", "mean_toxic_conc_scale", "sl_mean_obs_log_scale","area_herb_log_scale","ava_mean_toxin_scale","select_scale"))),
-    var = case_when(
-      var == "beta_numeric_scale" ~ "Clusteredness~(beta)",
-      var == "var_high" ~ "Var.~high~vs.~Var.~low"
-    )
-  )
+# sem_sim_d <- sem_sim_d %>% 
+#   mutate(
+#     exclude = ifelse(is.na(exclude), "total", exclude),
+#     only = ifelse(is.na(only), "total", only),
+#     cat_size = factor(ifelse(cat_size < 0, "small", "large"), 
+#                       level = rev(c("small", "large"))),
+#     only = factor(only, 
+#                   level = rev(c("var_toxic_12_scale", "mean_toxic_conc_scale", "sl_mean_obs_log_scale","area_herb_log_scale","ava_mean_toxin_scale","select_scale"))),
+#     var = case_when(
+#       var == "beta_numeric_scale" ~ "Clusteredness~(beta)",
+#       var == "var_high" ~ "Var.~high~vs.~Var.~low"
+#     )
+#   )
 
-sem_sim_d %>% 
-  ggplot(
-    aes(
-      x = only, y = val, color = cat_size
-    )
-  ) +
-  geom_hline(aes(yintercept = 0), linetype = "dashed") + 
-  stat_pointinterval(
-    position = position_dodge(width = 0.7), stroke = 2
-  ) + 
-  scale_x_discrete(label = rev(c("Temporal var. toxin", "Mean toxin ingested","Mean step length","Diet consumption", "Neighborhood diet quality", "Diet selectivity"))) +
-  coord_flip() + 
-  theme_bw(base_size = 15) +
-  theme(legend.position = "top", legend.box="vertical", legend.margin=margin(b = -5, t = -5)) +
-  scale_shape_discrete(label = c("yes", "no")) +
-  facet_wrap(~ var, labeller = label_parsed, scales = "free_x") +
-  scale_color_discrete(type = c("steelblue","limegreen")) + 
-  labs(y = "Standardized total effect on RGR", 
-       x = "Proximal mediator", color = "Pre-weight") + 
-  geom_text(
-    data = sem_sim_d %>% 
-      group_by(var,cat_size,only) %>% 
-      summarise(
-        lower = quantile(val, probs = 0.025),
-        upper = quantile(val, probs = 0.975)
-      ) %>% 
-      ungroup() %>% 
-      mutate(
-        sig = (lower < 0 & upper < 0) | (lower > 0 & upper > 0),
-        star = ifelse(sig, "*   ", "ns")
-      ) %>% 
-      group_by(var) %>% 
-      mutate(
-        max_val = max(upper)
-      ) %>% 
-      left_join(
-        expand.grid(
-          "only" = c('select_scale', 'ava_mean_toxin_scale', 'area_herb_log_scale', 
-                     'sl_mean_obs_log_scale', 'mean_toxic_conc_scale', 'var_toxic_12_scale'),
-          "var" = c("Clusteredness~(beta)", "Var.~high~vs.~Var.~low")
-        ) %>% 
-          cbind(
-            "expected" = c("-", "+", "+","-","-","+",
-                           "+", "+", "+", "-", "+", "-")
-          )
-      ),
-    aes(label = paste0("(",expected, ")   ", star), y = max_val * 1.4, fill = cat_size, color = NULL),
-    size = 4,
-    position = position_dodge(width = 0.7)
-  ) +
-  geom_text(
-    data = sem_sim_d %>% 
-      group_by(var,cat_size,only) %>% 
-      summarise(
-        lower = quantile(val, probs = 0.025),
-        upper = quantile(val, probs = 0.975)
-      ) %>% 
-      ungroup() %>% 
-      mutate(
-        sig = (lower < 0 & upper < 0) | (lower > 0 & upper > 0),
-        star = ifelse(sig, "*", "ns")
-      ) %>% 
-      group_by(var) %>% 
-      mutate(
-        max_val = max(upper)
-      ),
-    aes(label = "2122223", y = max_val * 1.7, group = cat_size, color = NULL),
-    alpha = 0,
-    size = 4,
-    position = position_dodge(width = 0.7)
-  ) + 
-  scale_y_continuous(labels = fancy_linear)
+# sem_sim_;d %>% 
+#   ggplot(
+#     aes(
+#       x = only, y = val, color = cat_size
+#     )
+#   ) +
+#   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
+#   stat_pointinterval(
+#     position = position_dodge(width = 0.7), stroke = 2
+#   ) + 
+#   scale_x_discrete(label = rev(c("Temporal var. toxin", "Mean toxin ingested","Mean step length","Diet consumption", "Neighborhood diet quality", "Diet selectivity"))) +
+#   coord_flip() + 
+#   theme_bw(base_size = 15) +
+#   theme(legend.position = "top", legend.box="vertical", legend.margin=margin(b = -5, t = -5)) +
+#   scale_shape_discrete(label = c("yes", "no")) +
+#   facet_wrap(~ var, labeller = label_parsed, scales = "free_x") +
+#   scale_color_discrete(type = c("steelblue","limegreen")) + 
+#   labs(y = "Standardized total effect on RGR", 
+#        x = "Proximal mediator", color = "Pre-weight") + 
+#   geom_text(
+#     data = sem_sim_d %>% 
+#       group_by(var,cat_size,only) %>% 
+#       summarise(
+#         lower = quantile(val, probs = 0.025),
+#         upper = quantile(val, probs = 0.975)
+#       ) %>% 
+#       ungroup() %>% 
+#       mutate(
+#         sig = (lower < 0 & upper < 0) | (lower > 0 & upper > 0),
+#         star = ifelse(sig, "*   ", "ns")
+#       ) %>% 
+#       group_by(var) %>% 
+#       mutate(
+#         max_val = max(upper)
+#       ) %>% 
+#       left_join(
+#         expand.grid(
+#           "only" = c('select_scale', 'ava_mean_toxin_scale', 'area_herb_log_scale', 
+#                      'sl_mean_obs_log_scale', 'mean_toxic_conc_scale', 'var_toxic_12_scale'),
+#           "var" = c("Clusteredness~(beta)", "Var.~high~vs.~Var.~low")
+#         ) %>% 
+#           cbind(
+#             "expected" = c("-", "+", "+","-","-","+",
+#                            "+", "+", "+", "-", "+", "-")
+#           )
+#       ),
+#     aes(label = paste0("(",expected, ")   ", star), y = max_val * 1.4, fill = cat_size, color = NULL),
+#     size = 4,
+#     position = position_dodge(width = 0.7)
+#   ) +
+#   geom_text(
+#     data = sem_sim_d %>% 
+#       group_by(var,cat_size,only) %>% 
+#       summarise(
+#         lower = quantile(val, probs = 0.025),
+#         upper = quantile(val, probs = 0.975)
+#       ) %>% 
+#       ungroup() %>% 
+#       mutate(
+#         sig = (lower < 0 & upper < 0) | (lower > 0 & upper > 0),
+#         star = ifelse(sig, "*", "ns")
+#       ) %>% 
+#       group_by(var) %>% 
+#       mutate(
+#         max_val = max(upper)
+#       ),
+#     aes(label = "2122223", y = max_val * 1.7, group = cat_size, color = NULL),
+#     alpha = 0,
+#     size = 4,
+#     position = position_dodge(width = 0.7)
+#   ) + 
+#   scale_y_continuous(labels = fancy_linear)
 
 
 

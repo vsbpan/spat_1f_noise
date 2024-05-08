@@ -462,7 +462,7 @@ subm_rgr <- glmmTMB(
     cat_pre_wt_log_scale + 
     cat_pre_wt_log_scale_sq +
     mean_toxic_conc_scale + 
-    area_herb_log_scale + 
+    area_herb_log_scale * cat_pre_wt_log_scale + 
     sl_mean_obs_log_scale + 
     var_toxic_12_scale +
     (1|session_id),
@@ -478,7 +478,7 @@ subm_var_toxic <- glmmTMB(
   var_toxic_12_scale ~ 
     beta_numeric_scale + var_high + 
     sl_mean_obs_log_scale + 
-    select_scale + ava_qual +
+    select_scale + ava_qual + 
     (1|session_id),
   data = d2
 ); summary(subm_var_toxic)
@@ -491,9 +491,8 @@ subm_var_toxic <- glmmTMB(
 ```{r}
 subm_sl <- glmmTMB(
   sl_mean_obs_log_scale ~ 
-    var_high * cat_pre_wt_log_scale + beta_numeric_scale + 
-    cat_pre_wt_log_scale_sq +
-    on_toxic + ava_qual + 
+    beta_numeric_scale + on_toxic + var_high + ava_qual * cat_pre_wt_log_scale + 
+    cat_pre_wt_log_scale_sq + 
     (1|session_id),
   data = d2,
 ); summary(subm_sl)
@@ -535,7 +534,6 @@ subm_on_toxic <- glmmTMB(
 subm_herb <- glmmTMB(
   area_herb_log_scale ~ 
     beta_numeric_scale + var_high * cat_pre_wt_log_scale + 
-    sl_mean_obs_log_scale + 
     (1|session_id),
   data = d2,
 ); summary(subm_herb)
@@ -662,56 +660,6 @@ knitr::include_graphics("graphs/joined_SEM.png")
 ```{r}
 knitr::include_graphics("graphs/SEM_forest.png")
 ```
-
-
-# Some demo plots {.tabset}
-## Example spectra
-
-```{r}
-fetch_trt_meta() %>% 
-  mutate(beta = gsub("beta|_.*","",syn_id)) %>% 
-  arrange(beta) %>% 
-  group_by(beta) %>% 
-  slice_sample(n = 5) %>% 
-  trt_meta_as_list() %>% 
-  plot.imlist(main.panel = c(rep("beta = -5", 5), rep("beta = 0", 5), rep("beta = 5", 5)))
-```
-
-
-
-## Mask-R-CNN output
-
-```{r}
-par(mfrow=c(1,2))
-fetch_image(21, rank = 10) %>% plot(main = "Cropped image")
-fetch_data_dict(21) %>% plot(frame = 10, main = "Mask-R-CNN prediction")
-dev.off()
-```
-
-
-```{r}
-fetch_data_dict(55) %>% plot(frame = 10, main = "Another Mask-R-CNN prediction example")
-```
-
-
-## Movement tracks
-```{r}
-ggarrange(
-  plot_track_overlay(repID = 45),
-  plot_track_overlay(repID = 46),
-  plot_track_overlay(repID = 49),
-  plot_track_overlay(repID = 61),
-  common.legend = FALSE, ncol = 2, nrow = 2, legend = "right"
-)
-```
-
-## Herbivory mask
-
-```{r}
-fast_load_image("invisible/consumption_mask/55.jpg") %>% 
-  plot()
-```
-
 
 
 # Session Info
