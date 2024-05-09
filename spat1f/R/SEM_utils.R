@@ -200,17 +200,17 @@ SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, 
                        get_sd_y(x, family = insight::get_family(x)$family)
                      }))
   
-  sem_coef <- append_std_coef2(sem_coef, 
-                               resp = "on_toxic",
-                               round(obs_emp_std(
-                                 model_list(sem_fit)[[which(mod_list_resp == "on_toxic")]]
-                               ), digits = 4))
-  sem_coef <- append_std_coef2(sem_coef, 
-                               resp = "ava_qual",
-                               round(obs_emp_std(
-                                 model_list(sem_fit)[[which(mod_list_resp == "ava_qual")]]
-                               ), digits = 4))
-  
+  # sem_coef <- append_std_coef2(sem_coef, 
+  #                              resp = "on_toxic",
+  #                              round(obs_emp_std(
+  #                                model_list(sem_fit)[[which(mod_list_resp == "on_toxic")]]
+  #                              ), digits = 4))
+  # sem_coef <- append_std_coef2(sem_coef, 
+  #                              resp = "ava_qual",
+  #                              round(obs_emp_std(
+  #                                model_list(sem_fit)[[which(mod_list_resp == "ava_qual")]]
+  #                              ), digits = 4))
+  # 
   sem_coef <- sem_coef %>% 
     left_join(
       data.frame(

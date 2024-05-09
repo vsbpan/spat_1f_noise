@@ -64,7 +64,7 @@ by_data <- expand.grid("var" = c("beta_numeric_scale", "var_high"),
                        "only" = c("sl_mean_obs_log_scale", "area_herb_log_scale",
                                   "mean_toxic_conc_scale", "var_toxic_12_scale", NA),
                        "cat_size" = c(-2, 2),
-                       "exclude" = c(NA, "ava_qual"))
+                       "exclude" = c(NA, "ava_qual_logit_scale"))
 
 out_list <- pb_par_lapply(
   1:500,
@@ -88,8 +88,8 @@ out_list <- pb_par_lapply(
   cores = 6
 )
 
-out_list_d <- out_list %>%
-  do.call("rbind", .)
+# out_list_d <- out_list %>%
+#   do.call("rbind", .)
 # write_csv(out_list_d, "cleaned_data/SEM_sim_node_removal.csv")
 
 
