@@ -118,7 +118,7 @@ sem_sim_d %>%
   scale_y_continuous(labels = fancy_linear) -> g3;g3
 
 
-ggsave("graphs/SEM_forest.png", g3, width = 6.5, height = 5.5, dpi = 600)
+ggsave("graphs/manuscript1_figures/SEM_forest.png", g3, width = 6.5, height = 5.5, dpi = 600)
 
 
 
