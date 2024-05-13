@@ -49,13 +49,15 @@ out_list <- pb_par_lapply(
   sem_fit = sem_fit,
   by_data = by_data,
   og_set = og_set,
-  cores = 6
+  cores = 6, 
+  inorder = FALSE, 
+  export_fun_only = TRUE
 )
 
 out_list_d <- out_list %>% 
   do.call("rbind", .)
 
-# write_csv(out_list_d, "cleaned_data/SEM_sim_hypotheses.csv")
+write_csv(out_list_d, "cleaned_data/SEM_sim_hypotheses.csv")
 
 
 #### Figure S? ####
@@ -85,11 +87,14 @@ out_list <- pb_par_lapply(
   sem_fit = sem_fit,
   by_data = by_data,
   og_set = og_set,
-  cores = 6
+  cores = 6,
+  inorder = FALSE, 
+  export_fun_only = TRUE
 )
 
-# out_list_d <- out_list %>%
-#   do.call("rbind", .)
-# write_csv(out_list_d, "cleaned_data/SEM_sim_node_removal.csv")
+out_list_d <- out_list %>%
+  do.call("rbind", .)
+
+write_csv(out_list_d, "cleaned_data/SEM_sim_node_removal.csv")
 
 

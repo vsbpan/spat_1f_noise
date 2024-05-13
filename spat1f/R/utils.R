@@ -391,3 +391,11 @@ lapply_name <- function(x, FUN, ...){
   z
 }
 
+# Wrapper for formatC()
+sigfig <- function(x, digits = 4){
+  formatC(x, digits = 2, format = "fg", flag = "#")
+}
+
+
+
+

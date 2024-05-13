@@ -567,24 +567,6 @@ sem_summary <- suppressWarnings(suppressMessages(
                .progressBar = FALSE)
   ))
 
-# Standardize via observed-empirical method
-# sem_summary <- append_std_coef(sem_summary, 
-#                                resp = "on_toxic",
-#                                round(obs_emp_std(
-#                                  subm_on_toxic,
-#                                  no_standardize_x =  c("var_high",
-#                                                        "beta_red",
-#                                                        "beta_white")
-#                                  ), digits = 4))
-# 
-# sem_summary <- append_std_coef(sem_summary, 
-#                                resp = "ava_qual", 
-#                                round(obs_emp_std(
-#                                  subm_ava,
-#                                  no_standardize_x =  c("var_high",
-#                                                        "beta_red",
-#                                                        "beta_white")
-#                                  ),digits = 4))
 ```
 
 ```{r}
@@ -620,14 +602,31 @@ knitr::kable(
 
 ```{r}
 contrast_by_pre_wt(subm_toxin_ingested, "var_high", "trt")
+1/sd(subm_toxin_ingested$frame$mean_toxic_conc_scale)
 ```
 
 ```{r}
 contrast_by_pre_wt(subm_select, "var_high", "trt")
+1/sd(subm_select$frame$select_scale)
 ```
 
 ```{r}
 contrast_by_pre_wt(subm_herb, "var_high", "trt")
+1/sd(subm_herb$frame$area_herb_log_scale)
+```
+
+
+```{r}
+contrast_by_pre_wt(subm_sl, "var_high", "trt")
+1/sd(subm_sl$frame$sl_mean_obs_log_scale)
+```
+
+```{r}
+emmeans::emtrends(subm_rgr, 
+                 ~ area_herb_log_scale | cat_pre_wt_log_scale, 
+                 var = "area_herb_log_scale", 
+                 at = list(cat_pre_wt_log_scale = c(-2,2)))
+sd(subm_rgr$frame$area_herb_log_scale) / sd(subm_rgr$frame$RGR_scale)
 ```
 
 
@@ -636,19 +635,20 @@ emmeans::emtrends(subm_ava,
                  ~ beta_numeric_scale | cat_pre_wt_log_scale, 
                  var = "beta_numeric_scale", 
                  at = list(cat_pre_wt_log_scale = c(-2,2)))
+sd(subm_ava$frame$beta_numeric_scale) * sd(subm_ava$frame$ava_qual_logit_scale)
 ```
 
 ## SEM plots
 
 
 ```{r}
-knitr::include_graphics("graphs/joined_SEM.png")
+# knitr::include_graphics("graphs/joined_SEM.png")
 ```
 
 ## SEM forest plot
 
 ```{r}
-knitr::include_graphics("graphs/SEM_forest.png")
+# knitr::include_graphics("graphs/SEM_forest.png")
 ```
 
 

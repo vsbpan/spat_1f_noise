@@ -119,6 +119,10 @@ get_sd_y <- function(x, family){
   return(out)
 }
 
+get_sd_x <- function(x, predictor){
+  matrixStats::colSds(as.matrix(x$data[, predictor, drop = FALSE]))
+}
+
 # A modified version of summary.psem()
 summary_psem <- function (object, ..., 
                           no_standardize_x = NULL,
@@ -179,6 +183,74 @@ summary_psem <- function (object, ...,
   return(l)
 }
 
+SEM_clean_coef <- function(sem_fit, cat_size, og_set){
+  # Get model coefficients
+  sem_coef <- suppressWarnings(coefs(sem_fit)) %>% 
+    as.data.frame()
+  sem_coef <- fix_coef_name(sem_coef) # fix empty name
+  mod_list_resp <- do.call("c",lapply(model_list(sem_fit), insight::find_response))
+  sd_y <- do.call("c",lapply(model_list(sem_fit), 
+                             function(x){
+                               get_sd_y(x, family = insight::get_family(x)$family)
+                             }))
+  
+  # Deal with interactions
+  sem_coef <- sem_coef %>%
+    rename(
+      response = Response,
+      predictor = Predictor,
+      estimate = Estimate
+    ) %>% 
+    filter(
+      !grepl("~~",predictor) 
+    ) %>% 
+    mutate(
+      estimate = ifelse(
+        grepl(":cat_pre_wt_log_scale|cat_pre_wt_log_scale:", predictor),
+        cat_size * estimate,
+        estimate
+      ),
+      predictor = gsub(":cat_pre_wt_log_scale|cat_pre_wt_log_scale:","", predictor)
+    ) %>% 
+    group_by(
+      response, predictor
+    ) %>% 
+    summarise(
+      estimate = sum(estimate)
+    ) %>% 
+    suppressMessages() %>% 
+    ungroup() 
+  
+  # append sdx and sdy for standardization
+  sem_coef <- sem_coef %>% 
+    left_join(
+      data.frame(
+        "response" = mod_list_resp,
+        "sd_y" = sd_y
+      ),
+      by = "response"
+    ) %>% 
+    left_join(
+      data.frame(
+        "predictor" = unique(sem_coef$predictor),
+        "sd_x" = get_sd_x(sem_fit, unique(sem_coef$predictor))
+      ),
+      by = "predictor"
+    )
+  
+  # Perform standardization and filter out invalid paths
+  sem_coef <- sem_coef %>% 
+    mutate(
+      std_est = ifelse(predictor %in% c("var_high","beta_red",
+                                        "beta_white","beta_numeric_scale"), 
+                       estimate / sd_y,
+                       estimate / sd_y * sd_x)
+    ) %>% 
+    filter(
+      paste0(response, "~", predictor) %in% og_set
+    )
+  return(sem_coef)
+}
 
 
 #' @title Predict coefficients from a psem object. 
@@ -190,76 +262,12 @@ summary_psem <- function (object, ...,
 #' @param only a vector of variable names for which the indirect effects must go through. Ignored if set to NA. 
 SEM_pred_coef <- function(sem_fit, var, target, cat_size, og_set, exclude = NA, only = NA){
   
-  sem_coef <- suppressWarnings(coefs(sem_fit)) %>% 
-    as.data.frame()
-  sem_coef <- fix_coef_name(sem_coef)
-  mod_list_resp <- do.call("c",lapply(model_list(sem_fit), insight::find_response))
-
-  sd_y <- do.call("c",lapply(model_list(sem_fit), 
-                     function(x){
-                       get_sd_y(x, family = insight::get_family(x)$family)
-                     }))
-  
-  # sem_coef <- append_std_coef2(sem_coef, 
-  #                              resp = "on_toxic",
-  #                              round(obs_emp_std(
-  #                                model_list(sem_fit)[[which(mod_list_resp == "on_toxic")]]
-  #                              ), digits = 4))
-  # sem_coef <- append_std_coef2(sem_coef, 
-  #                              resp = "ava_qual",
-  #                              round(obs_emp_std(
-  #                                model_list(sem_fit)[[which(mod_list_resp == "ava_qual")]]
-  #                              ), digits = 4))
-  # 
-  sem_coef <- sem_coef %>% 
-    left_join(
-      data.frame(
-        "Response" = mod_list_resp,
-        "sd_y" = sd_y
-      ),
-      by = "Response"
-    )
-  
-
-  sem_coef <- sem_coef %>%
-    filter(
-      !grepl("~~",Predictor) 
-    ) %>% 
-    mutate(
-      Std.Estimate = as.numeric(Std.Estimate),
-      Std.Error = as.numeric(Std.Error),
-      std_est = Std.Estimate
-    ) %>% 
-    mutate(
-      Estimate = ifelse(
-        grepl(":cat_pre_wt_log_scale", Predictor),
-        cat_size * Estimate,
-        Estimate
-      ),
-      Predictor = gsub(":cat_pre_wt_log_scale","",Predictor),
-      std_est = ifelse(Predictor %in% c("var_high","beta_red",
-                                        "beta_white","beta_numeric_scale"), 
-                       round(Estimate / sd_y, digits = 4),
-                       std_est),
-      response = Response,
-      predictor = Predictor
-    ) %>% 
-    group_by(
-      response, predictor
-    ) %>% 
-    summarise(
-      std_est = sum(std_est)
-    ) %>% 
-    filter(
-      paste0(response, "~", predictor) %in% og_set
-    ) %>% 
-    suppressMessages() %>% 
-    ungroup() 
+  sem_coef <- SEM_clean_coef(sem_fit, cat_size = cat_size, og_set = og_set)
   
   if(!is.na(null_to_NA(exclude))){
     sem_coef <- sem_coef %>% 
       filter(
-      !grepl(paste0(c("cat_pre_wt", as.character(exclude)),collapse = "|"),predictor)
+      !grepl(paste0(c("cat_pre_wt", as.character(exclude)),collapse = "|"), predictor)
     )
   }
   

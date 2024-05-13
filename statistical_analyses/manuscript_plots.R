@@ -133,18 +133,15 @@ ggsave("graphs/manuscript1_figures/SEM_forest.png", g3, width = 6.5, height = 5.
 
 
 
-
-
-
-
-
-
+#### Manuscript SEM table ####
 
 
 sem_sim_d <- read_csv("cleaned_data/SEM_sim_hypotheses.csv")
 sem_sim_d %>% 
   group_by(var, target, only, cat_size) %>% 
-  do(as.data.frame(t(summarise_vec(.$val)))) %>% 
+  do(as.data.frame(t(
+    sigfig(summarise_vec(.$val), digits = 2)
+  ))) %>% 
   View()
 
 
