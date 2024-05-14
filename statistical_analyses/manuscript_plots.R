@@ -90,7 +90,7 @@ sem_sim_d %>%
       mutate(
         max_val = max(upper)
       ),
-    aes(label = star, y = max_val * 1.3, fill = cat_size, color = NULL),
+    aes(label = star, y = max_val * 1.2, fill = cat_size, color = NULL),
     size = 4,
     position = position_dodge(width = 0.7)
   ) + 
@@ -110,7 +110,7 @@ sem_sim_d %>%
       mutate(
         max_val = max(upper)
       ),
-    aes(label = star, y = max_val * 1.4, group = cat_size, color = NULL),
+    aes(label = star, y = max_val * 1.3, group = cat_size, color = NULL),
     alpha = 0,
     size = 4,
     position = position_dodge(width = 0.7)
