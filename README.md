@@ -1,10 +1,18 @@
 # 1/f Noise Project
 
-## Overview
+## Table of Contents
+1. [Overview](#Overview)
+2. [Installation](#Installation)
+3. [Description](#Description)
+    3.1 [Code library](#CodeLibrary)
+    3.2 [File structure](#FileStructure)
+    3.3 [Data](#Data)
+
+
+
+## Overview <a name="Overview"></a>
 
 This repo hosts code for image processing and data analysis for an INTERN funded project, examining the consequences of spatial autocorrelation and variance in fine-scale plant toxin distribution on caterpillar outcomes. 
-
-
 
 
 ![**Manuscript 1 methods figure**](demo/methods_figure.jpg)
@@ -14,14 +22,14 @@ Summary of the data processing pipeline that derives measures of herbivore movem
 
 
 
-## Installation
+## Installation <a name="Installation"></a>
 
 Run `Package_installation.R` to install repository dependencies. For the dependency *herbivar*, see  [herbivar](https://github.com/vsbpan/herbivar) GitHub page on installation instructions. 
 
 
-## Description
+## Description <a name="Description"></a>
 
-### Code library 
+### Code library <a name="CodeLibrary"></a>
 
 The custom code written for this project are bundled as a pseudo simulated package *spat1f*. It can be imported using `source(spat1f/init.R)`, or `soure(spat1f/init_analysis.R)` to get the cleaned experimental metadata in the global environment as well.  
 
@@ -43,7 +51,7 @@ The custom code written for this project are bundled as a pseudo simulated packa
     * `amt_distr` No S3 generics, but used throughout. A list of parameter values and metadata for a parametric distribution. Has functions for updating, density, random number generation, and fitting. 
 
 
-### File structure
+### File structure <a name="FileStructure"></a>
 
 * `annotations/` Houses `.json` files of image annotations in COCO format. This is mostly used for back up purposes. 
     * `coco_test.json` COCO annotation file for testing data
@@ -118,7 +126,7 @@ The custom code written for this project are bundled as a pseudo simulated packa
 * `README.md` This README documentation
 
 
-### Data
+### Data <a name="Data"></a>
 
 
 * `raw_data/1_f_noise_experiment data_May_03_2024.csv` Final experimental data (some of the variables were not analyzed in manuscript 1)
