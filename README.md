@@ -4,9 +4,9 @@
 1. [Overview](#Overview)
 2. [Installation](#Installation)
 3. [Description](#Description)
-    3.1 [Code library](#CodeLibrary)
-    3.2 [File structure](#FileStructure)
-    3.3 [Data](#Data)
+    * [Code library](#CodeLibrary)
+    * [File structure](#FileStructure)
+    * [Data](#Data)
 
 
 
