@@ -119,6 +119,7 @@ get_sd_y <- function(x, family){
   return(out)
 }
 
+# Compute the sd_x from a `psem` object given a character vector of predictors
 get_sd_x <- function(x, predictor){
   matrixStats::colSds(as.matrix(x$data[, predictor, drop = FALSE]))
 }
@@ -183,6 +184,8 @@ summary_psem <- function (object, ...,
   return(l)
 }
 
+
+# Internal function that does most of the SEM coef cleaning, including dealing with interactions, removing correlated errors, standardizing coefficients, and removing nonsignificant paths. 
 SEM_clean_coef <- function(sem_fit, cat_size, og_set){
   # Get model coefficients
   sem_coef <- suppressWarnings(coefs(sem_fit)) %>% 

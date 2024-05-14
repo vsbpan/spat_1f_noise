@@ -22,10 +22,14 @@ Imports:
     RcppArmadillo,
     amt,
     survival,
-    imagerExtra
+    imagerExtra,
+	insight,
+	matrixStats,
+	jsonlite,
+	spatstat.geom,
+	spatstat.utils
 Suggests:
     piecewiseSEM,
-    jsonlite,
     sjPlot,
     performance,
     tidybayes,
