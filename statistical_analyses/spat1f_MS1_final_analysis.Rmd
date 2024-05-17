@@ -640,14 +640,38 @@ sd(subm_ava$frame$beta_numeric_scale) * sd(subm_ava$frame$ava_qual_logit_scale)
 
 
 ```{r}
-knitr::include_graphics("graphs/manuscript1_figures/SEM_joined.png")
+knitr::include_graphics(paste0(getwd(), "/graphs/manuscript1_figures/SEM_joined.png"), rel_path = FALSE)
 ```
 
 ## SEM forest plot
 
 ```{r}
-knitr::include_graphics("graphs/manuscript1_figures/SEM_forest.png")
+knitr::include_graphics(paste0(getwd(),"/graphs/manuscript1_figures/SEM_forest.png"), rel_path = FALSE)
 ```
+
+
+## Misc
+
+### Time to pupation
+
+```{r}
+subm_pupt <- glmmTMB(
+  time_to_pupation ~ 
+    cat_pre_wt_log_scale + 
+    cat_pre_wt_log_scale_sq +
+    mean_toxic_conc_scale + 
+    area_herb_log_scale  + 
+    sl_mean_obs_log_scale + 
+    var_toxic_12_scale +
+    (1|session_id),
+  family = Gamma(link = "log"),
+  data = d2 %>% 
+    filter(!is.na(time_to_pupation))
+); summary(subm_pupt)
+
+r2(subm_pupt)
+```
+
 
 
 # Session Info

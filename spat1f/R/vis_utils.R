@@ -311,7 +311,12 @@ unscalelog <- function(logx){
 # Plot track and treatment spec together
 plot_track_overlay <- function(events = NULL, repID = NULL, 
                                ref_data = get("ref_data", envir = globalenv()), 
-                               score_thresh = 0.7){
+                               score_thresh = 0.7,
+                               plot_elements = c("ud","track"),
+                               colored_track = TRUE
+                               ){
+  
+  plot_elements <- match.arg(plot_elements, several.ok = TRUE)
   
   if(is.null(repID)){
     repID <- na.omit(unique(events$repID))
@@ -348,29 +353,50 @@ plot_track_overlay <- function(events = NULL, repID = NULL,
       head_y = head_y / 1000 * 12 + 0.5
     )
   
-  plot_d %>% 
+  g <- plot_d %>% 
     ggplot(aes(x = dim1, y = dim2)) + 
     geom_tile(
       fill = ifelse(plot_d$val == 1, "white", "grey"),
-      alpha = 0.5) +
-    geom_density_2d_filled(
-      data = events,
-      aes(x = head_x, y = head_y), 
-      inherit.aes = FALSE,
-      alpha = 0.5, 
-      show.legend = FALSE
-    ) +
-    geom_path(
-      data = events,
-      aes(x = head_x, y = head_y, color = round(time / 360))
-    ) +
+      alpha = 0.5)
+  
+  if("ud" %in% plot_elements){
+    g <- g + 
+      geom_density_2d_filled(
+        data = events,
+        aes(x = head_x, y = head_y), 
+        inherit.aes = FALSE,
+        alpha = 0.5, 
+        show.legend = FALSE
+      ) + 
+      scale_fill_viridis_d(option = "mako")
+  }
+  
+  if("track" %in% plot_elements){
+    if(colored_track){
+      g <- g +
+        geom_path(
+          data = events,
+          aes(x = head_x, y = head_y, color = round(time / 360))
+        ) + 
+        scale_color_gradient2(midpoint = 600)
+    } else {
+      g <- g +
+        geom_path(
+          data = events,
+          aes(x = head_x, y = head_y), color = "black"
+        )
+    }
+    
+      
+  }
+  g <- g +
     theme_void() + 
     geom_point(aes(x = 0.5, y = 0.5), alpha = 0) + # Force the edges to align
     geom_point(aes(x = 12.5, y = 12.5), alpha = 0) + # Force the edges to align
     theme(legend.position = "right", plot.title = element_text(hjust = 0.5)) + 
-    labs(title = sprintf("repID: %s", repID_clean(repID)), color = "time steps") + 
-    scale_color_gradient2(midpoint = 600) +
-    scale_fill_viridis_d(option = "mako")
+    labs(title = sprintf("repID: %s", repID_clean(repID)), color = "time steps") 
+  
+  return(g)
 }
 
 # Make log-log histogram
