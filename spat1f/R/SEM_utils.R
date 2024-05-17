@@ -329,3 +329,23 @@ obs_emp_std <- function(model, no_standardize_x =  c("var_high","beta_red","beta
     beta * sd_x /  sd_yhat
   )
 }
+
+# Index out the conditioned variables in basis set
+basisSet_conditioned <- function(x){
+  x[-c(1,2)]
+}
+
+# Index out the predictor in basis set
+basisSet_predictor <- function(x){
+  x[2]
+}
+
+# Index out the response in the basis set
+basisSet_response <- function(x){
+  x[1]
+}
+
+
+
+
+

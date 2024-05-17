@@ -467,8 +467,8 @@ subm_sl <- glmmTMB(
   sl_mean_obs_log_scale ~ 
     beta_numeric_scale + 
     on_toxic_logit_scale + 
-    var_high * cat_pre_wt_log_scale + 
-    ava_qual_logit_scale + 
+    var_high +  
+    select_scale + 
     cat_pre_wt_log_scale + 
     cat_pre_wt_log_scale_sq + 
     (1|session_id),
@@ -559,13 +559,20 @@ sem_fit <- psem(
     subm_ava,
     subm_herb,
     subm_sl, 
-    var_toxic_12_scale %~~% on_toxic_logit_scale,
+    var_toxic_12_scale %~~% on_toxic_logit_scale, # correlated errors
     data = d2
 )
 sem_summary <- suppressWarnings(suppressMessages(
   summary_psem(sem_fit, 
                no_standardize_x =  c("var_high","beta_red","beta_white"), 
-               .progressBar = FALSE)
+               .progressBar = FALSE, 
+               # Remove 'ava_qual_logit_scale' from the independence claim when 'on_toxic_logit_scale' is conditioned. 'on_toxic_logit_scale' is a more proximal predictor and is highly collinear with ava_qual_logit_scale. 
+               basis.set = keep(basisSet(sem_fit), function(x){ 
+                 res1 <- (basisSet_predictor(x) == "ava_qual_logit_scale")
+                 res2 <- ("on_toxic_logit_scale" %in% basisSet_conditioned(x))
+                 res <- res1 & res2
+                 return(!res)
+               }))
   ))
 
 ```
@@ -613,11 +620,6 @@ contrast_by_pre_wt(subm_herb, "var_high", "trt")
 1/sd(subm_herb$frame$area_herb_log_scale)
 ```
 
-
-```{r}
-contrast_by_pre_wt(subm_sl, "var_high", "trt")
-1/sd(subm_sl$frame$sl_mean_obs_log_scale)
-```
 
 ```{r}
 emmeans::emtrends(subm_rgr, 
