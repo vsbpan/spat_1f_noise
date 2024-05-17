@@ -78,8 +78,8 @@ sem_sim_d %>%
     data = sem_sim_d %>% 
       group_by(var,cat_size,exclude,only) %>% 
       summarise(
-        lower = quantile(val, probs = 0.025),
-        upper = quantile(val, probs = 0.975)
+        lower = quantile(val, probs = 0.055),
+        upper = quantile(val, probs = 0.955)
       ) %>% 
       ungroup() %>% 
       mutate(
@@ -98,8 +98,8 @@ sem_sim_d %>%
     data = sem_sim_d %>% 
       group_by(var,cat_size,exclude,only) %>% 
       summarise(
-        lower = quantile(val, probs = 0.025),
-        upper = quantile(val, probs = 0.975)
+        lower = quantile(val, probs = 0.055),
+        upper = quantile(val, probs = 0.955)
       ) %>% 
       ungroup() %>% 
       mutate(
@@ -140,7 +140,7 @@ sem_sim_d <- read_csv("cleaned_data/SEM_sim_hypotheses.csv")
 sem_sim_d %>% 
   group_by(var, target, only, cat_size) %>% 
   do(as.data.frame(t(
-    sigfig(summarise_vec(.$val), digits = 2)
+    sigfig(summarise_vec(.$val, interval = 0.89), digits = 2)
   ))) %>% 
   View()
 

@@ -31,7 +31,7 @@ by_data <- expand.grid("var" = c("beta_numeric_scale", "var_high"),
   )
 
 out_list <- pb_par_lapply(
-  1:500,
+  1:1000,
   function(j, sem_fit, by_data, og_set){
     sem_fit_booti <- bootSEM(sem_fit, nboot = 1, cores = 1, silent = TRUE)[[1]]
     v <- lapply(seq_len(nrow(by_data)), function(i){
@@ -69,7 +69,7 @@ by_data <- expand.grid("var" = c("beta_numeric_scale", "var_high"),
                        "exclude" = c(NA, "ava_qual_logit_scale"))
 
 out_list <- pb_par_lapply(
-  1:500,
+  1:1000,
   function(j, sem_fit, by_data, og_set){
     sem_fit_booti <- bootSEM(sem_fit, nboot = 1, cores = 1, silent = TRUE)[[1]]
     v <- lapply(seq_len(nrow(by_data)), function(i){
@@ -94,7 +94,6 @@ out_list <- pb_par_lapply(
 
 out_list_d <- out_list %>%
   do.call("rbind", .)
-
 write_csv(out_list_d, "cleaned_data/SEM_sim_node_removal.csv")
 
 
