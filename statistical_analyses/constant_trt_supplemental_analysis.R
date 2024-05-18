@@ -1,28 +1,25 @@
 source("spat1f/init_analysis.R")
 
-ref_data %>% 
-  filter(mean_trt == "1 mg/g") %>% 
-  filter(var_trt == "constant")
-
 d <- ref_data %>% 
-  filter(mean_trt == "1 mg/g") %>% 
+  filter(mean_trt == "1 mg/g") %>%  # Filter only trials with the correct concentration
   mutate(cat_pre_wt_log_scale = as.numeric(scale(log(cat_pre_wt))),
          cat_pre_wt_log = log(cat_pre_wt))
 
+# Simple RGR model as before, but dropping beta 
 m <- glmmTMB(
   RGR ~ 
     var_trt * cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) + (1|session_id),
   data = d
 ); summary(m)
 
-car::Anova(m, type = "III")
+car::Anova(m, type = "III") 
 
 emmeans::emmeans(m, 
                  trt.vs.ctrl ~ var_trt | cat_pre_wt_log_scale, 
                  var = "var_trt", 
                  at = list(cat_pre_wt_log_scale = c(-2, 2)))
 
-
+# Same thing here but with time to pupation
 m2.1 <- glmmTMB(
   time_to_pupation ~ 
     var_trt * cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) + (1|session_id),
@@ -32,6 +29,7 @@ m2.1 <- glmmTMB(
 
 car::Anova(m2.1, type = "III")
 
+# Drop interaction
 m2 <- glmmTMB(
   time_to_pupation ~ 
     var_trt + cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) + (1|session_id),
@@ -54,7 +52,7 @@ plot_model(type = "eff", terms = c("cat_pre_wt[all]", "var_trt"))
 
 
 
-
+# Manuscript plot
 g1 <- marginal_effects(m, terms = c("cat_pre_wt_log_scale","var_trt")) %>% 
   ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = yhat)) + 
   geom_ribbon(aes(ymax = upper, ymin = lower, fill = var_trt), alpha = 0.2) + 

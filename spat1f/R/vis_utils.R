@@ -313,7 +313,8 @@ plot_track_overlay <- function(events = NULL, repID = NULL,
                                ref_data = get("ref_data", envir = globalenv()), 
                                score_thresh = 0.7,
                                plot_elements = c("ud","track"),
-                               colored_track = TRUE
+                               colored_track = TRUE,
+                               trt_spec = "auto"
                                ){
   
   plot_elements <- match.arg(plot_elements, several.ok = TRUE)
@@ -324,7 +325,9 @@ plot_track_overlay <- function(events = NULL, repID = NULL,
   
   stopifnot(length(repID) == 1)
   
-  trt_spec <- fetch_trt_spec(repID)
+  if(isTRUE(trt_spec == "auto")){
+    trt_spec <- fetch_trt_spec(repID) 
+  }
   if(is.null(trt_spec)){
     plot_d <- expand.grid(
       "dim1" = 1:12, 

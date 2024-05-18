@@ -383,6 +383,7 @@ iterate_random_steps <- function(start, issf_fit,
                                  r_thresh = attr(issf_fit$data, "r_thresh")){
   out.list <- vector(mode = "list", length = n+1)
   out.list[[1]] <- start
+  stopifnot(nrow(start) == 1)
   
   if(use_observed){
     ra <- filter(issf_fit$data, case & !is.na(r) & !is.na(theta_rel))$theta_rel
@@ -392,7 +393,6 @@ iterate_random_steps <- function(start, issf_fit,
     ra <- rdist(issf_fit$ta_updated, 10^5)[[index]]
     rr <- rdist(issf_fit$sl_updated, 10^5)[[index]]
   }
-  
   
   new_x2 <- start$x2
   new_y2 <- start$y2
@@ -406,7 +406,7 @@ iterate_random_steps <- function(start, issf_fit,
           data = .,
           n = 1, 
           keep_obs = FALSE, 
-          id = 1, 
+          id = start$step_id + i, 
           x_start = .$x2,
           y_start = .$y2,
           direction_start = (.$theta_abs + .$theta_rel) %% (2 * pi),
@@ -426,7 +426,7 @@ iterate_random_steps <- function(start, issf_fit,
 
 # Create starting object for iterate_random_steps()
 creat_start <- function(x, y, theta){
-  data.frame("step_id" = 1, "x2" = x, "y2" = y, "theta_abs" = theta, "theta_rel" = 0)
+  data.frame("step_id" = 1, "r" = NA, "r_threshed" = NA, "theta_abs" = theta, "theta_rel" = 0, "x1" = NA, "x2" = x, "y1" = NA, "y2" = y)
 }
 
 
