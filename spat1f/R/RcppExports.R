@@ -17,3 +17,23 @@ mask_insersectC <- function(img1, img2) {
     .Call(`_spat1f_mask_insersectC`, img1, img2)
 }
 
+flatten_xy <- function(x, y, max_x = 1000, max_y = 1000, dim_x = 12, dim_y = 12) {
+    .Call(`_spat1f_flatten_xy`, x, y, max_x, max_y, dim_x, dim_y)
+}
+
+read_valueC <- function(x, y, max_x, max_y, img) {
+    .Call(`_spat1f_read_valueC`, x, y, max_x, max_y, img)
+}
+
+pick_new_theta_xy <- function(sl_rand, ta_rand, index, n, direction_start, x_start, y_start) {
+    .Call(`_spat1f_pick_new_theta_xy`, sl_rand, ta_rand, index, n, direction_start, x_start, y_start)
+}
+
+add_random_stepsC <- function(n_draws, x_start, y_start, direction_start, sl_rand, ta_rand, index, rss_coef_exp, ref_grid_flat) {
+    .Call(`_spat1f_add_random_stepsC`, n_draws, x_start, y_start, direction_start, sl_rand, ta_rand, index, rss_coef_exp, ref_grid_flat)
+}
+
+add_random_steps_iterateC <- function(n, n_draws, x_start, y_start, direction_start, diet_start, sl_rand, ta_rand, rss_coef, ref_grid_flat) {
+    .Call(`_spat1f_add_random_steps_iterateC`, n, n_draws, x_start, y_start, direction_start, diet_start, sl_rand, ta_rand, rss_coef, ref_grid_flat)
+}
+

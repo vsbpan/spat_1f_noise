@@ -90,12 +90,10 @@ mask_info <- function(x){
 
 # Read value at specified coordinates from reference image. Scales the x,y input with dim_xy of the target image so that it matches relatively to the ref_img
 # Is the raw data read in as transformed from fast_load_image, if yes, then set transform = TRUE. This orients the ref_image to match that of the x,y input, as it appears on windows and from the output of the mask-RCNN.
-read_value <- function(x, y, dim_xy, ref_img, transform = TRUE){
-  nx <- length(x)
-  stopifnot(nx == length(y))
+read_value <- function(x, y, dim_xy = c(1000, 1000), ref_img, transform = TRUE){
   
   if(is.null(ref_img)){
-    return(rep(NA, nx))
+    return(rep(NA, length(x)))
   }
   
   if(transform){
@@ -105,15 +103,10 @@ read_value <- function(x, y, dim_xy, ref_img, transform = TRUE){
   stopifnot(
     imager::spectrum(ref_img) == 1 & imager::depth(ref_img) == 1
   )
-  
-  # As proportion of ref image
-  x <- ceiling(x/dim_xy[1] * nrow(ref_img))
-  y <- ceiling(y/dim_xy[2] * ncol(ref_img))
-  
+
   return(
-    vapply(seq_along(x), function(i){
-      as.array(ref_img)[x[i], y[i], 1, 1]
-    }, FUN.VALUE = numeric(1))
+    read_valueC(x, y, max_x = dim_xy[1], max_y = dim_xy[2], 
+                img = as.cimg(ref_img)[,,1,1])
   )
 }
 
