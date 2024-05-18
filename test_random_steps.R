@@ -1,4 +1,35 @@
-reload()
+source("spat1f/init_analysis.R")
+
+ID <- 81
+
+fetch_events(ID) %>% 
+  clean_events() %$%
+  move_seq(head_x, head_y) %>% 
+  filter(!is.na(r)) %>% 
+  add_random_steps(n = 100L,
+                   sl_distr = fit_gamma(.$r),
+                   ta_distr = fit_genvonmises(.$theta_rel)
+  ) %>%
+  flag_invalid_steps(remove = TRUE) %>%
+  mutate(
+    toxic = read_value(x2, y2, c(1000, 1000),
+                       ref_img = fetch_trt_spec(ID, 
+                                                .ref_data = ref_data, 
+                                                quiet = TRUE)), 
+    less_toxic = 1 - toxic
+  ) %>%
+  append_estimators(na_as_zero = TRUE) %>% 
+  issf(
+    case ~
+      less_toxic +
+      (cos_theta_pi + cos_2theta) +  
+      (sl + logsl) + 
+      strata(step_id),
+    data = .) -> issf_fit
+
+
+
+
 spec <- dummy_spec()
 spec <- c(1:12 %% 2,
           (1:12+1) %% 2) %>% 
@@ -52,13 +83,13 @@ out <- pb_par_lapply(
   },
   issf_fit = issf_fit,
   sim_d = sim_d,
-  cores = 6, 
+  cores = 8, 
   inorder = FALSE
 )
 
 
 do.call("rbind", out) %>% 
-  ggplot(aes(x = as.factor(b), y = 1 - ava_qual)) + 
+  ggplot(aes(x = as.factor(b), y = 1 - ava_toxic)) + 
   geom_pointrange(stat = "summary") + 
   geom_point(position = position_jitter(width = 0.2, height = 0))
 
