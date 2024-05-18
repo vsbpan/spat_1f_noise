@@ -74,7 +74,7 @@ add_random_steps2 <- function(
     "theta" = theta_new[i],
     "x" = x_new[i],
     "y" = y_new[i],
-    "ava_qual" = mean(ref_grid_flat[i_new]),
+    "ava_toxic" = mean(ref_grid_flat[i_new]),
     "on_toxic" = ref_grid_flat[i_new[i]]
   )
   
