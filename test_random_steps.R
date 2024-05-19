@@ -40,7 +40,7 @@ spec <- c(1:12 %% 2,
 fetch_trt_spec(5) %>% plot()
 
 iterate_random_steps2(issf_fit, 
-                      start = make_start2(0,500,500), 
+                      start = make_start2(0,500,500, 1), 
                       n = 5000, 
                       ref_grid = spec, 
                       rss_coef = 0.9) %>% 
@@ -79,67 +79,58 @@ x <- iterate_random_steps2(issf_fit,
                            rss_coef = 0.9)
 
 
-profvis::profvis(
-  iterate_random_steps2(issf_fit, 
-                        start = make_start2(0,500,500), 
-                        n = 5000, 
-                        ref_grid = as.cimg(syn_spec(12, 5, plot = FALSE)), 
-                        rss_coef = 0.9)
-)
-reload()
+x
 
 
 
-debug(add_random_steps2)
-pick_new_theta_xy(list(rgamma(1000, 1,1)), 
-                  list(rgenvonmises(1000, 1,1)), 
-                  index = 1, n = 10, 
-                  direction_start = 0, 
-                  x_start = 500, 
-                  y_start = 500)
-
-test_index(list(1:5, 1:9), 1)
-
-debug(add_random_steps2)
-
-
-
-sim_d <- expand.grid(
-  "b" = c(5, 0, -5),
-  "rss" = c(0, 0.5, 1), 
-  "scale" = c(10, 30, 100)
-) %>% 
-  rep_data.frame(50)
-
-out <- pb_par_lapply(
-  seq_len(nrow(sim_d)), function(i, sim_d){
-    issf_fit2 <- list(
-      "ta_updated" = list(make_genvonmises(kappa1 = 0.4867337, kappa2 = 0.2466265)),
-      "sl_updated" = list(make_gamma(shape = 0.5717441, scale = sim_d[i,"scale"]))
-    )
-    
-    spec <- as.cimg(syn_spec(12, sim_d[i,"b"], plot = FALSE))
-    x <- iterate_random_steps2(issf_fit2, 
-                               start = make_start2(0,500,500), 
-                               n = 10000, 
-                               ref_grid = spec, 
-                               rss_coef = sim_d[i,"rss"])
-    data.frame(
-      "b" = sim_d[i,"b"],
-      "rss" = sim_d[i,"rss"],
-      "scale" = sim_d[i, "scale"],
-      "sl" = mean(move_seq(x$x, y = x$y)$r), 
-      "ava_toxic" = mean(x$ava_toxic, na.rm = TRUE),
-      "on_toxic" = mean(x$on_toxic, na.rm = TRUE)
-    )
-  },
-  sim_d = sim_d,
-  cores = 8, 
-  inorder = FALSE
-)
+for (j in 1:5){
+  sim_d <- expand.grid(
+    "b" = c(5, 0, -5),
+    "rss" = c(0, 0.5, 1), 
+    "scale" = c(10, 30, 100),
+    "k" = c(0.33, 1, 3)
+  ) %>% 
+    rep_data.frame(40)
+  
+  out <- pb_par_lapply(
+    seq_len(nrow(sim_d)), function(i, sim_d){
+      issf_fit2 <- list(
+        "ta_updated" = list(
+          make_genvonmises(kappa1 = 0.4867337, kappa2 = 0.2466265),
+          make_genvonmises(kappa1 = 0.4867337, kappa2 = 0.2466265)
+        ),
+        "sl_updated" = list(
+          make_gamma(shape = 0.5717441, scale = sim_d[i, "scale"]),
+          make_gamma(shape = 0.5717441, scale = sim_d[i, "scale"] / sim_d[i, "k"]) 
+        )
+      )
+      
+      spec <- as.cimg(syn_spec(12, sim_d[i,"b"], plot = FALSE))
+      x <- iterate_random_steps2(issf_fit2, 
+                                 start = make_start2(0,500,500, 1), 
+                                 n = 10000, 
+                                 ref_grid = spec, 
+                                 rss_coef = sim_d[i,"rss"])
+      x <- x[, c("on_toxic", "r", "ava_toxic")]
+      
+      data.frame(
+        sim_d[i, ,drop = FALSE],
+        as.data.frame(t(colMeans(x, na.rm = TRUE)))
+      )
+    },
+    sim_d = sim_d,
+    cores = 8, 
+    inorder = FALSE
+  )
+  
+  write_csv(do.call("rbind", out), file = sprintf("check_point_%s.csv",j))
+}
 
 
-do.call("rbind", out) %>% 
+
+d <- read_csv("temp.csv")
+
+d %>% 
   ggplot(aes(x = as.factor(rss), y = 1 - ava_toxic, color = factor(b))) + 
   geom_point(position = position_jitterdodge(jitter.width = 0.2, 
                                              jitter.height = 0, 
@@ -148,10 +139,10 @@ do.call("rbind", out) %>%
                   position = position_dodge(width = 0.5), 
                   color = "black",
                   aes(group = factor(b)), linewidth = 1) + 
-  facet_wrap(~scale)
+  facet_wrap(~scale + k)
 
 
-do.call("rbind", out) %>% 
+d %>% 
   ggplot(aes(x = as.factor(rss), y = 1 - on_toxic, color = factor(b))) + 
   geom_point(position = position_jitterdodge(jitter.width = 0.2, 
                                              jitter.height = 0, 
@@ -160,12 +151,12 @@ do.call("rbind", out) %>%
                   position = position_dodge(width = 0.5), 
                   color = "black",
                   aes(group = factor(b)), linewidth = 1) + 
-  facet_wrap(~scale)
+  facet_wrap(~scale + k)
 
 
-
-do.call("rbind", out) %>% 
-  ggplot(aes(x = as.factor(rss), y = log(sl), color = factor(b))) + 
+d %>% 
+  filter(k == 1) %>%
+  ggplot(aes(x = as.factor(scale), y = r, color = factor(b))) + 
   geom_point(position = position_jitterdodge(jitter.width = 0.2, 
                                              jitter.height = 0, 
                                              dodge.width = 0.5)) + 
@@ -173,7 +164,7 @@ do.call("rbind", out) %>%
                   position = position_dodge(width = 0.5), 
                   color = "black",
                   aes(group = factor(b)), linewidth = 1) + 
-  facet_wrap(~scale, scales = "free")
+  facet_wrap(~rss)
 
 
 

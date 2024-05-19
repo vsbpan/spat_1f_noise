@@ -8,8 +8,8 @@ iterate_random_steps2 <- function(issf_fit,
   
   ref_grid_flat <- c(ref_grid)
   
-  ra <- rdist(issf_fit$ta_updated, 10^5)
-  rr <- rdist(issf_fit$sl_updated, 10^5)
+  ra <- rdist(issf_fit$ta_updated, 10e5)
+  rr <- rdist(issf_fit$sl_updated, 10e5)
   
   sim <- add_random_steps_iterateC(
     n = n, 
@@ -18,8 +18,8 @@ iterate_random_steps2 <- function(issf_fit,
     y_start = start$y, 
     direction_start = start$theta, 
     diet_start = start$on_toxic, 
-    sl_rand = ra, 
-    ta_rand = rr, 
+    sl_rand = rr, 
+    ta_rand = ra, 
     rss_coef = rss_coef, 
     ref_grid_flat = ref_grid_flat
   )
