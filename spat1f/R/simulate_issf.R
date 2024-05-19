@@ -1,12 +1,14 @@
 iterate_random_steps2 <- function(issf_fit, 
                                   start = make_start2(),
                                   n = 100,
+                                  same_move = FALSE,
                                   ref_grid = dummy_spec(),
                                   rss_coef = 0){
   stopifnot(nrow(start) == 1)
   
   
   ref_grid_flat <- c(ref_grid)
+  stopifnot(isTRUE(length(ref_grid_flat) == 144))
   
   ra <- rdist(issf_fit$ta_updated, 1e5)
   rr <- rdist(issf_fit$sl_updated, 1e5)
@@ -21,6 +23,7 @@ iterate_random_steps2 <- function(issf_fit,
     sl_rand = rr, 
     ta_rand = ra, 
     rss_coef = rss_coef, 
+    same_move = same_move,
     ref_grid_flat = ref_grid_flat
   )
   

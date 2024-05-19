@@ -144,8 +144,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // add_random_steps_iterateC
-DataFrame add_random_steps_iterateC(int n, int n_draws, double x_start, double y_start, double direction_start, double diet_start, List sl_rand, List ta_rand, double rss_coef, NumericVector ref_grid_flat);
-RcppExport SEXP _spat1f_add_random_steps_iterateC(SEXP nSEXP, SEXP n_drawsSEXP, SEXP x_startSEXP, SEXP y_startSEXP, SEXP direction_startSEXP, SEXP diet_startSEXP, SEXP sl_randSEXP, SEXP ta_randSEXP, SEXP rss_coefSEXP, SEXP ref_grid_flatSEXP) {
+DataFrame add_random_steps_iterateC(int n, int n_draws, double x_start, double y_start, double direction_start, double diet_start, List sl_rand, List ta_rand, double rss_coef, bool same_move, NumericVector ref_grid_flat);
+RcppExport SEXP _spat1f_add_random_steps_iterateC(SEXP nSEXP, SEXP n_drawsSEXP, SEXP x_startSEXP, SEXP y_startSEXP, SEXP direction_startSEXP, SEXP diet_startSEXP, SEXP sl_randSEXP, SEXP ta_randSEXP, SEXP rss_coefSEXP, SEXP same_moveSEXP, SEXP ref_grid_flatSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -158,8 +158,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< List >::type sl_rand(sl_randSEXP);
     Rcpp::traits::input_parameter< List >::type ta_rand(ta_randSEXP);
     Rcpp::traits::input_parameter< double >::type rss_coef(rss_coefSEXP);
+    Rcpp::traits::input_parameter< bool >::type same_move(same_moveSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type ref_grid_flat(ref_grid_flatSEXP);
-    rcpp_result_gen = Rcpp::wrap(add_random_steps_iterateC(n, n_draws, x_start, y_start, direction_start, diet_start, sl_rand, ta_rand, rss_coef, ref_grid_flat));
+    rcpp_result_gen = Rcpp::wrap(add_random_steps_iterateC(n, n_draws, x_start, y_start, direction_start, diet_start, sl_rand, ta_rand, rss_coef, same_move, ref_grid_flat));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -174,7 +175,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_spat1f_read_valueC", (DL_FUNC) &_spat1f_read_valueC, 5},
     {"_spat1f_pick_new_theta_xy", (DL_FUNC) &_spat1f_pick_new_theta_xy, 7},
     {"_spat1f_add_random_stepsC", (DL_FUNC) &_spat1f_add_random_stepsC, 9},
-    {"_spat1f_add_random_steps_iterateC", (DL_FUNC) &_spat1f_add_random_steps_iterateC, 10},
+    {"_spat1f_add_random_steps_iterateC", (DL_FUNC) &_spat1f_add_random_steps_iterateC, 11},
     {NULL, NULL, 0}
 };
 

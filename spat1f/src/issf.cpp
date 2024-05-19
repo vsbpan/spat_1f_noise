@@ -164,6 +164,7 @@ DataFrame add_random_steps_iterateC(int n,
                                     List sl_rand, 
                                     List ta_rand, 
                                     double rss_coef,
+                                    bool same_move,
                                     NumericVector ref_grid_flat){
   
   double rss_coef_exp = exp(rss_coef); 
@@ -187,7 +188,12 @@ DataFrame add_random_steps_iterateC(int n,
   
   for(int i = 0; i < n; ++i){
     temp_on_toxic = tempdf["on_toxic"];
-    ind = ifelse(temp_on_toxic > 0.5, 1, 2);
+    if(same_move){
+      ind = 1;
+    } else {
+      ind = ifelse(temp_on_toxic > 0.5, 1, 2);
+    }
+    
     index = ind[0];
     tempdf = add_random_stepsC(n_draws, tempdf["x"], tempdf["y"], tempdf["theta"],
                                sl_rand, ta_rand, 

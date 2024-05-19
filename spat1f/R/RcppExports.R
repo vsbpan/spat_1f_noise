@@ -37,7 +37,7 @@ add_random_stepsC <- function(n_draws, x_start, y_start, direction_start, sl_ran
     .Call(`_spat1f_add_random_stepsC`, n_draws, x_start, y_start, direction_start, sl_rand, ta_rand, index, rss_coef_exp, ref_grid_flat)
 }
 
-add_random_steps_iterateC <- function(n, n_draws, x_start, y_start, direction_start, diet_start, sl_rand, ta_rand, rss_coef, ref_grid_flat) {
-    .Call(`_spat1f_add_random_steps_iterateC`, n, n_draws, x_start, y_start, direction_start, diet_start, sl_rand, ta_rand, rss_coef, ref_grid_flat)
+add_random_steps_iterateC <- function(n, n_draws, x_start, y_start, direction_start, diet_start, sl_rand, ta_rand, rss_coef, same_move, ref_grid_flat) {
+    .Call(`_spat1f_add_random_steps_iterateC`, n, n_draws, x_start, y_start, direction_start, diet_start, sl_rand, ta_rand, rss_coef, same_move, ref_grid_flat)
 }
 

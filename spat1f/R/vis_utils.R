@@ -403,19 +403,58 @@ plot_track_overlay <- function(events = NULL, repID = NULL,
 }
 
 # Make log-log histogram
-loghist <- function(x, ...){
+loghist <- function(x, nclass = 100, log.p = TRUE, geom = c("line", "col"), draw_dist = NULL, ...){
+  
+  geom <- match.arg(geom)
   x <- log(x)
-  p <- hist(x, plot = FALSE, ...)
-  data.frame(
+  p <- hist(x, plot = FALSE, nclass = nclass, ...)
+  d <- data.frame(
     "x" = exp(p$mids),
-    "p" = p$counts / length(x)
-  ) %>% 
+    "p" = p$counts / length(x) / mean(diff(p$mids))
+  )
+  g <- d %>% 
     ggplot(aes(x = x, y = p)) + 
-    geom_col() + 
-    scale_y_continuous(trans = "log10") + 
     theme_bw(base_size = 15) + 
-    scale_x_continuous(trans = "log10") + 
+    scale_x_continuous(trans = "log10", labels = fancy_scientificb) + 
     labs(x = "x", y = "P(x)")
+  
+  if(log.p){
+    g <- g + scale_y_continuous(trans = "log10")
+  }
+  
+  if(geom == "line"){
+    g <- g + geom_line()
+  }
+  
+  if(geom == "col"){
+    g <- g + geom_col()
+  }
+  
+  if(!is.null(draw_dist)){
+    dist_name <- draw_dist$name
+    
+    den <- do.call(
+      paste0("d",dist_name),
+      c(
+        list(d$x), 
+        draw_dist$params
+      )
+    )
+    
+    den[!is.finite(den)] <- NA_real_
+    
+    g <- g + 
+      geom_line(
+        data = data.frame(
+          "x" = d$x, 
+          "p" = den * d$x
+        ), 
+        color = "red",
+        size = 1
+      )
+  }
+  
+  return(g)
 }
 
 
