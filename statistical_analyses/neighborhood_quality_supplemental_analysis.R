@@ -78,8 +78,21 @@ spat1f::iterate_random_steps(
 
 
 
+select_m <- glmmTMB(
+  less_toxic ~ 
+    var_trt + as.numeric(beta) * cat_pre_wt_log_scale + 
+    (1|session_id),
+  family = gaussian(),
+  data = d2,
+); summary(select_m)
 
-
+ava_beta_m <- glmmTMB(
+  ava_qual ~ 
+    var_trt + (less_toxic + cat_pre_wt_log_scale) * as.numeric(beta) + 
+    (1|session_id),
+  data = d2,
+  family = beta_family()
+); summary(ava_beta_m)
 
 
 
@@ -99,6 +112,7 @@ ava_beta_m <- glmmTMB(
     (1|session_id),
   family = beta_family(link = "logit"),
   data = d2,
+  
 ); summary(ava_beta_m)
 
 

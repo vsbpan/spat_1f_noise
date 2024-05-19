@@ -1,39 +1,41 @@
 # Random number generation for generalized vonmises distribution
-rgenvonmises <- function(n, kappa1, kappa2, a = NULL, max_try = 1000){
-  # .g_genvonmises <- function(omega, kappa1, kappa2){
-  #   kappa1 * cos(omega) + kappa2 * cos(2 * (omega - pi))
-  # }
-
-  # Standard ratio-of-uniforms algorithm from 10.1016/j.stamet.2006.11.003
-  if(is.null(a)){
-    a <- exp(max(g_genvonmisesC(seq(0, 2 * pi, by = 0.00001), kappa1, kappa2))) 
-  }
-  n_out <- 0
-  n_first_shot <- ceiling(n * 5L)
-  x <- c()
-  
-  for (i in seq_len(max_try)){
-    # u <- runif(n_first_shot, 0, a)
-    # v <- runif(n_first_shot, 0, 2 * pi * a)
-    # s <- v > 2*pi*u
-    # u[s] <- a-u[s]
-    # v[s] <- 2 * pi * a - v[s]
-    # w <- g_genvonmisesC(v/u, kappa1, kappa2)/2
-    # cond <- u <= exp(w)
-    # x_temp <- v[cond]/u[cond]
-    x_temp <- propose_genvonmises(n, a, kappa1, kappa2)
-    x <- c(x, x_temp)
-    n_out <- length(x)
-    if(n_out > n){
-      break
-    } else {
-      if(i == max_try){
-        stop(sprintf("Function timed out after %s tries. Generated %s percent of requested numbers. \nConsider increasing the 'max_try' argument.", max_try, n_out / n * 100))
-      }
-    }
-  }
-  return(x[seq_len(n)] - pi)
+rgenvonmises <- function(n, kappa1, kappa2, max_try = 1000){
+  rgenvonmisesC(n, kappa1, kappa2, max_try)
 }
+# .g_genvonmises <- function(omega, kappa1, kappa2){
+#   kappa1 * cos(omega) + kappa2 * cos(2 * (omega - pi))
+# }
+# Standard ratio-of-uniforms algorithm from 10.1016/j.stamet.2006.11.003
+# if(is.null(a)){
+#   a <- exp(max(g_genvonmisesC(seq(0, 2 * pi, by = 0.00001), kappa1, kappa2))) 
+# }
+# n_out <- 0
+# x <- c()
+# 
+# for (i in seq_len(max_try)){
+#   # u <- runif(n_first_shot, 0, a)
+#   # v <- runif(n_first_shot, 0, 2 * pi * a)
+#   # s <- v > 2*pi*u
+#   # u[s] <- a-u[s]
+#   # v[s] <- 2 * pi * a - v[s]
+#   # w <- g_genvonmisesC(v/u, kappa1, kappa2)/2
+#   # cond <- u <= exp(w)
+#   # x_temp <- v[cond]/u[cond]
+#   x_temp <- propose_genvonmises(n, a, kappa1, kappa2)
+#   x <- c(x, x_temp)
+#   n_out <- length(x)
+#   if(n_out > n){
+#     break
+#   } else {
+#     if(i == max_try){
+#       stop(sprintf("Function timed out after %s tries. Generated %s percent of requested numbers. \nConsider increasing the 'max_try' argument.", max_try, n_out / n * 100))
+#     }
+#   }
+# }
+# return(x[seq_len(n)] - pi)
+
+
+
 
 # Density function for generalized von mises distribution
 dgenvonmises <- function(x, kappa1, kappa2, log = FALSE){
