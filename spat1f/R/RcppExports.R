@@ -9,6 +9,10 @@ propose_genvonmises <- function(n, a, kappa1, kappa2) {
     .Call(`_spat1f_propose_genvonmises`, n, a, kappa1, kappa2)
 }
 
+rgenvonmisesC <- function(n, kappa1, kappa2, max_try = 1000L) {
+    .Call(`_spat1f_rgenvonmisesC`, n, kappa1, kappa2, max_try)
+}
+
 iouC <- function(img1, img2) {
     .Call(`_spat1f_iouC`, img1, img2)
 }

@@ -33,5 +33,44 @@ NumericVector runif(int n, double l, double u){
   return out;
 }
 
+NumericVector conc(NumericVector x, NumericVector y){
+  int nx=x.size(), n=x.size()+y.size(),i,j;
+  NumericVector out=no_init(n);
+  for (i=0; i<nx; ++i){ out[ i ] = x[ i ];}
+  for (j=i, i=0; j<n; ++j, ++i){ out[ j ] = y[i] ;}
+  return out;
+}
 
 
+// [[Rcpp::export]]
+NumericVector rgenvonmisesC(int n, double kappa1, double kappa2, int max_try = 1000){
+  double pi = 3.141593;
+  IntegerVector grid = seq(0, floor(2 * pi * 100000));
+  
+  double a = exp(max(g_genvonmisesC(as<NumericVector>(grid) / 100000, kappa1, kappa2)));
+  
+  int n_out = 0;
+  NumericVector x = NumericVector(0);
+  NumericVector x_temp;
+  
+  for(int i = 1; i < (max_try + 1); ++i){
+    x_temp = propose_genvonmises(n, a, kappa1, kappa2);
+    x = conc(x, x_temp);
+    n_out = x.length();
+    if(n_out > n){
+      break;
+    } else {
+      if(i == max_try){
+        double p = (double)n_out / (double)n * 100;
+        stop(
+          "Function timed out after %u tries. Generated %.02f percent of requested numbers. \nConsider increasing the 'max_try' argument.", 
+          max_try, p
+        );
+      }
+    }
+  }
+
+  NumericVector out = x[seq(1, n)] - pi;
+
+  return out;
+}

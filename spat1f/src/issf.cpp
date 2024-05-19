@@ -65,7 +65,7 @@ List pick_new_theta_xy(List sl_rand, List ta_rand, int index, int n,
   NumericVector r_new;
   
   if((sl_rand.length() < index) | (index < 1) | (ta_rand.length() < index)){
-    stop("Indexed location does not exist.");
+    stop("Indexed location %u does not exist in list of length %u and %u.", index, sl_rand.length(), ta_rand.length());
   }
 
   for(int i = 0; i < 1001; ++i){

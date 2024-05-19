@@ -38,6 +38,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rgenvonmisesC
+NumericVector rgenvonmisesC(int n, double kappa1, double kappa2, int max_try);
+RcppExport SEXP _spat1f_rgenvonmisesC(SEXP nSEXP, SEXP kappa1SEXP, SEXP kappa2SEXP, SEXP max_trySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< double >::type kappa1(kappa1SEXP);
+    Rcpp::traits::input_parameter< double >::type kappa2(kappa2SEXP);
+    Rcpp::traits::input_parameter< int >::type max_try(max_trySEXP);
+    rcpp_result_gen = Rcpp::wrap(rgenvonmisesC(n, kappa1, kappa2, max_try));
+    return rcpp_result_gen;
+END_RCPP
+}
 // iouC
 double iouC(arma::mat img1, arma::mat img2);
 RcppExport SEXP _spat1f_iouC(SEXP img1SEXP, SEXP img2SEXP) {
@@ -153,6 +167,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_spat1f_g_genvonmisesC", (DL_FUNC) &_spat1f_g_genvonmisesC, 3},
     {"_spat1f_propose_genvonmises", (DL_FUNC) &_spat1f_propose_genvonmises, 4},
+    {"_spat1f_rgenvonmisesC", (DL_FUNC) &_spat1f_rgenvonmisesC, 4},
     {"_spat1f_iouC", (DL_FUNC) &_spat1f_iouC, 2},
     {"_spat1f_mask_insersectC", (DL_FUNC) &_spat1f_mask_insersectC, 2},
     {"_spat1f_flatten_xy", (DL_FUNC) &_spat1f_flatten_xy, 6},
