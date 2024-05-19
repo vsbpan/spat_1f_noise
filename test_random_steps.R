@@ -128,9 +128,15 @@ for (j in 1:5){
 
 
 
-d <- read_csv("temp.csv")
+d <- read_csv("cleaned_data/issf_sim_experiment_(k_rss_sl_beta).csv")
+
+
 
 d %>% 
+  mutate(
+    scale = sprintf("scale = %s", scale),
+    k = sprintf("k = %s", k)
+  ) %>% 
   ggplot(aes(x = as.factor(rss), y = 1 - ava_toxic, color = factor(b))) + 
   geom_point(position = position_jitterdodge(jitter.width = 0.2, 
                                              jitter.height = 0, 
@@ -139,7 +145,12 @@ d %>%
                   position = position_dodge(width = 0.5), 
                   color = "black",
                   aes(group = factor(b)), linewidth = 1) + 
-  facet_wrap(~scale + k)
+  facet_wrap(~scale + k) + 
+  theme_bw() + 
+  labs(x = "Less toxic diet selection strength (LogOdds)", 
+       y = "Neighborhood quality (Proportion)", 
+       color = expression(beta)) + 
+  scale_color_brewer(type = "qual")
 
 
 d %>% 
@@ -155,8 +166,7 @@ d %>%
 
 
 d %>% 
-  filter(k == 1) %>%
-  ggplot(aes(x = as.factor(scale), y = r, color = factor(b))) + 
+  ggplot(aes(x = as.factor(rss), y = r, color = factor(b))) + 
   geom_point(position = position_jitterdodge(jitter.width = 0.2, 
                                              jitter.height = 0, 
                                              dodge.width = 0.5)) + 
@@ -164,7 +174,7 @@ d %>%
                   position = position_dodge(width = 0.5), 
                   color = "black",
                   aes(group = factor(b)), linewidth = 1) + 
-  facet_wrap(~rss)
+  facet_wrap(~scale + k, scales = "free")
 
 
 
