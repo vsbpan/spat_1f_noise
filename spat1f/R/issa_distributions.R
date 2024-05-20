@@ -1,3 +1,56 @@
+# General wrapper for amt_dist type object for getting density function
+ddist <- function(dist, x_max = 1500, len = 100, return_x = TRUE){
+  
+  f <- function(dist){
+    dist_name <- dist$name
+    if(dist_name == "vonmises" | dist_name == "genvonmises"){
+      x <- seq(-pi, pi, len = len)
+    }
+    if(dist_name == "gamma" | dist_name == "lnorm"){
+      x <- seq(0, x_max, len = len)
+    }
+    
+    d <- do.call(
+      paste0("d",dist_name),
+      c(
+        list(x), 
+        dist$params
+      )
+    )
+    
+    d[!is.finite(d)] <- NA_real_
+    
+    if(return_x){
+      data.frame("x" = x, "density" = d)
+    }
+  }
+  
+  if(!any(class(dist) %in% c("ta_distr", "sl_distr","amt_distr"))){
+    lapply(dist, function(x){
+      f(x)
+    })
+  } else {
+    f(dist)
+  }
+  
+}
+
+# General wrapper for amt_dist type object for getting random number generation
+rdist <- function(dist, n, ...){
+  dots <- as.list(match.call(expand.dots = TRUE))[-c(1:3)]
+  if(!any(class(dist) %in% c("ta_distr", "sl_distr","amt_distr"))){
+    lapply(
+      dist,
+      function(x){
+        do.call(paste0("r", x$name), c(list(n = n), x$params, dots)) 
+      }
+    ) 
+  } else {
+    do.call(paste0("r", dist$name), c(list(n = n), dist$params, dots)) 
+  }
+}
+
+
 # Random number generation for generalized vonmises distribution
 rgenvonmises <- function(n, kappa1, kappa2, max_try = 1000){
   rgenvonmisesC(n, kappa1, kappa2, max_try)
@@ -51,6 +104,22 @@ dgenvonmises <- function(x, kappa1, kappa2, log = FALSE){
   }
   return(d)
 }
+
+# create amt dist for inverse gamma
+make_invgamma <- function(shape, scale){
+  param_names <- c("shape", "scale")
+  
+  params <- as.list(c(shape, scale))
+  names(params) <- param_names
+  
+  out <- list("name" = "invgamma",
+              "params" = params,
+              "vcov" = NULL)
+  
+  class(out) <- c("invgamma_distr", "sl_distr", "amt_distr", "list")
+  return(out)
+}
+
 
 # create amt dist for generalized von mises 
 make_genvonmises <- function(kappa1, kappa2){
@@ -111,57 +180,6 @@ dzigamma <- function (x, p, shape, scale = 1/rate, rate, log = FALSE) {
   return(d)
 }
 
-# General wrapper for amt_dist type object for getting density function
-ddist <- function(dist, x_max = 1500, len = 100, return_x = TRUE){
-
-  f <- function(dist){
-    dist_name <- dist$name
-    if(dist_name == "vonmises" | dist_name == "genvonmises"){
-      x <- seq(-pi, pi, len = len)
-    }
-    if(dist_name == "gamma" | dist_name == "lnorm"){
-      x <- seq(0, x_max, len = len)
-    }
-    
-    d <- do.call(
-      paste0("d",dist_name),
-      c(
-        list(x), 
-        dist$params
-      )
-    )
-    
-    d[!is.finite(d)] <- NA_real_
-    
-    if(return_x){
-      data.frame("x" = x, "density" = d)
-    }
-  }
-  
-  if(!any(class(dist) %in% c("ta_distr", "sl_distr","amt_distr"))){
-    lapply(dist, function(x){
-      f(x)
-    })
-  } else {
-    f(dist)
-  }
-  
-}
-
-# General wrapper for amt_dist type object for getting random number generation
-rdist <- function(dist, n, ...){
-  dots <- as.list(match.call(expand.dots = TRUE))[-c(1:3)]
-  if(!any(class(dist) %in% c("ta_distr", "sl_distr","amt_distr"))){
-    lapply(
-      dist,
-      function(x){
-        do.call(paste0("r", x$name), c(list(n = n), x$params, dots)) 
-      }
-    ) 
-  } else {
-    do.call(paste0("r", dist$name), c(list(n = n), dist$params, dots)) 
-  }
-}
 
 # kth moment of absolute value of genvonmises dist
 genvonmises_abs_moments <- function(kappa1, kappa2, k = 1){
@@ -175,5 +193,26 @@ genvonmises_abs_moments <- function(kappa1, kappa2, k = 1){
     )$value 
   }
 }
+
+rinvgamma <- function(n, shape, scale){
+  1 / rgamma(n, shape = shape, scale = scale)
+}
+
+dinvgamma <- function(x, shape, scale, log = FALSE){
+  extraDistr::dinvgamma(x, alpha = shape, beta = scale, log = log)
+}
+
+
+dfrechet <- function(x, shape, scale, log = FALSE){
+  extraDistr::dfrechet(x = x, lambda = shape, mu = 0, sigma = scale, log = log)
+}
+
+rfrechet <- function(n, shape, scale){
+  extraDistr::dfrechet(n, lambda = shape, mu = 0, sigma = scale)
+}
+
+
+
+
 
 

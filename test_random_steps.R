@@ -1,13 +1,13 @@
 source("spat1f/init_analysis.R")
 
-ID <- 50
+ID <- 81
 
 fetch_events(ID) %>% 
   clean_events() %$%
   move_seq(head_x, head_y) %>% 
   filter(!is.na(r)) %>% 
   add_random_steps(n = 100L,
-                   sl_distr = fit_gamma(.$r),
+                   sl_distr = fit_invgamma(.$r),
                    ta_distr = fit_genvonmises(.$theta_rel)
   ) %>%
   flag_invalid_steps(remove = TRUE) %>%
@@ -23,7 +23,7 @@ fetch_events(ID) %>%
     case ~
       less_toxic +
       (cos_theta_pi + cos_2theta) +  
-      (sl + logsl) + 
+      (invsl + logsl) + 
       strata(step_id),
     data = .) -> issf_fit
 
@@ -41,12 +41,17 @@ fetch_trt_spec(5) %>% plot()
 
 spec <- fetch_trt_spec(ID)
 
-iterate_random_steps2(issf_fit, 
-                      start = make_start2(0,500,500, 1), 
-                      n = 5000, 
-                      ref_grid = spec, 
-                      same_move = TRUE, 
-                      rss_coef = 0.5) %>% 
+iterate_random_steps2(
+  ta_sl_list = list(
+    "sl" = list(make_invgamma(1.2, 6.8)),
+    "ta" = list(make_genvonmises(0.48, 0.267))
+  ), 
+  start = make_start2(0,500,500, 1), 
+  n = 5000, 
+  ref_grid = spec, 
+  same_move = TRUE, 
+  rss_coef = 0.5
+) %>% 
   mutate(head_x = x, head_y = y) %>% 
   plot_track_overlay(
     repID = "Foo", 
@@ -64,17 +69,36 @@ plot_track_overlay(
 
 reload()
 
-x <- fetch_events(50) %>% 
+
+
+
+ID <- sample(setdiff(fetch_repID(), problem_ids), size = 1)
+x <- fetch_events(ID) %>% 
   clean_events() %$% 
   move_seq(head_x, head_y) %>% 
   .$r %>% 
   na.omit()
 
+plot_track_overlay(repID = ID)
+
+comp_dist(x)
 x %>% 
-  loghist(nclass = 25, log.p = FALSE, geom = "col", draw_dist = fit_gamma(x))
+  loghist(nclass = 50, log.p = FALSE, geom = "col", 
+          draw_dist = list(fit_frechet(x), fit_invgamma(x), fit_lnorm(x), fit_gamma(x))
+          )
+
+extraDistr::r(10000, 5) %>% loghist(log.p = FALSE)
 
 
-debug(loghist)
+comp_dist(x, dist = c("frechet","invgamma","gamma","lnorm"))
+
+
+
+
+
+
+survival_plot(x)
+
 
 
 

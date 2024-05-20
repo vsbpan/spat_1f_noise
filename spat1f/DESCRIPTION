@@ -27,7 +27,9 @@ Imports:
 	matrixStats,
 	jsonlite,
 	spatstat.geom,
-	spatstat.utils
+	spatstat.utils,
+	extraDistr,
+	moveHMM
 Suggests:
     piecewiseSEM,
     sjPlot,

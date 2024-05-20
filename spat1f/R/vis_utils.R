@@ -403,9 +403,15 @@ plot_track_overlay <- function(events = NULL, repID = NULL,
 }
 
 # Make log-log histogram
-loghist <- function(x, nclass = 100, log.p = TRUE, geom = c("line", "col"), draw_dist = NULL, ...){
+loghist <- function(x, nclass = 50, log.p = TRUE, geom = c("line", "col"), draw_dist = NULL, ...){
   
-  geom <- match.arg(geom)
+  if(!log.p && length(geom) == 2){
+    geom <- "col"
+  } else {
+    geom <- match.arg(geom)
+  }
+  
+  
   x <- log(x)
   p <- hist(x, plot = FALSE, nclass = nclass, ...)
   d <- data.frame(
@@ -431,27 +437,41 @@ loghist <- function(x, nclass = 100, log.p = TRUE, geom = c("line", "col"), draw
   }
   
   if(!is.null(draw_dist)){
-    dist_name <- draw_dist$name
+    if(inherits(draw_dist, "amt_distr")){
+      draw_dist <- list(draw_dist) 
+    }
     
-    den <- do.call(
-      paste0("d",dist_name),
-      c(
-        list(d$x), 
-        draw_dist$params
+    n <- length(draw_dist)
+    den_data <- vector(mode = "list", length = n)
+    
+    for (i in seq_len(n)){
+      dist_name <- draw_dist[[i]]$name
+      
+      den <- do.call(
+        paste0("d",dist_name),
+        c(
+          list(d$x), 
+          draw_dist[[i]]$params
+        )
       )
-    )
-    
-    den[!is.finite(den)] <- NA_real_
+      
+      den[!is.finite(den)] <- NA_real_
+      
+      den_data[[i]] <- data.frame(
+        "x" = d$x, 
+        "p" = den * d$x,
+        "dist" = dist_name
+      )
+    }
     
     g <- g + 
       geom_line(
-        data = data.frame(
-          "x" = d$x, 
-          "p" = den * d$x
-        ), 
-        color = "red",
+        data = do.call("rbind", den_data), 
+        aes(color = dist),
         size = 1
-      )
+      ) + 
+      theme(legend.position = "top")
+    
   }
   
   return(g)

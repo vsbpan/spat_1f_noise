@@ -26,13 +26,13 @@ add_random_steps <- function(
   if(!is.null(ta_rand)){
     ta_rand <- ta_rand
   } else {
-    ta_rand <- rdist(ta_distr, n = 10e5)
+    ta_rand <- rdist(ta_distr, n = 1e5)
   }
   
   if(!is.null(sl_rand)){
     sl_rand <- sl_rand
   } else {
-    sl_rand <- rdist(sl_distr, n = 10e5)
+    sl_rand <- rdist(sl_distr, n = 1e5)
   }
   
   if(!is.null(thresh_r)){
@@ -122,16 +122,9 @@ refit_issf <- function(object, newdata = NULL){
 
 # Wrapper for clogit that update the distributions
 issf <- function(formula, data, 
-                 mulog_estimator = "logsl",
-                 sdlog_estimator = "logslsq",
-                 zero_inflation_estimator = "moved",
-                 scale_estimator = "sl", 
-                 shape_estimator = "logsl", 
-                 kappa_estimator = "cos_thta" ,
-                 kappa1_estimator = "cos_theta_pi",
-                 kappa2_estimator = "cos_2theta",
-                 remove_invalid = TRUE,
-                 adjust = TRUE,
+                 sl_estimators = NULL,
+                 ta_estimators = NULL,
+                 update = TRUE,
                  ...){
   m <- .issf_fit_internal(formula, data, ...)
   out <- list(
@@ -142,17 +135,10 @@ issf <- function(formula, data,
     "call" = match.call(), 
     "formula" = formula
   )
-  if(adjust){
+  if(update){
     out <- update_distr(out, 
-                        mulog_estimator = mulog_estimator,
-                        sdlog_estimator = sdlog_estimator,
-                        zero_inflation_estimator = zero_inflation_estimator,
-                        scale_estimator = scale_estimator, 
-                        shape_estimator = shape_estimator,
-                        kappa_estimator = kappa_estimator, 
-                        kappa1_estimator = kappa1_estimator,
-                        kappa2_estimator = kappa2_estimator,
-                        remove_invalid = remove_invalid)
+                        sl_estimators = sl_estimators,
+                        ta_estimators = ta_estimators)
   }
   
   class(out) <- c("issf_fit","list")
@@ -171,151 +157,6 @@ registerS3method("print", "issf_fit", print.issf_fit)
 registerS3method("summary", "issf_fit", print.issf_fit)
 
 
-# Append generalized von mises distribution param estimators. na_as_zero should generally be set to TRUE as that they don't get dropped when used in tandem with :moved
-append_genvonmises_estimators <- function(x, na_as_zero = FALSE){
-  if(na_as_zero){
-    x %>% 
-      mutate(
-        cos_theta_pi = ifelse(is.na(theta_rel), 0, cos(theta_rel + pi)),
-        cos_2theta = ifelse(is.na(theta_rel), 0, cos(2 * (theta_rel))),
-      )
-  } else {
-    x %>% 
-      mutate(
-        cos_theta_pi = cos(theta_rel + pi),
-        cos_2theta = cos(2 * (theta_rel)),
-      )
-  }
-}
-
-
-# Append zigamma distribution param estimators
-append_zigamma_estimators <- function(x){
-  x %>% 
-    mutate(
-      sl = r_threshed,
-      logsl = ifelse(r_threshed > 0, r_threshed, 0)
-    )
-}
-
-# Append gamma distribution param estimators
-append_gamma_estimators <- function(x){
-  x %>% 
-    mutate(
-      sl = r,
-      logsl = log(r)
-    )
-}
-
-# Append lognormal distribution param estimators
-append_lnorm_estimators <- function(x){
-  x %>% 
-    mutate(
-      logsl = log(r),
-      logslsq = log(r)^2
-    )
-}
-
-
-# Append zigamma zero inflation estimator
-append_moved <- function(x, thresh = NULL){
-  if(is.null(thresh)){
-    thresh <- attr(x, "r_thresh")
-  }
-  x %>% 
-    mutate(
-      moved = ifelse(r > thresh, 1, 0)
-    )
-}
-
-# Append von mises param estimator. na_as_zero should generally be set to TRUE
-append_vonmises_estimators <- function(x, na_as_zero = FALSE){
-  if(na_as_zero){
-    x %>% 
-      mutate(
-        cos_theta = ifelse(is.na(threa_rel), 0, cos(theta_rel))
-      )
-  } else {
-    x %>% 
-      mutate(
-        cos_theta = cos(theta_rel)
-      )
-  }
-}
-
-# General append estimator wrapper for various distributions
-append_estimators <- function(x, na_as_zero = FALSE){
-  sl_est_method <- switch(attr(x, "sl")$name, 
-                          "gamma" = append_gamma_estimators,
-                          "lnorm" = append_lnorm_estimators,
-                          "zigamma" = append_zigamma_estimators)
-  
-  ta_est_method <- switch(attr(x, "ta")$name, 
-                          "vonmises" = append_vonmises_estimators,
-                          "genvonmises" = append_genvonmises_estimators)
-  
-  x %>% 
-    sl_est_method() %>% 
-    ta_est_method(na_as_zero = na_as_zero) %>% 
-    append_moved()
-  
-}
-
-
-# General update distribution wrapper using param estimators  
-update_distr <- function(x, 
-                         mulog_estimator = "logsl",
-                         sdlog_estimator = "logslsq",
-                         zero_inflation_estimator = "moved",
-                         scale_estimator = "sl", 
-                         shape_estimator = "logsl",
-                         kappa_estimator = "cos_theta",
-                         kappa1_estimator = "cos_theta_pi", 
-                         kappa2_estimator = "cos_2theta",
-                         remove_invalid = FALSE){
-  
-  sl_dist_name <- x$sl$name 
-  ta_dist_name <- x$ta$name
-  
-  
-  
-  if(ta_dist_name == "vonmises"){
-    x$ta_updated <- update_vonmises(x$ta, beta_cos_ta = x$model$coefficients[kappa_estimator])
-  } else {
-    if(ta_dist_name == "genvonmises"){
-      x$ta_updated <- update_genvonmises(
-        x$ta, 
-        beta_cos_theta_pi = x$model$coefficients[kappa1_estimator],
-        beta_cos_2theta = x$model$coefficients[kappa2_estimator])
-    }
-  }
-  
-  
-  if(sl_dist_name == "gamma"){
-    x$sl_updated <- update_gamma(x$sl, 
-                                beta_sl = x$model$coefficients[scale_estimator], 
-                                beta_log_sl = x$model$coefficients[shape_estimator])
-  } else {
-    if(sl_dist_name == "zigamma"){
-      warning("Zigamma not implemented")
-      # x$sl_updated <- update_zigamma_ss(x$sl, 
-      #                                   beta_sl = x$model$coefficients[scale_estimator], 
-      #                                   beta_log_sl = x$model$coefficients[shape_estimator])
-      # x$data_updated <- resample_data(x, remove_invalid = remove_invalid)
-      # x <- refit_issf(x, newdata = x$data_updated)
-      # x$sl_updated <- update_zigamma_p(x$sl_updated,
-      #                                x$model$coefficients[zero_inflation_estimator])
-    } else {
-      if(sl_dist_name == "lnorm"){
-        x$sl_updated <- update_lnorm(x$sl, 
-                                     beta_log_sl = x$model$coefficients[mulog_estimator], 
-                                     beta_log_sl_sq = x$model$coefficients[sdlog_estimator])
-      }
-    }
-  }
-  
-  return(x)
-}
 
 # Simulate available steps from updated sl and ta distributions
 resample_ava_steps <- function(model, n = 1L){

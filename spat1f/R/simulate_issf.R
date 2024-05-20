@@ -1,4 +1,24 @@
-iterate_random_steps2 <- function(issf_fit, 
+extract_ta_sl <- function(issf_fit, updated = TRUE){
+  if(updated){
+    return(
+      list(
+        "sl" = issf_fit$sl_updated,
+        "ta" = issf_fit$ta_updated
+      )
+    )
+  } else {
+    return(
+      list(
+        "sl" = issf_fit$sl,
+        "ta" = issf_fit$ta
+      )
+    )
+  }
+}
+
+
+iterate_random_steps2 <- function(issf_fit = NULL,
+                                  ta_sl_list = extract_ta_sl(issf_fit, updated = TRUE),
                                   start = make_start2(),
                                   n = 100,
                                   same_move = FALSE,
@@ -10,8 +30,18 @@ iterate_random_steps2 <- function(issf_fit,
   ref_grid_flat <- c(ref_grid)
   stopifnot(isTRUE(length(ref_grid_flat) == 144))
   
-  ra <- rdist(issf_fit$ta_updated, 1e5)
-  rr <- rdist(issf_fit$sl_updated, 1e5)
+  
+  if(is.null(ta_sl_list)){
+    stop("'ta_sl_list' must not be NULL.")
+  }
+  
+  stopifnot(
+    inherits(ta_sl_list$ta[[1]], "ta_distr"),
+    inherits(ta_sl_list$sl[[1]], "sl_distr")
+  )
+  
+  ra <- rdist(ta_sl_list$ta, 1e5)
+  rr <- rdist(ta_sl_list$sl, 1e5)
   
   sim <- add_random_steps_iterateC(
     n = n, 
