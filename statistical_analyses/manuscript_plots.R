@@ -174,18 +174,20 @@ fetch_trt_meta() %>%
 img <- spat1f::fast_load_image("graphs/methods_figure/processed_rep81__cam20_s80016_rank223.jpg")
 jpeg(paste0("graphs/methods_figure/", "processed_rep81__cam20_s80016_rank223_prediction", ".jpg"), 
      width = 15, height = 15, units = "cm", res = 600)
-fetch_trt_spec(81) %>% 
+
+
+fetch_trt_spec(55) %>% 
   flip_xy() %>% 
   resize(1000, 1000) %>% 
   imdraw(
     img, ., opacity = 0.1
   ) %>% 
   plot.cimg(axes = FALSE)
-fetch_data_dict(81)[223] %>% 
+fetch_data_dict(55)[223] %>% 
   plot(add = TRUE)
 dev.off()
 
-g <- fetch_trt_spec(81) %>% 
+g <- fetch_trt_spec(55) %>% 
   flip_xy() %>% 
   as.matrix() %>% 
   melt() %>% 
@@ -194,7 +196,7 @@ g <- fetch_trt_spec(81) %>%
     aes(fill = as.factor(val)),
     alpha = 0.5) +
   geom_path(
-    data = fetch_events(81) %>%
+    data = fetch_events(55) %>%
       clean_events(keep_sus = TRUE) %>%
       insert_gaps() %>% 
       mutate(
@@ -214,16 +216,16 @@ g <- fetch_trt_spec(81) %>%
 
 
 
-fetch_image(81, rank = 100) %>% 
+fetch_image(55, rank = 100) %>% 
   plot()
 
-fetch_trt_spec(81) %>% 
+fetch_trt_spec(55) %>% 
   flip_xy() %>% 
   resize(1000, 1000) %>% 
-  imdraw(fetch_image(81, rank = 223), ., opacity = 0.05) %>% 
+  imdraw(fetch_image(55, rank = 100), ., opacity = 0.05) %>% 
   plot()
 
-plot(fetch_data_dict(81)[223], add = TRUE)
+plot(fetch_data_dict(55)[100], add = TRUE)
 
 
 
