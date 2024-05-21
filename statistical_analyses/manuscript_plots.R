@@ -222,7 +222,7 @@ fetch_image(55, rank = 100) %>%
 fetch_trt_spec(55) %>% 
   flip_xy() %>% 
   resize(1000, 1000) %>% 
-  imdraw(fetch_image(55, rank = 100), ., opacity = 0.05) %>% 
+  imdraw(fetch_image(55, rank = 100), ., opacity = 0.1) %>% 
   plot()
 
 plot(fetch_data_dict(55)[100], add = TRUE)
