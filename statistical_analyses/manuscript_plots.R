@@ -202,6 +202,96 @@ dev.off()
 
 
 
+fetch_trt_spec(55) %>% 
+  flip_xy() %>% 
+  resize(1000, 1000) %>% 
+  imdraw(
+    img, ., opacity = 0.1
+  ) %>% 
+  plot.cimg(axes = FALSE)
+fetch_data_dict(55)[223] %>% 
+  plot(add = TRUE)
+dev.off()
+
+g <- fetch_trt_spec(55) %>% 
+  flip_xy() %>% 
+  as.matrix() %>% 
+  melt() %>% 
+  ggplot(aes(x = dim1, y = 12 - dim2)) + 
+  geom_tile(
+    aes(fill = as.factor(val)),
+    alpha = 0.5) +
+  geom_path(
+    data = fetch_events(55) %>%
+      clean_events(keep_sus = TRUE) %>%
+      insert_gaps() %>% 
+      mutate(
+        head_x = head_x / 1000 * 12 + 0.5,
+        head_y = 12-(head_y / 1000 * 12 + 0.5)
+      ),
+    aes(x = head_x, y = head_y)
+  ) +
+  theme_void() + 
+  scale_fill_discrete(type = c("grey","white")) +
+  theme(legend.position = "none") +
+  geom_point(aes(x = 0.5, y = 0.5), alpha = 0) + # Force the edges to align
+  geom_point(aes(x = 12.5, y = 12.5), alpha = 0) # Force the edges to align
+
+# ggsave("graphs/methods_figure/rep81_tracks.jpg", g, width = 7.5, height = 8, dpi = 600)
+
+
+
+
+g <- fetch_trt_spec(81) %>% 
+  flip_xy() %>% 
+  as.matrix() %>% 
+  melt() %>% 
+  ggplot(aes(x = dim1, y = 12 - dim2)) + 
+  geom_tile(
+    aes(fill = as.factor(val)),
+    alpha = 0.5) +
+  geom_path(
+    data = fetch_events(81) %>%
+      clean_events(keep_sus = TRUE, score_thresh = 0.7) %>%
+      mutate(
+        head_x = head_x / 1000 * 12 + 0.5,
+        head_y = 12-(head_y / 1000 * 12 + 0.5)
+      ) %>% 
+      .[-nrow(.),],
+    aes(x = head_x, y = head_y, group = 1, 
+        color = as.character(viterbi(fit_HMM(as.moveData(fetch_events(81) %>%
+                                                           clean_events(keep_sus = TRUE, score_thresh = 0.7) %$% 
+                                                           move_seq(head_x, head_y)))))
+    )
+  ) +
+  theme_void() + 
+  scale_fill_discrete(type = c("grey","white")) +
+  scale_color_discrete(type = rev(.getPalette(2))) +
+  theme(legend.position = "none") +
+  geom_point(aes(x = 0.5, y = 0.5), alpha = 0) + # Force the edges to align
+  geom_point(aes(x = 12.5, y = 12.5), alpha = 0);g # Force the edges to align
+
+
+# ggsave("graphs/methods_figure/rep81_tracks_segmented.jpg", g, width = 7.5, height = 8, dpi = 600)
+
+
+
+fetch_image(55, rank = 100) %>% 
+  plot()
+
+fetch_trt_spec(55) %>% 
+  flip_xy() %>% 
+  resize(1000, 1000) %>% 
+  imdraw(fetch_image(55, rank = 100), ., opacity = 0.05) %>% 
+  plot()
+
+plot(fetch_data_dict(55)[100], add = TRUE)
+
+
+
+
+
+
 
 
 
