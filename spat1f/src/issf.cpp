@@ -46,7 +46,17 @@ NumericVector read_valueC(NumericVector x,
   img.attr("dim") = R_NilValue;
   NumericVector img_flat = as<NumericVector>(img);
   NumericVector indices = flatten_xy(x, y, max_x, max_y, dim_img[0], dim_img[1]);
-  NumericVector out = img_flat[indices-1];
+  NumericVector out = NumericVector(indices.length());
+  bool is_na_here;
+  for(int i = 0; i < out.length(); ++i){
+    is_na_here = NumericVector::is_na(indices[i]);
+    
+    if(is_na_here){
+      out[i] = NA_REAL;
+    } else {
+      out[i] = img_flat[indices[i]-1];
+    }
+  }
   return out;
 }
 

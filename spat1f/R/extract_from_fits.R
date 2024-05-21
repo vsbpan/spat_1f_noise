@@ -156,6 +156,7 @@ extract_ava_neighborhood_quality <- function(issf_fit_l,
     "rep_id" = names(issf_fit_l),
     "ava_qual" = do.call("c", res)
   )
+  cat("\n")
   return(out)
 }
 
@@ -181,7 +182,7 @@ extract_temporal_var <- function(repIDs,
   
   out <- data.frame(repIDs, v)
   names(out) <- c("rep_id", paste0("var_toxic_",hours))
-  
+  cat("\n")
   return(out)
 }
 
@@ -203,7 +204,7 @@ extract_mean_on_toxic <- function(repIDs,
   
   out <- data.frame(repIDs, v)
   names(out) <- c("rep_id", "on_toxic")
-  
+  cat("\n")
   return(out)
 }
 
@@ -249,12 +250,12 @@ extract_obs_move_summary <- function(repIDs,
     do.call("rbind", .)
   
   out <- data.frame("rep_id" = repIDs, v)
-  
+  cat("\n")
   return(out)
 }
 
 # Nice wrapper for `.get_prop_state1_engine()` with repIDs as input
-extract_obs_move_summary <- function(repIDs, 
+extract_prop_state1_summary <- function(repIDs, 
                                      .ref_data = get("ref_data", pos = globalenv()),
                                      cores = 1){
   v <- seq_along(repIDs) %>%
@@ -274,7 +275,7 @@ extract_obs_move_summary <- function(repIDs,
     do.call("rbind", .)
   
   out <- data.frame("rep_id" = repIDs, v)
-  
+  cat("\n")
   return(out)
 }
 

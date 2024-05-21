@@ -43,7 +43,7 @@ d2 <- d2 %>%
 
 fit <- issf(
   case ~
-    state:less_toxic + 
+    less_toxic + 
     (state:cos_theta_pi + state:cos_2theta) +
     (state:logslsq + state:logsl) +
     strata(step_id),

@@ -149,7 +149,7 @@ sem_sim_d %>%
 
 source("spat1f/init_analysis.R")
 
-
+# Example specs
 fetch_trt_meta() %>% 
   mutate_if(is.numeric, .funs = function(x){
     ifelse(x == 1, 1, 0.5)
@@ -171,35 +171,24 @@ fetch_trt_meta() %>%
   )
 
 
-img <- spat1f::fast_load_image("graphs/methods_figure/processed_rep81__cam20_s80016_rank223.jpg")
-jpeg(paste0("graphs/methods_figure/", "processed_rep81__cam20_s80016_rank223_prediction", ".jpg"), 
+# Example raw image
+img <- fetch_image(55, 100, type = "raw")
+jpeg(paste0("graphs/", "processed_rep55_rank100_raw", ".jpg"), 
      width = 15, height = 15, units = "cm", res = 600)
-
-
-
-
-#### Herbivory mask processing figure #####
-
-img1 <- fast_load_image("graphs/methods_figure/processed_rep81__cam20_s0_rank1.jpg")
-img2 <- fast_load_image("graphs/methods_figure/processed_rep81__cam20_s441162_rank1225.jpg")
-mask <- (fetch_data_dict(81)[1225] %>% get_mask())[[1]]
-
-hue_diff <- (HUE(img1) - HUE(img2)) 
-hue_diff2 <- hue_diff
-hue_diff2[imager::grow(mask, x = 20)] <- quantile(hue_diff2, probs = 0.1)
-spe_img <- hue_diff2 %>% imagerExtra::SPE(lamda = 0.001,range = c(0,1))
-thr_img <- spe_img %>% threshold2(thr = "otsu")
-img_final <- thr_img %>% shrink(10)
-
-
-jpeg(paste0("graphs/methods_figure/", "herbivory_detection", ".jpg"), width = 15, height = 10, units = "cm", res = 600)
-plot.imlist(imlist(img2, HUE(img2), hue_diff,
-                   spe_img, as.cimg(thr_img), as.cimg(img_final)), 
-            main.panel = c("Raw image", "HUE", "Delta HUE censored",
-                           "SPE enhanced", "Otsu thresholded", "Eroded final"), 
-            axes = FALSE, interpolate = FALSE)
+plot(img)
 dev.off()
 
+# Exampled cropped image
+img <- fetch_image(55, 100)
+jpeg(paste0("graphs/", "processed_rep55_rank100_cropped", ".jpg"), 
+     width = 15, height = 15, units = "cm", res = 600)
+plot(img, axes = FALSE)
+dev.off()
+
+# Example predicted image
+img <- fetch_image(55, 100)
+jpeg(paste0("graphs/", "processed_rep55_rank100_prediction", ".jpg"), 
+     width = 15, height = 15, units = "cm", res = 600)
 
 
 fetch_trt_spec(55) %>% 
@@ -209,10 +198,11 @@ fetch_trt_spec(55) %>%
     img, ., opacity = 0.1
   ) %>% 
   plot.cimg(axes = FALSE)
-fetch_data_dict(55)[223] %>% 
+fetch_data_dict(55)[100] %>% 
   plot(add = TRUE)
 dev.off()
 
+# Example track
 g <- fetch_trt_spec(55) %>% 
   flip_xy() %>% 
   as.matrix() %>% 
@@ -237,12 +227,10 @@ g <- fetch_trt_spec(55) %>%
   geom_point(aes(x = 0.5, y = 0.5), alpha = 0) + # Force the edges to align
   geom_point(aes(x = 12.5, y = 12.5), alpha = 0) # Force the edges to align
 
-# ggsave("graphs/methods_figure/rep81_tracks.jpg", g, width = 7.5, height = 8, dpi = 600)
+# ggsave("graphs/rep55_tracks.jpg", g, width = 7.5, height = 8, dpi = 600)
 
-
-
-
-g <- fetch_trt_spec(81) %>% 
+# Example track segmented
+g <- fetch_trt_spec(55) %>% 
   flip_xy() %>% 
   as.matrix() %>% 
   melt() %>% 
@@ -251,17 +239,20 @@ g <- fetch_trt_spec(81) %>%
     aes(fill = as.factor(val)),
     alpha = 0.5) +
   geom_path(
-    data = fetch_events(81) %>%
-      clean_events(keep_sus = TRUE, score_thresh = 0.7) %>%
+    data = fetch_events(55) %>%
+      clean_events(keep_sus = TRUE) %>%
       mutate(
         head_x = head_x / 1000 * 12 + 0.5,
         head_y = 12-(head_y / 1000 * 12 + 0.5)
       ) %>% 
       .[-nrow(.),],
     aes(x = head_x, y = head_y, group = 1, 
-        color = as.character(viterbi(fit_HMM(as.moveData(fetch_events(81) %>%
-                                                           clean_events(keep_sus = TRUE, score_thresh = 0.7) %$% 
-                                                           move_seq(head_x, head_y)))))
+        color = as.character(
+          viterbi(
+            fit_HMM(
+              as.moveData(fetch_events(55) %>%
+                            clean_events(keep_sus = TRUE) %$% 
+                            move_seq(head_x, head_y)))))
     )
   ) +
   theme_void() + 
@@ -272,26 +263,30 @@ g <- fetch_trt_spec(81) %>%
   geom_point(aes(x = 12.5, y = 12.5), alpha = 0);g # Force the edges to align
 
 
-# ggsave("graphs/methods_figure/rep81_tracks_segmented.jpg", g, width = 7.5, height = 8, dpi = 600)
+# ggsave("graphs/rep55_tracks_segmented.jpg", g, width = 7.5, height = 8, dpi = 600)
 
 
+#### Herbivory mask processing figure #####
 
-fetch_image(55, rank = 100) %>% 
-  plot()
+img1 <- fast_load_image("graphs/methods_figure/processed_rep81__cam20_s0_rank1.jpg")
+img2 <- fast_load_image("graphs/methods_figure/processed_rep81__cam20_s441162_rank1225.jpg")
+mask <- (fetch_data_dict(81)[1225] %>% get_mask())[[1]]
 
-fetch_trt_spec(55) %>% 
-  flip_xy() %>% 
-  resize(1000, 1000) %>% 
-  imdraw(fetch_image(55, rank = 100), ., opacity = 0.1) %>% 
-  plot()
-
-plot(fetch_data_dict(55)[100], add = TRUE)
-
-
-
+hue_diff <- (HUE(img1) - HUE(img2)) 
+hue_diff2 <- hue_diff
+hue_diff2[imager::grow(mask, x = 20)] <- quantile(hue_diff2, probs = 0.1)
+spe_img <- hue_diff2 %>% imagerExtra::SPE(lamda = 0.001,range = c(0,1))
+thr_img <- spe_img %>% threshold2(thr = "otsu")
+img_final <- thr_img %>% shrink(10)
 
 
-
+jpeg(paste0("graphs/methods_figure/", "herbivory_detection", ".jpg"), width = 15, height = 10, units = "cm", res = 600)
+plot.imlist(imlist(img2, HUE(img2), hue_diff,
+                   spe_img, as.cimg(thr_img), as.cimg(img_final)), 
+            main.panel = c("Raw image", "HUE", "Delta HUE censored",
+                           "SPE enhanced", "Otsu thresholded", "Eroded final"), 
+            axes = FALSE, interpolate = FALSE)
+dev.off()
 
 
 

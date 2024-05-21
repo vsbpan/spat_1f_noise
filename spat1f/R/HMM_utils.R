@@ -30,16 +30,17 @@ stateProbs <- function(model){
 fit_HMM <- function(data, 
                     stepPar0 = c(2.5, 1.5, 1.5, 0.8), anglePar0 = c(0, pi, 0.1, 0.1), 
                     stepDist = "lnorm", angleDist = "wrpcauchy", 
-                    state1_rthresh = 200, # State 1 long distance movement defined as >200 pixels
-                    formula = ~1){
+                    formula = ~1, 
+                    ...){
   moveHMM::fitHMM(data = data, 
                   nbStates = 2,
                   stepPar0 = stepPar0, 
                   stepDist = stepDist, 
                   angleDist = angleDist,
                   anglePar0 = anglePar0, 
-                  knownStates = ifelse(data$step > state1_rthresh, 1, NA), 
-                  formula = formula)
+                  knownStates = ifelse(data$step == max(data$step, na.rm = TRUE), 1, NA), # label the longest distance movement as state 1
+                  formula = formula, 
+                  ...)
 }
 
 

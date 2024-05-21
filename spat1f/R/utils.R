@@ -100,7 +100,14 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
       .combine = c, 
       .verbose = FALSE,
       .inorder = inorder, 
-      .final = invisible,
+      .final = function(x){
+        if(!has_clust){
+          message("\nClosing parallel workers. . .")
+          stopCluster(cl)
+          has_clust <- TRUE
+        }
+        invisible(x)
+      },
       .options.snow = list(
         progress = function(n) {
           if(!silent){
@@ -116,14 +123,6 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
       
       list(FUN(indf(x, i), ...))
     }
-    
-    on.exit(
-      if(!has_clust){
-        message("\nClosing parallel workers. . .")
-        stopCluster(cl)
-      } 
-    )
-    
   }
   
   return(out)
