@@ -6,6 +6,7 @@ add_random_steps <- function(
     x_start = data$x1,
     y_start = data$y1,
     direction_start = data$theta_abs,
+    state = data$state,
     sl_distr = fit_lnorm(data$r),
     ta_distr = fit_genvonmises(data$theta_rel),
     sl_rand = NULL,
@@ -39,16 +40,33 @@ add_random_steps <- function(
     sl_rand[sl_rand < thresh_r] <- 0
   }
   
+  if(!is.list(sl_rand)){
+    sl_rand <- list(sl_rand)
+  }
+  
+  if(!is.list(ta_rand)){
+    ta_rand <- list(ta_rand)
+  }
+  
+  stopifnot(length(sl_rand) == length(ta_rand))
+  
+  if(is.null(state) || length(sl_rand) == 1){
+    index <- rep(1, nr)
+  } else {
+    index <- state
+  }
   
   out <- lapply(seq_along(id), function(i){
+    
+    
     if(paired){
-      index_theta <- index_r <- sample.int(n = length(sl_rand), size = n)
+      index_theta <- index_r <- sample.int(n = length(sl_rand[[index[i]]]), size = n)
     } else {
-      index_r <- sample.int(n = length(sl_rand), size = n)
-      index_theta <- sample.int(n = length(ta_rand), size = n)
+      index_r <- sample.int(n = length(sl_rand[[index[i]]]), size = n)
+      index_theta <- sample.int(n = length(ta_rand[[index[i]]]), size = n)
     }
-    r <- sl_rand[index_r]
-    theta <- ta_rand[index_theta]
+    r <- sl_rand[[index[i]]][index_r]
+    theta <- ta_rand[[index[i]]][index_theta]
     
     
     x1 <- x_start[i]
@@ -162,10 +180,10 @@ registerS3method("summary", "issf_fit", print.issf_fit)
 resample_ava_steps <- function(model, n = 1L){
   model$data %>%
     filter(case) %>% 
-    dplyr::select(step_id, x1, x2, y1, y2, theta_abs, r, theta_rel) %>% 
+    dplyr::select(step_id, x1, x2, y1, y2, theta_abs, r, theta_rel, state) %>% 
     add_random_steps(n = n,
-                     sl_distr = model$sl_updated[[1]],
-                     ta_distr = model$ta_updated[[1]]
+                     sl_distr = model$sl_updated,
+                     ta_distr = model$ta_updated
     ) %>%
     flag_invalid_steps(remove = TRUE)
 }
