@@ -306,10 +306,10 @@ update_genvonmises <- function(dist, kappa1_estimator, kappa2_estimator){
 }
 
 # Update lognormal distribution params using fitted betas from ISSA
-update_lnorm <- function(dist, mulog_estimator, sdlog_esimator){
-  stopifnot(length(mulog_estimator) == length(sdlog_esimator))
+update_lnorm <- function(dist, mulog_estimator, sdlog_estimator ){
+  stopifnot(length(mulog_estimator) == length(sdlog_estimator ))
   lapply(seq_along(mulog_estimator), function(i){
-    amt::update_lnorm(dist, beta_log_sl = mulog_estimator[i], beta_log_sl_sq = sdlog_esimator[i])
+    amt::update_lnorm(dist, beta_log_sl = mulog_estimator[i], beta_log_sl_sq = sdlog_estimator [i])
   })
 }
 

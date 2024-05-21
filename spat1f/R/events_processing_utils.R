@@ -32,7 +32,7 @@ rad2degree <- function(theta){
 }
 
 # Calculate step length and turn angle. step lengths smaller than r_thresh are considered none movement, causing the turn angle of that step to be NA
-move_seq <- function(x,y, r_thresh = 1, inherit.theta = FALSE){ 
+move_seq <- function(x,y, r_thresh = 0, inherit.theta = FALSE){ 
   stopifnot(length(x) == length(y))
   
   if(length(x) < 2){

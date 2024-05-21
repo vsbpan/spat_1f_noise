@@ -48,7 +48,8 @@ The custom code written for this project are bundled as a pseudo simulated packa
     * `COCO_Json`: A list of data.frames and lists that represents a COCO annotation file. Has functions for importing, exporting, merging, randomization, subsetting, and summary. 
     * `issf_fit`: Fitted integrated step selection function. Has functions for summary and step simulation.
     * `events`: Not an actual class, but used throughout. A data.frame of location and associated metadata of each caterpillar at each time point. Has functions for validation, data extraction, summary, and visualization. Usually paired with `clean_events()` to keep only valid caterpillar identifications. 
-    * `amt_distr` No S3 generics, but used throughout. A list of parameter values and metadata for a parametric distribution. Has functions for updating, density, random number generation, and fitting. 
+    * `amt_distr` No S3 generics, but used throughout. A list of parameter values and metadata for a parametric distribution. Has functions for creation, update, finding the density, random number generation, and fitting.
+    * `moveHMM` A class of model object from the *moveHMM* package. Some methods are exported to *spat1f* so that user won't need to load the *moveHMM* library, which conflicts with *tidyverse*. 
 
 
 ### File structure <a name="FileStructure"></a>

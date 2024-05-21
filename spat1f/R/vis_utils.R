@@ -313,10 +313,10 @@ plot_track_overlay <- function(events = NULL, repID = NULL,
                                ref_data = get("ref_data", envir = globalenv()), 
                                score_thresh = 0.7,
                                plot_elements = c("ud","track"),
-                               colored_track = TRUE,
+                               colored_track = c("none", "states","time"),
                                trt_spec = "auto"
                                ){
-  
+  colored_track <- match.arg(colored_track)
   plot_elements <- match.arg(plot_elements, several.ok = TRUE)
   
   if(is.null(repID)){
@@ -350,6 +350,10 @@ plot_track_overlay <- function(events = NULL, repID = NULL,
                    keep_sus = FALSE)
   }
   
+  if(colored_track == "states"){
+    hmm_fit <- fit_HMM(as.moveData(move_seq(events$head_x, events$head_y)))
+  }
+  
   events <- events %>% 
     mutate(
       head_x = head_x / 1000 * 12 + 0.5,
@@ -375,13 +379,24 @@ plot_track_overlay <- function(events = NULL, repID = NULL,
   }
   
   if("track" %in% plot_elements){
-    if(colored_track){
+    if(colored_track == "time"){
       g <- g +
         geom_path(
           data = events,
           aes(x = head_x, y = head_y, color = round(time / 360))
         ) + 
-        scale_color_gradient2(midpoint = 600)
+        scale_color_gradient2(midpoint = 600) + 
+        labs(color = "time steps")
+    } else if(colored_track == "states"){
+      states <- as.character(viterbi(hmm_fit))
+      g <- g +
+        geom_path(
+          data = events[-nrow(events),],
+          aes(x = head_x, y = head_y, color = states, group = 1)
+        ) + 
+        labs(color = "states") + 
+        scale_color_manual(values = .getPalette(unique_len(states)))
+      
     } else {
       g <- g +
         geom_path(
@@ -397,7 +412,7 @@ plot_track_overlay <- function(events = NULL, repID = NULL,
     geom_point(aes(x = 0.5, y = 0.5), alpha = 0) + # Force the edges to align
     geom_point(aes(x = 12.5, y = 12.5), alpha = 0) + # Force the edges to align
     theme(legend.position = "right", plot.title = element_text(hjust = 0.5)) + 
-    labs(title = sprintf("repID: %s", repID_clean(repID)), color = "time steps") 
+    labs(title = sprintf("repID: %s", repID_clean(repID))) 
   
   return(g)
 }

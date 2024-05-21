@@ -54,13 +54,7 @@ fit_list <- pb_par_lapply(
     
     out <- issf( # Fit the issf
       mod_form,
-      data = d,
-      shape_estimator = c("logsl"),
-      scale_estimator = c("sl"),
-      kappa1_estimator = "cos_theta_pi",
-      kappa2_estimator = "cos_2theta", 
-      mulog_estimator = "logsl", 
-      sdlog_estimator = "logslsq"
+      data = d
     )
     
     return(out)

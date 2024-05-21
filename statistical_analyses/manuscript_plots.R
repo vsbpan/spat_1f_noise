@@ -176,6 +176,32 @@ jpeg(paste0("graphs/methods_figure/", "processed_rep81__cam20_s80016_rank223_pre
      width = 15, height = 15, units = "cm", res = 600)
 
 
+
+
+#### Herbivory mask processing figure #####
+
+img1 <- fast_load_image("graphs/methods_figure/processed_rep81__cam20_s0_rank1.jpg")
+img2 <- fast_load_image("graphs/methods_figure/processed_rep81__cam20_s441162_rank1225.jpg")
+mask <- (fetch_data_dict(81)[1225] %>% get_mask())[[1]]
+
+hue_diff <- (HUE(img1) - HUE(img2)) 
+hue_diff2 <- hue_diff
+hue_diff2[imager::grow(mask, x = 20)] <- quantile(hue_diff2, probs = 0.1)
+spe_img <- hue_diff2 %>% imagerExtra::SPE(lamda = 0.001,range = c(0,1))
+thr_img <- spe_img %>% threshold2(thr = "otsu")
+img_final <- thr_img %>% shrink(10)
+
+
+jpeg(paste0("graphs/methods_figure/", "herbivory_detection", ".jpg"), width = 15, height = 10, units = "cm", res = 600)
+plot.imlist(imlist(img2, HUE(img2), hue_diff,
+                   spe_img, as.cimg(thr_img), as.cimg(img_final)), 
+            main.panel = c("Raw image", "HUE", "Delta HUE censored",
+                           "SPE enhanced", "Otsu thresholded", "Eroded final"), 
+            axes = FALSE, interpolate = FALSE)
+dev.off()
+
+
+
 fetch_trt_spec(55) %>% 
   flip_xy() %>% 
   resize(1000, 1000) %>% 
@@ -216,6 +242,40 @@ g <- fetch_trt_spec(55) %>%
 
 
 
+g <- fetch_trt_spec(81) %>% 
+  flip_xy() %>% 
+  as.matrix() %>% 
+  melt() %>% 
+  ggplot(aes(x = dim1, y = 12 - dim2)) + 
+  geom_tile(
+    aes(fill = as.factor(val)),
+    alpha = 0.5) +
+  geom_path(
+    data = fetch_events(81) %>%
+      clean_events(keep_sus = TRUE, score_thresh = 0.7) %>%
+      mutate(
+        head_x = head_x / 1000 * 12 + 0.5,
+        head_y = 12-(head_y / 1000 * 12 + 0.5)
+      ) %>% 
+      .[-nrow(.),],
+    aes(x = head_x, y = head_y, group = 1, 
+        color = as.character(viterbi(fit_HMM(as.moveData(fetch_events(81) %>%
+                                                           clean_events(keep_sus = TRUE, score_thresh = 0.7) %$% 
+                                                           move_seq(head_x, head_y)))))
+    )
+  ) +
+  theme_void() + 
+  scale_fill_discrete(type = c("grey","white")) +
+  scale_color_discrete(type = rev(.getPalette(2))) +
+  theme(legend.position = "none") +
+  geom_point(aes(x = 0.5, y = 0.5), alpha = 0) + # Force the edges to align
+  geom_point(aes(x = 12.5, y = 12.5), alpha = 0);g # Force the edges to align
+
+
+# ggsave("graphs/methods_figure/rep81_tracks_segmented.jpg", g, width = 7.5, height = 8, dpi = 600)
+
+
+
 fetch_image(55, rank = 100) %>% 
   plot()
 
@@ -229,32 +289,6 @@ plot(fetch_data_dict(55)[100], add = TRUE)
 
 
 
-
-
-
-
-
-#### Herbivory mask processing figure #####
-
-img1 <- fast_load_image("graphs/methods_figure/processed_rep81__cam20_s0_rank1.jpg")
-img2 <- fast_load_image("graphs/methods_figure/processed_rep81__cam20_s441162_rank1225.jpg")
-mask <- (fetch_data_dict(81)[1225] %>% get_mask())[[1]]
-
-hue_diff <- (HUE(img1) - HUE(img2)) 
-hue_diff2 <- hue_diff
-hue_diff2[imager::grow(mask, x = 20)] <- quantile(hue_diff2, probs = 0.1)
-spe_img <- hue_diff2 %>% imagerExtra::SPE(lamda = 0.001,range = c(0,1))
-thr_img <- spe_img %>% threshold2(thr = "otsu")
-img_final <- thr_img %>% shrink(10)
-
-
-jpeg(paste0("graphs/methods_figure/", "herbivory_detection", ".jpg"), width = 15, height = 10, units = "cm", res = 600)
-plot.imlist(imlist(img2, HUE(img2), hue_diff,
-                   spe_img, as.cimg(thr_img), as.cimg(img_final)), 
-            main.panel = c("Raw image", "HUE", "Delta HUE censored",
-                           "SPE enhanced", "Otsu thresholded", "Eroded final"), 
-            axes = FALSE, interpolate = FALSE)
-dev.off()
 
 
 

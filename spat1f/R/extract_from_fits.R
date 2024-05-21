@@ -111,6 +111,21 @@
     })
 }
 
+# Internal function that takes a repID and compute the average proportion time in state 1
+.get_prop_state1_engine <- function(repID, 
+                                      .ref_data = get("ref_data", pos = globalenv())){
+  x <- repID
+  fetch_events(x, append_detection_summary = FALSE) %>% 
+    clean_events(ref_data = .ref_data) %$% 
+    move_seq(head_x, head_y) %>% 
+    as.moveData() %>% 
+    fit_HMM() %>% 
+    stateProbs() %>% 
+    .[,1,drop = TRUE] %>% 
+    mean()
+}
+
+
 
 # Nice wrapper for `.get_ava_neighborhood_quality_engine()` with list as input
 extract_ava_neighborhood_quality <- function(issf_fit_l, 
@@ -237,3 +252,30 @@ extract_obs_move_summary <- function(repIDs,
   
   return(out)
 }
+
+# Nice wrapper for `.get_prop_state1_engine()` with repIDs as input
+extract_obs_move_summary <- function(repIDs, 
+                                     .ref_data = get("ref_data", pos = globalenv()),
+                                     cores = 1){
+  v <- seq_along(repIDs) %>%
+    pb_par_lapply(
+      function(i, repIDs, .ref_data){
+        id <- repIDs[i]
+        cat(sprintf("\tProcessing repID = %s, %s of %s             \r", 
+                    id, 
+                    i,
+                    length(repIDs)))
+        .get_prop_state1_engine(id, .ref_data = .ref_data)
+      }, 
+      repIDs = repIDs,
+      .ref_data = .ref_data,
+      cores = cores
+    ) %>% 
+    do.call("rbind", .)
+  
+  out <- data.frame("rep_id" = repIDs, v)
+  
+  return(out)
+}
+
+
