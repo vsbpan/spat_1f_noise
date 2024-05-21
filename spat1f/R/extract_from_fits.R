@@ -274,7 +274,7 @@ extract_prop_state1_summary <- function(repIDs,
     ) %>% 
     do.call("rbind", .)
   
-  out <- data.frame("rep_id" = repIDs, v)
+  out <- data.frame("rep_id" = repIDs, "prop_explore" = v)
   cat("\n")
   return(out)
 }

@@ -89,7 +89,9 @@ d <- ref_data %>%
     sl_mean_obs_log_scale = as.numeric(scale(log(sl_mean_obs))),
     cat_pre_wt_log_scale_sq = as.numeric(scale(log(cat_pre_wt)^2)),
     RGR_scale = as.numeric(scale(RGR)), 
-    sl_mean_pred = shape * scale
+    sl_mean_pred = exp(sdlog^2/2 * meanlog), 
+    prop_explore_logit = qlogis(prop_explore),
+    prop_explore_logit_scale = as.numeric(scale(prop_explore_logit))
   )
 
 # Subset of data.frame for SEM
@@ -105,6 +107,7 @@ d2 <- d %>%
      !is.na(select_scale) &
       !is.na(ava_qual_scale) &
      !is.na(sl_mean_obs) &
+      !is.na(prop_explore) & 
       !is.na(RGR)) %>% 
   mutate(
     var_high = ifelse(var_trt == "high_var", 1, 0),

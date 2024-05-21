@@ -31,7 +31,7 @@ NumericVector flatten_xy(NumericVector x, NumericVector y,
   if(x.length() != y.length()){
     stop("x and y must have the same length");
   }
-  NumericVector i = (ceiling(y / max_y * dim_y) + (ceiling(x / max_x * dim_x) - 1) * dim_y);
+  NumericVector i = (ceiling(x / max_x * dim_x) + (ceiling(y / max_y * dim_y) - 1) * dim_x);
   return i;
 }
 
