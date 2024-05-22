@@ -51,6 +51,8 @@ rdist <- function(dist, n, ...){
 }
 
 
+
+
 # Random number generation for generalized vonmises distribution
 rgenvonmises <- function(n, kappa1, kappa2, max_try = 1000){
   rgenvonmisesC(n, kappa1, kappa2, max_try)
@@ -203,15 +205,20 @@ dinvgamma <- function(x, shape, scale, log = FALSE){
 }
 
 
-dfrechet <- function(x, shape, scale, log = FALSE){
-  extraDistr::dfrechet(x = x, lambda = shape, mu = 0, sigma = scale, log = log)
+
+rvonmises <- function(n, kappa){
+  x <- as.numeric(circular::rvonmises(n = n, mu = circular::circular(pi), kappa = kappa))
+  x <- x %%(2 * pi)
+  ifelse(x > base::pi, x - (2 * base::pi), x)
 }
 
-rfrechet <- function(n, shape, scale){
-  extraDistr::dfrechet(n, lambda = shape, mu = 0, sigma = scale)
+dvonmises <- function(x, kappa, log = FALSE){
+  # x <- (x + pi)
+  circular::dvonmises(circular::circular(x), 
+                      mu = circular::circular(-pi), 
+                      kappa = kappa, 
+                      log = log)
 }
-
-
 
 
 

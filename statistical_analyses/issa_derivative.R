@@ -16,14 +16,27 @@ fit_list <- pb_par_lapply(
     if(length(na.omit(d$r)) < 30 | length(na.omit(d$theta_rel)) < 30){
       return(NULL)
     } else {
-      # Append state column infered from a fitted Hidden Markov Model
+      # Append state column inferred from a fitted Hidden Markov Model
       d$state <- as.factor(viterbi(fit_HMM(as.moveData(d))))
+      
+      # Now enforce that each state must have >= 30 observations
+      count <- d %>% 
+        group_by(state) %>% 
+        summarise(count = sum(!is.na(theta_rel))) %>% 
+        .$count
+      
+      if(
+        any(count < 30)
+      ){
+        return(NULL)
+      } 
+      
 
       # Prepare data for issa
       d <- d %>%
         filter(!is.na(r)) %>%  # throw out steps where r is NA
         add_random_steps(n = 100L, # Simulate random available steps
-                         sl_distr = fit_lnorm(.$r), # Fit lgonormal step length dist
+                         sl_distr = fit_gamma(.$r), # Fit gamma step length dist
                          ta_distr = fit_genvonmises(.$theta_rel) # Generalized von Mises turn angle dist
         ) %>%
         flag_invalid_steps(remove = TRUE) %>% # Throw out any random step that is outside of the arena
@@ -43,16 +56,16 @@ fit_list <- pb_par_lapply(
     if(has_toxic){
       mod_form <- formula(
         case ~
-          less_toxic + # Habitat selection estimation
+          state:less_toxic + # Habitat selection estimation
           (state:cos_theta_pi + state:cos_2theta) +# Turn angle update 
-          (state:logslsq + state:logsl) +# step length update
+          (state:sl + state:logsl) +# step length update
           strata(step_id) # Stratify be step ID
       )
     } else {
       mod_form <- formula(
         case ~
           (state:cos_theta_pi + state:cos_2theta) +
-          (state:logslsq + state:logsl) +
+          (state:sl + state:logsl) +
           strata(step_id)
       )
     }
@@ -60,7 +73,7 @@ fit_list <- pb_par_lapply(
     out <- issf( # Fit the issf
       mod_form,
       data = d,
-      sl_estimators = lapply(.lnorm_default_estimator(), function(x){
+      sl_estimators = lapply(.gamma_default_estimator(), function(x){
         sprintf("%s:%s", c("state1", "state2"), x)
       }), 
       ta_estimators = lapply(.genvonmises_default_estimator(), function(x){
@@ -78,10 +91,12 @@ names(fit_list) <- unname(unlist(id_list))[!unname(unlist(id_list)) %in% problem
 
 fit_list
 
-saveRDS(object = c(fit_list), "invisible/issf_fit_list.rds")
+# saveRDS(object = c(fit_list), "invisible/issf_fit_list_state_less_toxic_gamma.rds")
+# saveRDS(object = c(fit_list), "invisible/issf_fit_list_state_less_toxic.rds")
+# saveRDS(object = c(fit_list), "invisible/issf_fit_list.rds")
 rm("fit_list")
 
-issf_fit_l <- readRDS("invisible/issf_fit_list.rds")
+issf_fit_l <- readRDS("invisible/issf_fit_list_state_less_toxic_gamma.rds")
 
 issf_fit_l <- issf_fit_l %>% 
   purrr:::keep(function(x){
@@ -119,5 +134,5 @@ res <- extract_ava_neighborhood_quality(issf_fit_l[i],
     by = "rep_id"
   )
 
-# write_csv(res, "cleaned_data/event_derivative.csv")
+# write_csv(res, "cleaned_data/event_derivative3.csv")
 

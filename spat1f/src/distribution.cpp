@@ -33,14 +33,17 @@ NumericVector runif(int n, double l, double u){
   return out;
 }
 
-NumericVector conc(NumericVector x, NumericVector y){
-  int nx=x.size(), n=x.size()+y.size(),i,j;
-  NumericVector out=no_init(n);
-  for (i=0; i<nx; ++i){ out[ i ] = x[ i ];}
-  for (j=i, i=0; j<n; ++j, ++i){ out[ j ] = y[i] ;}
-  return out;
-}
 
+NumericVector conc(NumericVector vec1, NumericVector vec2) {
+  int n = vec1.size();
+  int m = vec2.size();
+  NumericVector result(n + m);
+  
+  std::copy(vec1.begin(), vec1.end(), result.begin());
+  std::copy(vec2.begin(), vec2.end(), result.begin() + n);
+  
+  return result;
+}
 
 // [[Rcpp::export]]
 NumericVector rgenvonmisesC(int n, double kappa1, double kappa2, int max_try = 1000){

@@ -418,7 +418,7 @@ plot_track_overlay <- function(events = NULL, repID = NULL,
 }
 
 # Make log-log histogram
-loghist <- function(x, nclass = 50, log.p = TRUE, geom = c("line", "col"), draw_dist = NULL, ...){
+loghist <- function(x, nclass = 50, log.p = FALSE, log.x = TRUE, geom = c("line", "col"), draw_dist = NULL, ...){
   
   if(!log.p && length(geom) == 2){
     geom <- "col"
@@ -426,18 +426,28 @@ loghist <- function(x, nclass = 50, log.p = TRUE, geom = c("line", "col"), draw_
     geom <- match.arg(geom)
   }
   
+  if(log.x){
+    p <- hist(log(x), plot = FALSE, nclass = nclass, ...)
+    d <- data.frame(
+      "x" = exp(p$mids),
+      "p" = p$density
+    )
+  } else {
+    p <- hist(x, plot = FALSE, nclass = nclass, ...)
+    d <- data.frame(
+      "x" = p$mids,
+      "p" = p$density
+    )
+  }
   
-  x <- log(x)
-  p <- hist(x, plot = FALSE, nclass = nclass, ...)
-  d <- data.frame(
-    "x" = exp(p$mids),
-    "p" = p$counts / length(x) / mean(diff(p$mids))
-  )
   g <- d %>% 
     ggplot(aes(x = x, y = p)) + 
     theme_bw(base_size = 15) + 
-    scale_x_continuous(trans = "log10", labels = fancy_scientificb) + 
     labs(x = "x", y = "P(x)")
+  
+  if(log.x){
+    g <- g + scale_x_continuous(trans = "log10", labels = fancy_scientificb)
+  }
   
   if(log.p){
     g <- g + scale_y_continuous(trans = "log10")
@@ -472,9 +482,15 @@ loghist <- function(x, nclass = 50, log.p = TRUE, geom = c("line", "col"), draw_
       
       den[!is.finite(den)] <- NA_real_
       
+      if(log.x){
+        p <- den * d$x 
+      } else {
+        p <- den
+      }
+      
       den_data[[i]] <- data.frame(
         "x" = d$x, 
-        "p" = den * d$x,
+        "p" = p,
         "dist" = dist_name
       )
     }
@@ -536,5 +552,37 @@ fancy_scientificb <- function(l) {
 scientific_10_exp_labels <- scales::trans_format("log10", scales::math_format(10^.x) )
 scientific_10_exp_breaks <- scales::trans_format("log10", function(x) 10^x )
 
+scale_xy_log <- function(name = waiver(), 
+                                axis = "xy",
+                                trans = "log10", 
+                                label = fancy_scientificb,  
+                                ...){
+  if(grepl("x", axis)){
+    res <- scale_x_continuous(
+      name, 
+      trans = trans, 
+      label = label,
+      ...
+    )
+  }
+  
+  if(grepl("y", axis)){
+    res <- scale_y_continuous(
+      name, 
+      trans = trans, 
+      label = label,
+      ...
+    )
+  }
+  
+  return(res)
+}
 
+scale_x_ta <- function(name = waiver(), ...){
+  scale_x_continuous(
+    name,
+    breaks = c(-pi, -pi / 2, 0, pi / 2, pi), 
+    labels = c(expression(-pi), expression(-pi/2), 0, expression(pi/2), expression(pi)), 
+    ...)
+}
 

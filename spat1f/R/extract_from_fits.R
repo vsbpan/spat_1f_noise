@@ -215,8 +215,16 @@ exract_model_coef <- function(issf_fit_l){
       as.data.frame(t(
         c(
           coef(x$model),
-          do.call("c",x$sl_updated[[1]]$params),
-          do.call("c",x$ta_updated[[1]]$params)
+          do.call("c", lapply(seq_along(x$sl_updated), function(i){
+            v <- do.call("c",x$sl_updated[[i]]$params)
+            names(v) <- paste0(names(v),"_",i)
+            return(v)
+          })),
+          do.call("c", lapply(seq_along(x$ta_updated), function(i){
+            v <- do.call("c",x$ta_updated[[i]]$params)
+            names(v) <- paste0(names(v),"_",i)
+            return(v)
+          }))
         )
       ))
     }) %>%

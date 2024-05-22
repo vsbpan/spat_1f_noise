@@ -1,287 +1,292 @@
+mledist <- function(x, dist, init, amt_format = FALSE, param_names = NULL, ...){
+  if(!is.null(param_names)){
+    names(init) <- param_names
+    if(!all(param_names %in% names(formals(sprintf("d%s", dist))))){
+      extra <- param_names[!param_names %in% names(formals(sprintf("d%s", dist)))]
+      stop(sprintf("Cannot find the argument '%s' in the function d%s", extra, dist))
+      
+    }
+  }
+  
+  
+  
+  fit <- fitdistrplus::mledist(x, dist, start = as.list(init), 
+                               fix.arg = NULL, checkstartfix = TRUE, 
+                               ...)
+  names(fit)[1] <- "par"
+  
+  if(is.na(fit$value) || !is.finite(is.na(fit$value))){
+    fit$convergence <- 1
+  } else {
+    fit$se <- tryCatch(sqrt(diag(solve(fit$hessian))), 
+                       error = function(e){
+                         e
+                       })
+    if(inherits(fit$se, "error") || any(is.na(fit$se))){
+      if(inherits(fit$se, "error")){
+        fit$message <- paste0(as.character(fit$se), collapse = "\n")
+      } else {
+        fit$message <- "Cannot estimate standard error."
+      }
+      
+      fit$convergence <- 2
+      fit$se <- rep(NA_real_, length(fit$par))
+    } else {
+      fit$message <- ""
+    }
+  }
+  
+  if(amt_format){
+    if(is.null(param_names)){
+      stop("Must supply 'param_names' if amt_format = TRUE.")
+    }
+    
+    if(fit$convergence != 0){
+      message(sprintf("Did not converge for %s. \nCode: %s\nMessage: %s\n",
+                      dist,
+                      fit$convergence,
+                      fit$message))
+      vcov <- matrix(rep(NA, length(param_names)^2),
+                     nrow = length(param_names),
+                     ncol = length(param_names))
+    } else {
+      vcov <- solve(fit$hessian) 
+    }
+    
+    params <- as.list(fit$par)
+    
+    names(params) <- param_names
+    rownames(vcov) <- colnames(vcov) <- param_names
+    
+    out <- list("name" = dist,
+                "params" = params,
+                "vcov" = vcov) # VCV matrix on transformed scale
+    
+    return(out)
+  } else {
+    return(fit)
+  }
+}
+
+
+
 # Nice wrapper for fitting generalized von Mises distribution using MLE. 
 fit_genvonmises <- function(x, 
-                            method = c("Nelder-Mead", "BFGS", "nlminb", "nlm"),
-                            init = c(1, 0.5),
-                            lower = c(0, 0),
-                            upper = c(Inf, Inf),
-                            parscale = c(1000, 1000),
-                            na.rm = TRUE){
-  
-  method <- match.arg(method)
+                            init = "auto",
+                            na.rm = TRUE, 
+                            ...){
   
   if(na.rm){
     x <- x[!is.na(x)]
+  }
+  
+  if(any(init == "auto")){
+    init[1] <- 1
+    init[2] <- 0.5
+    init <- as.numeric(init)
   }
   
   param_names <- c("kappa1", "kappa2")
+  dist <- "genvonmises"
+  out <- mledist(x, dist, init = init, amt_format = TRUE, param_names = param_names, 
+                 lower = c(0, 0), optim.method = "L-BFGS-B", ...)
   
-  fit <- optim2(
-    init = init * parscale,
-    fn = function(theta){
-      -sum(dgenvonmises(x,
-                        kappa1 = (theta[1]) / parscale[1], # Transform to deal with numerical issue
-                        kappa2 = (theta[2]) / parscale[2], 
-                        log = TRUE))
-    },
-    lower = lower * parscale,
-    upper = upper * parscale,
-    method = method
-  )
-  
-  if(fit$convergence != 0){
-    message(sprintf("Did not converge.\nCode: %s\nMessage: %s", fit$convergence, fit$message))
-    vcov <- matrix(rep(NA, length(param_names)^2),
-                   nrow = length(param_names),
-                   ncol = length(param_names))
-  } else {
-    vcov <- solve(fit$hessian) / crossprod(x = t(matrix(parscale)))
-  }
-  
-  params <- as.list(fit$par)
-  params[[1]] <- (params[[1]]) / parscale[1] # Back transform
-  params[[2]] <- (params[[2]]) / parscale[2]
-  
-  names(params) <- param_names
-  rownames(vcov) <- colnames(vcov) <- param_names
-  
-  out <- list("name" = "genvonmises",
-              "params" = params,
-              "vcov" = vcov) # VCV matrix on transformed scale
-  
-  class(out) <- c("genvonmises_distr", "ta_distr", "amt_distr", "list")
+  class(out) <- c(sprintf("%s_distr", dist), "ta_distr", "amt_distr", "list")
   return(out)
   
 }
 
-# Is a hack that fits zigamma in two parts. 
-fit_zigamma2 <- function(x, na.rm = TRUE){
-  if(na.rm){
-    x <- x[!is.na(x)]
-  }
-  
-  zero <- ifelse(x > 0, 0, 1)
-  x2 <- x[!as.logical(zero)]
-  
-  pfit <- optim2(c(0.1), fn = function(theta){
-    -sum(dbinom(zero, size = 1, prob = theta/1000, log = TRUE))
-  },
-  method = "Brent",
-  lower = 0,
-  upper = 1000,
-  silent = TRUE)
-  
-  
-  param_names <- c("p", "shape", "scale")
-  
-  params_gamma <- amt::fit_distr(x2, "gamma")$params
-  
-  params <- list(
-    pfit$par / 1000,
-    params_gamma[[1]],
-    params_gamma[[2]]
-  )
-  names(params) <- param_names
-  
-  out <- list("name" = "zigamma",
-              "params" = params,
-              "vcov" = NA) # VCV matrix on transformed scale
-  
-  class(out) <- c("zigamma_distr", "sl_distr", "amt_distr", "list")
-  return(out)
-}
 
 # Fit zigamma returning the same format as `amt::fit_distr()`
 fit_zigamma <- function(x,
-                        method = c("Nelder-Mead", "BFGS", "nlminb", "nlm"),
-                        init = c(0.1, 1, 30),
-                        lower = c(0, 0, 0),
-                        upper = c(1, Inf, Inf),
-                        parscale = c(1000, 10, 100),
-                        na.rm = TRUE){
-  
-  method <- match.arg(method)
+                        init = "auto",
+                        na.rm = TRUE, 
+                        ...){
   
   if(na.rm){
     x <- x[!is.na(x)]
   }
   
-  param_names <- c("p", "shape", "scale")
-  
-  fit <- optim2(
-    init = init * parscale,
-    fn = function(theta){
-      -sum(dzigamma(x,
-                    p = (theta[1]) / parscale[1], # Transform to deal with numerical issue
-                    shape = (theta[2]) / parscale[2],
-                    scale = (theta[3]) / parscale[3], log = TRUE))
-    },
-    lower = lower * parscale,
-    upper = upper * parscale,
-    method = method
-  )
-  
-  if(fit$convergence != 0){
-    message(sprintf("Did not converge.\nCode: %s\nMessage: %s", fit$convergence, fit$message))
-    vcov <- matrix(rep(NA, length(param_names)^2),
-                   nrow = length(param_names),
-                   ncol = length(param_names))
-  } else {
-    vcov <- solve(fit$hessian) / crossprod(x = t(matrix(parscale)))
+  if(any(init == "auto")){
+    m1 <- mean(x[x>0])
+    m2 <- mean((x[x>0])^2)
+    init[1] <- mean(c(x == 0, TRUE))
+    init[2] <- (2 * m2 - m1^2)/(m2 - m1^2)
+    init[3] <- m1 * m2/(m2 - m1^2)
+    init <- as.numeric(init)
   }
   
-  params <- as.list(fit$par)
-  params[[1]] <- (params[[1]]) / parscale[1] # Back transform
-  params[[2]] <- (params[[2]]) / parscale[2]
-  params[[3]] <- (params[[3]]) / parscale[3]
+  param_names <- c("p", "shape", "scale")
   
-  names(params) <- param_names
-  rownames(vcov) <- colnames(vcov) <- param_names
+  dist <- "zigamma"
+  out <- mledist(x, dist, init = init, amt_format = TRUE, param_names = param_names, ...)
   
-  out <- list("name" = "zigamma",
-              "params" = params,
-              "vcov" = vcov) # VCV matrix on transformed scale
-  
-  class(out) <- c("zigamma_distr", "sl_distr", "amt_distr", "list")
+  class(out) <- c(sprintf("%s_distr", dist), "sl_distr", "amt_distr", "list")
   return(out)
 }
 
 
 # Fit inverse gamma distribution with MLE
 fit_invgamma <- function(x, 
-                         method = c("Nelder-Mead", "BFGS", "nlminb", "nlm"),
-                         init = c(1, 0.5),
-                         lower = c(0, 0),
-                         upper = c(Inf, Inf),
-                         parscale = c(1000, 1000),
-                         na.rm = TRUE){
-  
-  method <- match.arg(method)
+                         init = "auto",
+                         na.rm = TRUE, 
+                         ...){
   
   if(na.rm){
     x <- x[!is.na(x)]
   }
   
-  param_names <- c("shape", "scale")
-  
-  fit <- optim2(
-    init = init * parscale,
-    fn = function(theta){
-      -sum(dinvgamma(x,
-                     shape = (theta[1]) / parscale[1], # Transform to deal with numerical issue
-                     scale = (theta[2]) / parscale[2], 
-                     log = TRUE))
-    },
-    lower = lower * parscale,
-    upper = upper * parscale,
-    method = method
-  )
-  
-  if(fit$convergence != 0){
-    message(sprintf("Did not converge.\nCode: %s\nMessage: %s", fit$convergence, fit$message))
-    vcov <- matrix(rep(NA, length(param_names)^2),
-                   nrow = length(param_names),
-                   ncol = length(param_names))
-  } else {
-    vcov <- solve(fit$hessian) / crossprod(x = t(matrix(parscale)))
-  }
-  
-  params <- as.list(fit$par)
-  params[[1]] <- (params[[1]]) / parscale[1] # Back transform
-  params[[2]] <- (params[[2]]) / parscale[2]
-  
-  names(params) <- param_names
-  rownames(vcov) <- colnames(vcov) <- param_names
-  
-  out <- list("name" = "invgamma",
-              "params" = params,
-              "vcov" = vcov) # VCV matrix on transformed scale
-  
-  class(out) <- c("invgamma_distr", "ta_distr", "amt_distr", "list")
-  return(out)
-}
-
-
-# Fit inverse gamma distribution with MLE
-fit_frechet <- function(x, 
-                         method = c("Nelder-Mead", "BFGS", "nlminb", "nlm"),
-                         init = c(1, 0.5),
-                         lower = c(0, 0),
-                         upper = c(Inf, Inf),
-                         parscale = c(1000, 1000),
-                         na.rm = TRUE){
-  
-  method <- match.arg(method)
-  
-  if(na.rm){
-    x <- x[!is.na(x)]
+  if(any(init == "auto")){
+    m1 <- mean(x)
+    m2 <- mean(x^2)
+    init[1] <- (2 * m2 - m1^2)/(m2 - m1^2)
+    init[2] <- m1 * m2/(m2 - m1^2)
+    init <- as.numeric(init)
   }
   
   param_names <- c("shape", "scale")
   
-  fit <- optim2(
-    init = init * parscale,
-    fn = function(theta){
-      -sum(dfrechet(x,
-                     shape = (theta[1]) / parscale[1], # Transform to deal with numerical issue
-                     scale = (theta[2]) / parscale[2], 
-                     log = TRUE))
-    },
-    lower = lower * parscale,
-    upper = upper * parscale,
-    method = method
-  )
+  dist <- "invgamma"
+  out <- mledist(x, dist, init = init, amt_format = TRUE, param_names = param_names, ...)
   
-  if(fit$convergence != 0){
-    message(sprintf("Did not converge.\nCode: %s\nMessage: %s", fit$convergence, fit$message))
-    vcov <- matrix(rep(NA, length(param_names)^2),
-                   nrow = length(param_names),
-                   ncol = length(param_names))
-  } else {
-    vcov <- solve(fit$hessian) / crossprod(x = t(matrix(parscale)))
-  }
-  
-  params <- as.list(fit$par)
-  params[[1]] <- (params[[1]]) / parscale[1] # Back transform
-  params[[2]] <- (params[[2]]) / parscale[2]
-  
-  names(params) <- param_names
-  rownames(vcov) <- colnames(vcov) <- param_names
-  
-  out <- list("name" = "frechet",
-              "params" = params,
-              "vcov" = vcov) # VCV matrix on transformed scale
-  
-  class(out) <- c("frechet_distr", "ta_distr", "amt_distr", "list")
+  class(out) <- c(sprintf("%s_distr", dist), "sl_distr", "amt_distr", "list")
   return(out)
 }
 
 
 
-# update_zigamma_p <- function(dist, beta_move){
-#   new_p <- unname(plogis(qlogis(dist$params$p) - beta_move))
-#   make_zigamma(new_p, dist$params$shape, dist$params$scale)
-# }
-# 
-# update_zigamma_ss <- function(dist, beta_sl, beta_log_sl){
-#   new_shape <- unname(dist$params$shape + beta_log_sl)
-#   new_scale <- unname(1/((1/dist$params$scale) - beta_sl))
-#   make_zigamma(dist$params$p, new_shape, new_scale)
-# }
+
+
 
 # Standardized wrapper for fitting gamma distribution
-fit_gamma <- function(x){
-  amt::fit_distr(x, "gamma")
+fit_gamma <- function(x, 
+                      init = "auto",
+                      na.rm = TRUE, 
+                      ...){
+  if(na.rm){
+    x <- x[!is.na(x)]
+  }
+  
+  if(any(init == "auto")){
+    m <- mean(x)
+    v <- var(x)
+    init[1] <- m^2/v
+    init[2] <- m/v
+    init <- as.numeric(init)
+  }
+  
+  param_names <- c("shape", "scale")
+
+    dist <- "gamma"
+  out <- mledist(x, dist, init = init, amt_format = TRUE, param_names = param_names, ...)
+  
+  class(out) <- c(sprintf("%s_distr", dist), "sl_distr", "amt_distr", "list")
+  return(out)
+  
 }
 
 
 # Standardized wrapper for fitting lognormal distribution
-fit_lnorm <- function(x){
-  amt::fit_distr(x, "lnorm")
+fit_lnorm <- function(x, 
+                      init = "auto",
+                      na.rm = TRUE, 
+                      ...){
+  if(na.rm){
+    x <- x[!is.na(x)]
+  }
+  
+  if(any(init == "auto")){
+    
+    n <- length(x)
+    lx <- log(x)
+    sd0 <- sqrt((n - 1)/n) * sd(lx)
+    ml <- mean(lx)
+
+    init[1] <- ml
+    init[2] <- sd0
+    init <- as.numeric(init)
+  }
+  
+  param_names <- c("meanlog", "sdlog")
+  
+  dist <- "lnorm"
+  out <- mledist(x, dist, init = init, amt_format = TRUE, param_names = param_names, ...)
+  
+  class(out) <- c(sprintf("%s_distr", dist), "sl_distr", "amt_distr", "list")
+  return(out)
 }
 
 # Standardized wrapper for fitting vonmises distribution
-fit_vonmises <- function(x){
-  amt::fit_distr(x, "vonmises")
+fit_vonmises <- function(x, 
+                         init = "auto",
+                         na.rm = TRUE, 
+                         ...){
+  if(na.rm){
+    x <- x[!is.na(x)]
+  }
+  
+  if(any(init == "auto")){
+    V <- mean(cos(x - atan2(sum(sin(x)), sum(cos(x)))))
+    if (V > 0) {
+      init <- circular:::A1inv(V)
+    }
+    else {
+      init <- 0
+    }
+    init <- as.numeric(init)
+  }
+  
+  param_names <- c("kappa")
+  
+  dist <- "vonmises"
+  out <- mledist(x, dist, init = init, amt_format = TRUE, param_names = param_names, 
+                 lower = 0, optim.method = "L-BFGS-B", ...)
+  
+  class(out) <- c(sprintf("%s_distr", dist), "ta_distr", "amt_distr", "list")
+  return(out)
+}
+
+# function for making any fitting function with paste0("d",dist) defined
+# auto_init takes a function that takes x and infer the initial values for optimization
+make_fit <- function(dist, params, auto_init = NULL){
+  den_fun <- sprintf("d%s", dist)
+  if(is.null(get0(den_fun))){
+    stop(sprintf("Cannot find '%s()' anywhere. Please define the density function. ", den_fun))
+  }
+  
+  if(!all(params %in% names(formals(den_fun)))){
+    extra <- params[!params %in% names(formals(den_fun))]
+    stop(sprintf("Cannot find the argument '%s' in the function %s", extra, den_fun))
+    
+  }
+  
+  
+  f <- function(x, 
+                init = "auto",
+                na.rm = TRUE, 
+                ...){
+    if(na.rm){
+      x <- x[!is.na(x)]
+    }
+    
+    if(any(init == "auto")){
+      if(!is.null(auto_init)){
+        init <- auto_init(x)
+      } else {
+        init <- rep(1, length(params))
+      }
+      init <- as.numeric(init)
+    }
+    
+    param_names <- params
+    out <- mledist(x, dist, init = init, amt_format = TRUE, param_names = param_names, ...)
+    
+    class(out) <- c(sprintf("%s_distr", dist), "sl_distr", "ta_distr", "amt_distr", "list")
+    return(out)
+  }
+  assign(sprintf("fit_%s", dist), value = f, envir = globalenv())
+  message(sprintf("Successfully created the function '%s()' in the global environment.", sprintf("fit_%s", dist)))
+  return(invisible(NULL))
 }
 
 
@@ -346,7 +351,7 @@ update_zigamma <- function(dist, p_estimator, scale_estimator, shape_estimator){
 }
 
 
-comp_dist <- function(x, dist = c("gamma", "lnorm", "invgamma", "frechet"), criterion = "AICc"){
+comp_dist <- function(x, dist = c("gamma", "lnorm", "invgamma"), criterion = "AICc"){
   x <- x[!is.na(x)]
   
   l <- lapply(dist, function(d){
