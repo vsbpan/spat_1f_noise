@@ -1,1 +1,3 @@
-*.html linguist-vendored
+* linguist-vendored
+deep_learning/detectron2/detectron2/* linguist-vendored
+.html linguist-detectable=false
