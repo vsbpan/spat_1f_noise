@@ -128,7 +128,7 @@ ref_data <- ref_data %>%
     by = "rep_id" 
   ) %>% 
   left_join(
-    read_csv("cleaned_data/event_derivative3.csv", progress = FALSE) %>% 
+    read_csv("cleaned_data/event_derivative.csv", progress = FALSE) %>% 
       suppressMessages() %>% 
       mutate(
         rep_id = as.character(rep_id)
