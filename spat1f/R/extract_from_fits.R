@@ -131,29 +131,32 @@
 extract_ava_neighborhood_quality <- function(issf_fit_l, 
                                              .ref_data = get("ref_data", 
                                                              pos = globalenv()), 
-                                             n = 100L){
-  res <- lapply(
-    seq_along(issf_fit_l),
-    function(i, issf_fit_l, n, .ref_data){
-      id <- names(issf_fit_l)[i]
-      cat(sprintf("Processing repID = %s, %s of %s             \r", 
-                  id, 
-                  i,
-                  length(issf_fit_l)))
+                                             n = 100L,
+                                             cores = 1){
+  # Store a temp id to allow passing pb_par_lapply() a list directly
+  nms <- names(issf_fit_l)
+  issf_fit_l <- lapply(seq_along(issf_fit_l), function(i){
+    attr(issf_fit_l[[i]], "id") <- nms[i]
+    return(issf_fit_l[[i]])
+  })
+  
+  res <- pb_par_lapply(
+    issf_fit_l,
+    function(x, n, .ref_data){
       .get_ava_neighborhood_quality_engine(
-        issf_fit_l[[i]], 
-        id, 
+        x, 
+        attr(x, "id"), 
         .ref_data = .ref_data,
         n = n
       )
-    }, 
-    issf_fit_l = issf_fit_l,
+    },
     n = n,
-    .ref_data = .ref_data
+    .ref_data = .ref_data,
+    cores = cores
   )
   
   out <- data.frame(
-    "rep_id" = names(issf_fit_l),
+    "rep_id" = nms,
     "ava_qual" = do.call("c", res)
   )
   cat("\n")
@@ -170,8 +173,6 @@ extract_temporal_var <- function(repIDs,
   v <- repIDs %>%
     pb_par_lapply(
       function(x, .ref_data, hours){
-        cat(sprintf("\tProcessing repID = %s             \r", 
-                    x))
         .get_temporal_var_engine(x, .ref_data = .ref_data, hours = hours)
       }, 
       .ref_data = .ref_data,
@@ -193,8 +194,6 @@ extract_mean_on_toxic <- function(repIDs,
   v <- repIDs %>%
     pb_par_lapply(
       function(x, .ref_data){
-        cat(sprintf("\tProcessing repID = %s             \r", 
-                    x))
         .get_mean_on_toxic_engine(x, .ref_data = .ref_data)
       }, 
       .ref_data = .ref_data,
@@ -214,7 +213,7 @@ exract_model_coef <- function(issf_fit_l){
     lapply(function(x){
       as.data.frame(t(
         c(
-          coef(x$model),
+          flatten_mat_name(do.call("cbind",coef(x, se = TRUE))),
           do.call("c", lapply(seq_along(x$sl_updated), function(i){
             v <- do.call("c",x$sl_updated[[i]]$params)
             names(v) <- paste0(names(v),"_",i)
@@ -242,10 +241,6 @@ extract_obs_move_summary <- function(repIDs,
     pb_par_lapply(
       function(i, repIDs, .ref_data, probes){
         id <- repIDs[i]
-        cat(sprintf("\tProcessing repID = %s, %s of %s             \r", 
-                    id, 
-                    i,
-                    length(repIDs)))
         .get_obs_move_summary_engine(id, 
                                      .ref_data = .ref_data, 
                                      probes = probes)
@@ -263,17 +258,13 @@ extract_obs_move_summary <- function(repIDs,
 }
 
 # Nice wrapper for `.get_prop_state1_engine()` with repIDs as input
-extract_prop_state1_summary <- function(repIDs, 
+extract_prop_state1 <- function(repIDs, 
                                      .ref_data = get("ref_data", pos = globalenv()),
                                      cores = 1){
   v <- seq_along(repIDs) %>%
     pb_par_lapply(
       function(i, repIDs, .ref_data){
         id <- repIDs[i]
-        cat(sprintf("\tProcessing repID = %s, %s of %s             \r", 
-                    id, 
-                    i,
-                    length(repIDs)))
         .get_prop_state1_engine(id, .ref_data = .ref_data)
       }, 
       repIDs = repIDs,

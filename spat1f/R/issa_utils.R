@@ -143,8 +143,12 @@ issf <- function(formula, data,
                  sl_estimators = NULL,
                  ta_estimators = NULL,
                  update = TRUE,
+                 keep_data = TRUE,
                  ...){
   m <- .issf_fit_internal(formula, data, ...)
+  
+  
+  
   out <- list(
     "model" = m,
     "sl" = attr(data, "sl"),
@@ -159,9 +163,29 @@ issf <- function(formula, data,
                         ta_estimators = ta_estimators)
   }
   
+  if(!keep_data){
+    out$data <- NULL
+  }
+  
   class(out) <- c("issf_fit","list")
   
   return(out)
+}
+
+# S3 method for coef of issf_fit objects
+coef.issf_fit <- function(x, se = FALSE, ...){
+  if(se){
+    return(
+      list(
+        "estimate" = coef(x$model),
+        "se" = sqrt(diag(x$model$var))
+      )
+    )
+  } else {
+    return(
+      coef(x$model)
+    )
+  }
 }
 
 # S3 method for print and summary of issf_fit objects
@@ -173,6 +197,7 @@ print.issf_fit <- function(x, ...){
 # S3 method registration
 registerS3method("print", "issf_fit", print.issf_fit)
 registerS3method("summary", "issf_fit", print.issf_fit)
+registerS3method("coef", "issf_fit", coef.issf_fit)
 
 
 

@@ -80,7 +80,8 @@ d <- ref_data %>%
                                                         trans = "emp", 
                                                         nudge.method = "none", 
                                                         na.action = "ignore"))),
-    #select_scale = as.numeric(scale(less_toxic)),
+    select1_scale = as.numeric(scale(`estimate__state1:less_toxic`)),
+    select2_scale = as.numeric(scale(`estimate__state2:less_toxic`)),
     ava_qual_scale = as.numeric(scale(ava_qual)),
     ava_qual_logit_scale = as.numeric(scale(adjust_prop(ava_qual, 
                                                         trans = "emp", 
@@ -89,8 +90,6 @@ d <- ref_data %>%
     sl_mean_obs_log_scale = as.numeric(scale(log(sl_mean_obs))),
     cat_pre_wt_log_scale_sq = as.numeric(scale(log(cat_pre_wt)^2)),
     RGR_scale = as.numeric(scale(RGR)), 
-    #sl_mean_pred1 = exp(sdlog_1^2/2 * meanlog_1),
-    #sl_mean_pred2 = exp(sdlog_1^2/2 * meanlog_2),
     sl_mean_pred1 = shape_1 * scale_1,
     sl_mean_pred2 = shape_2 * scale_2,
     prop_explore_logit = qlogis(prop_explore),
@@ -103,11 +102,14 @@ d2 <- d %>%
     var_trt != "constant"
   ) %>% 
   filter(
+    sl_mean_pred1 > 0 & 
+    sl_mean_pred2 > 0 &
     !is.na(area_herb_log_scale) & 
     !is.na(var_toxic_12_scale) & 
     !is.na(mean_toxic_conc_scale) &
     !is.na(on_toxic_logit_scale) &
-    #!is.na(select_scale) &
+    !is.na(select1_scale) &
+    !is.na(select2_scale) &
     !is.na(ava_qual_scale) &
     !is.na(sl_mean_obs) &
     !is.na(prop_explore) & 

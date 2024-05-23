@@ -43,14 +43,20 @@ spec <- fetch_trt_spec(ID)
 
 iterate_random_steps2(
   ta_sl_list = list(
-    "sl" = list(make_gamma(1, 30)),
-    "ta" = list(make_genvonmises(0.48, 0.267))
+    "sl" = list(
+      make_gamma(1, 30),
+      make_gamma(1, 10)
+    ),
+    "ta" = list(
+      make_genvonmises(0.48, 0.267),
+      make_genvonmises(0.48, 0.267)
+    )
   ), 
   start = make_start2(0,500,500, 1), 
   n = 5000, 
   ref_grid = spec, 
   same_move = TRUE, 
-  rss_coef = 3
+  rss_coef = 0.5
 ) %>% 
   mutate(head_x = x, head_y = y) %>% 
   plot_track_overlay(

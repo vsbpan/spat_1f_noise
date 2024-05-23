@@ -4,7 +4,7 @@ library(amt)
 
 # Fit a bunch of issf and store them in a list
 fit_list <- pb_par_lapply(
-  unname(unlist(id_list))[!unname(unlist(id_list)) %in% problem_ids],
+  unname(unlist(id_list$var))[!unname(unlist(id_list$var)) %in% problem_ids],
   function(i, ref_data){
     ID <- i
     d <- fetch_events(ID) %>% # Get mask-R-CNN instances
@@ -25,9 +25,7 @@ fit_list <- pb_par_lapply(
         summarise(count = sum(!is.na(theta_rel))) %>% 
         .$count
       
-      if(
-        any(count < 30)
-      ){
+      if(any(count < 30)){
         return(NULL)
       } 
       
@@ -46,7 +44,8 @@ fit_list <- pb_par_lapply(
                              ref_img = fetch_trt_spec(ID, 
                                                       .ref_data = ref_data, 
                                                       quiet = TRUE)), 
-          less_toxic = 1 - toxic
+          less_toxic = 1 - toxic,
+          less_toxic_f= as.factor(less_toxic)
         ) %>%
         append_estimators(na_as_zero = TRUE) # Append correct step length and turn angle estimators
     }
@@ -58,7 +57,7 @@ fit_list <- pb_par_lapply(
         case ~
           state:less_toxic + # Habitat selection estimation
           (state:cos_theta_pi + state:cos_2theta) +# Turn angle update 
-          (state:sl + state:logsl) +# step length update
+          (state:sl + state:logsl) + # step length update
           strata(step_id) # Stratify be step ID
       )
     } else {
@@ -73,12 +72,19 @@ fit_list <- pb_par_lapply(
     out <- issf( # Fit the issf
       mod_form,
       data = d,
-      sl_estimators = lapply(.gamma_default_estimator(), function(x){
-        sprintf("%s:%s", c("state1", "state2"), x)
-      }), 
-      ta_estimators = lapply(.genvonmises_default_estimator(), function(x){
-        sprintf("%s:%s", c("state1", "state2"), x)
-      })
+      sl_estimators = pick_default_estimators(
+        "gamma", 
+        list(
+          c("state1", "state2")
+        )
+      ), 
+      ta_estimators = pick_default_estimators(
+        "genvonmises", 
+        list(
+          c("state1", "state2")
+        )
+      ), 
+      keep_data = TRUE
     )
     
     return(out)
@@ -87,16 +93,12 @@ fit_list <- pb_par_lapply(
   cores = 8,
   inorder = TRUE
 )
-names(fit_list) <- unname(unlist(id_list))[!unname(unlist(id_list)) %in% problem_ids]
+names(fit_list) <- unname(unlist(id_list$var))[!unname(unlist(id_list$var)) %in% problem_ids]
 
-fit_list
-
-# saveRDS(object = c(fit_list), "invisible/issf_fit_list_state_less_toxic_gamma.rds")
-# saveRDS(object = c(fit_list), "invisible/issf_fit_list_state_less_toxic.rds")
-# saveRDS(object = c(fit_list), "invisible/issf_fit_list.rds")
+saveRDS(object = c(fit_list), "invisible/issf_fit_list.rds")
 rm("fit_list")
 
-issf_fit_l <- readRDS("invisible/issf_fit_list_state_less_toxic_gamma.rds")
+issf_fit_l <- readRDS("invisible/issf_fit_list.rds")
 
 issf_fit_l <- issf_fit_l %>% 
   purrr:::keep(function(x){
@@ -107,16 +109,10 @@ issf_fit_l <- issf_fit_l %>%
 i <- seq_along(issf_fit_l)
 
 # Extract data from fitted models
-res <- extract_ava_neighborhood_quality(issf_fit_l[i], 
-                             .ref_data = ref_data, 
-                             n = 100) %>% 
-  left_join(
-    extract_temporal_var(names(issf_fit_l)[i], 
+res <- extract_temporal_var(names(issf_fit_l)[i], 
                          hours = 12L, 
                          .ref_data = ref_data, 
-                         cores = 6),
-    by = "rep_id"
-  ) %>% 
+                         cores = 6) %>% 
   left_join(
     exract_model_coef(issf_fit_l[i]),
     by = "rep_id"
@@ -130,9 +126,18 @@ res <- extract_ava_neighborhood_quality(issf_fit_l[i],
     by = "rep_id"
   ) %>% 
   left_join(
-    extract_prop_state1_summary(names(issf_fit_l)[i], cores = 6),
+    extract_prop_state1(names(issf_fit_l)[i], cores = 6),
+    by = "rep_id"
+  ) %>% 
+  left_join(
+    extract_ava_neighborhood_quality(issf_fit_l[i],
+                                     .ref_data = ref_data,
+                                     n = 100,
+                                     cores = 6), 
     by = "rep_id"
   )
 
-# write_csv(res, "cleaned_data/event_derivative3.csv")
+
+
+# write_csv(res, "cleaned_data/event_derivative.csv")
 
