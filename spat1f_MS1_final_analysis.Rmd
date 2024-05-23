@@ -64,65 +64,6 @@ check_mod <- function(model){
 ## Quick cleaning
 
 ```{r}
-# Main data.frame for analyses
-d <- ref_data %>% 
-  filter(error == 0) %>% 
-  mutate(
-    cat_pre_wt_log = log(cat_pre_wt),
-    cat_pre_wt_log_scale = as.numeric(scale(log(cat_pre_wt))),
-    cat_size = ifelse(cat_pre_wt < median(cat_pre_wt), "small", "big"),
-    has_var = ifelse(var_trt != "constant", 1, 0),
-    mean_toxic_conc_scale = as.numeric(scale(mean_toxic_conc)),
-    mean_toxic_scale = as.numeric(scale(mean_toxic)),
-    area_herb_log_scale = as.numeric(scale(log(area_herb+1))),
-    var_toxic_12_scale = as.numeric(scale(var_toxic_12)),
-    on_toxic_logit_scale = as.numeric(scale(adjust_prop(on_toxic, 
-                                                        trans = "emp", 
-                                                        nudge.method = "none", 
-                                                        na.action = "ignore"))),
-    #select_scale = as.numeric(scale(less_toxic)),
-    #ava_qual_scale = as.numeric(scale(ava_qual)),
-    # ava_qual_logit_scale = as.numeric(scale(adjust_prop(ava_qual, 
-    #                                                     trans = "emp", 
-    #                                                     nudge.method = "none", 
-    #                                                     na.action = "ignore"))),
-    sl_mean_obs_log_scale = as.numeric(scale(log(sl_mean_obs))),
-    cat_pre_wt_log_scale_sq = as.numeric(scale(log(cat_pre_wt)^2)),
-    RGR_scale = as.numeric(scale(RGR)), 
-    #sl_mean_pred1 = exp(sdlog_1^2/2 * meanlog_1),
-    #sl_mean_pred2 = exp(sdlog_1^2/2 * meanlog_2),
-    sl_mean_pred1 = shape_1 * scale_1,
-    sl_mean_pred2 = shape_2 * scale_2,
-    sl_mean_pred3 = shape_3 * scale_3,
-    sl_mean_pred4 = shape_4 * scale_4,
-    prop_explore_logit = qlogis(prop_explore),
-    prop_explore_logit_scale = as.numeric(scale(prop_explore_logit))
-  )
-
-# Subset of data.frame for SEM
-d2 <- d %>% 
-  filter(
-    var_trt != "constant"
-  ) %>% 
-  filter(
-    !is.na(area_herb_log_scale) & 
-    !is.na(var_toxic_12_scale) & 
-    !is.na(mean_toxic_conc_scale) &
-    !is.na(on_toxic_logit_scale) &
-    #!is.na(select_scale) &
-    #!is.na(ava_qual_scale) &
-    !is.na(sl_mean_obs) &
-    !is.na(prop_explore) & 
-    !is.na(RGR)) %>% 
-  mutate(
-    var_high = ifelse(var_trt == "high_var", 1, 0),
-    beta_red = ifelse(as.character(beta) == 5, 1, 0),
-    beta_white = ifelse(as.character(beta) == 0, 1, 0),
-    beta_red_cat_pre_wt_log_scale = beta_red * cat_pre_wt_log_scale,
-    beta_white_cat_pre_wt_log_scale = beta_white * cat_pre_wt_log_scale,
-    var_high_cat_pre_wt_log_scale = var_high * cat_pre_wt_log_scale,
-    beta_numeric_scale = as.numeric(scale(as.numeric(beta)))
-  )
 
 ```
 

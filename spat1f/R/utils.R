@@ -42,26 +42,29 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
                           silent = FALSE,
                           inorder = TRUE, 
                           export_fun_only = TRUE){
-  if(is.list(x)){
-    indf <- function(x,i){
-      x[[i]]
-    } 
-  } else {
-    indf <- function(x,i) {
-      x[i]
-    }
-  }
-  
+
   has_clust <- inherits(cores, "cluster")
   
   if(!has_clust && (is.null(cores) || is.na(cores) || cores <= 1 || isFALSE(cores))){
+    if(is.list(x)){
+      indf <- function(x,i){
+        x[[i]]
+      } 
+    } else {
+      indf <- function(x,i) {
+        x[i]
+      }
+    }
+    
     n <- length(x)
+    
     out <- lapply(seq_along(x), FUN = function(i){
       if(!silent){
         cat(sprintf("\r%s %d of %d",loop_text,i, n))
       }
       FUN(indf(x, i), ...)
     })
+    cat("\n")
   } else {
     
     if(!has_clust){
@@ -73,8 +76,6 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
       doSNOW::registerDoSNOW(cl)
     }
     
-    
-    indices <- seq_along(x)
     
     environment(FUN) <- environment()
     
@@ -95,7 +96,7 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
     spat1f_path <- path.package("spat1f")
     
     out <- foreach(
-      i = indices, 
+      i = x, # Passing large list directly as elements to avoid memory overflow
       .export = export,
       .combine = c, 
       .verbose = FALSE,
@@ -121,7 +122,7 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
                          export_all = TRUE, 
                          quiet = TRUE) # Load spat1f package
       
-      list(FUN(indf(x, i), ...))
+      list(FUN(i, ...))
     }
   }
   
@@ -395,5 +396,10 @@ sigfig <- function(x, digits = 4){
   formatC(x, digits = 2, format = "fg", flag = "#")
 }
 
-
+# Turn named matrix into a named vector
+flatten_mat_name <- function(x){
+  setNames(c(x),
+           paste(rep(colnames(x), each = nrow(x)), rownames(x), sep="__")
+  )
+}
 

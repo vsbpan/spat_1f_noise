@@ -81,6 +81,7 @@ append_vonmises_estimators <- function(x, na_as_zero = FALSE){
 
 # General append estimator wrapper for various distributions
 append_estimators <- function(x, na_as_zero = FALSE){
+  
   sl_est_method <- switch(attr(x, "sl")$name, 
                           "gamma" = append_gamma_estimators,
                           "lnorm" = append_lnorm_estimators,
@@ -98,9 +99,23 @@ append_estimators <- function(x, na_as_zero = FALSE){
   
 }
 
+interaction_grid <- function(estimators, int_list){
+  init_flat <- apply(expand.grid(int_list), 1, function(x){
+    paste0(x, collapse = ":")
+  })
+  
+  out <- lapply(estimators, function(x){
+    sprintf("%s:%s",
+            init_flat, 
+            x)
+  })
+  out
+}
+
+
 # default distribution estimator. called in pick_default_estimators()
 .gamma_default_estimator <- function(){
-  list(
+  out <- list(
     "shape" = "logsl",
     "scale" = "sl"
   )
@@ -142,14 +157,21 @@ append_estimators <- function(x, na_as_zero = FALSE){
 }
 
 
-pick_default_estimators <- function(dist){
+pick_default_estimators <- function(dist, int_list = NULL){
   fcall <- sprintf(".%s_default_estimator", dist)
   if(isFALSE(is.function(get0(fcall)))){
     stop(
       sprintf("Could not find function '%s'. Please define in the global environment.", fcall)
     )
   }
-  do.call(fcall, list())
+  
+  res <- do.call(fcall, list())
+  
+  if(!is.null(int_list)){
+    res <- interaction_grid(res, int_list)
+  } 
+  
+  return(res)
 }
 
 
