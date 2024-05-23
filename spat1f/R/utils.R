@@ -78,6 +78,7 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
     
     
     environment(FUN) <- environment()
+    indices <- seq_along(x)
     
     if(export_fun_only){
       # Export only functions in the global environment (faster)
@@ -95,7 +96,7 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
     pkg <- pkg[pkg != "spat1f"]
     spat1f_path <- path.package("spat1f")
     
-    out <- foreach(
+    out <- tryCatch(foreach(
       i = x, # Passing large list directly as elements to avoid memory overflow
       .export = export,
       .combine = c, 
@@ -123,7 +124,12 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
                          quiet = TRUE) # Load spat1f package
       
       list(FUN(i, ...))
-    }
+    }, error = function(e){
+      if(!has_clust){
+        message("\nClosing parallel workers. . .")
+        stopCluster(cl)
+      }
+    })
   }
   
   return(out)

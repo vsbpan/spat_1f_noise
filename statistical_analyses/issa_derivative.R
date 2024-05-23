@@ -45,7 +45,7 @@ fit_list <- pb_par_lapply(
                                                       .ref_data = ref_data, 
                                                       quiet = TRUE)), 
           less_toxic = 1 - toxic,
-          less_toxic_f= as.factor(less_toxic)
+          less_toxic_f = as.factor(less_toxic)
         ) %>%
         append_estimators(na_as_zero = TRUE) # Append correct step length and turn angle estimators
     }
@@ -55,9 +55,9 @@ fit_list <- pb_par_lapply(
     if(has_toxic){
       mod_form <- formula(
         case ~
-          state:less_toxic + # Habitat selection estimation
-          (state:cos_theta_pi + state:cos_2theta) +# Turn angle update 
-          (state:sl + state:logsl) + # step length update
+          # state:less_toxic + # Habitat selection estimation
+          (less_toxic_f:state:cos_theta_pi + less_toxic_f:state:cos_2theta) + # Turn angle update 
+          (state:less_toxic_f:sl + state:less_toxic_f:logsl) + # step length update
           strata(step_id) # Stratify be step ID
       )
     } else {
@@ -75,12 +75,14 @@ fit_list <- pb_par_lapply(
       sl_estimators = pick_default_estimators(
         "gamma", 
         list(
+          c("less_toxic_f0", "less_toxic_f1"),
           c("state1", "state2")
         )
       ), 
       ta_estimators = pick_default_estimators(
         "genvonmises", 
         list(
+          c("less_toxic_f0", "less_toxic_f1"),
           c("state1", "state2")
         )
       ), 
@@ -95,10 +97,10 @@ fit_list <- pb_par_lapply(
 )
 names(fit_list) <- unname(unlist(id_list$var))[!unname(unlist(id_list$var)) %in% problem_ids]
 
-saveRDS(object = c(fit_list), "invisible/issf_fit_list.rds")
+saveRDS(object = c(fit_list), "invisible/issf_fit_list2.rds")
 rm("fit_list")
 
-issf_fit_l <- readRDS("invisible/issf_fit_list.rds")
+issf_fit_l <- readRDS("invisible/issf_fit_list2.rds")
 
 issf_fit_l <- issf_fit_l %>% 
   purrr:::keep(function(x){
@@ -139,5 +141,5 @@ res <- extract_temporal_var(names(issf_fit_l)[i],
 
 
 
-# write_csv(res, "cleaned_data/event_derivative.csv")
+# write_csv(res, "cleaned_data/event_derivative_arrestment.csv")
 
