@@ -466,24 +466,6 @@ cox.zph(surv_m)
 
 ## Sub-models {.tabset}
 
-### Time to pupation
-```{r}
-subm_pupt <- glmmTMB(
-  time_to_pupation ~ 
-    cat_pre_wt_log_scale + 
-    cat_pre_wt_log_scale_sq + 
-    sl_mean_obs_log_scale +
-    prop_explore_logit_scale *  
-    var_toxic_12_scale + 
-    mean_toxic_conc_scale + 
-    area_herb_log_scale + 
-    (1|session_id),
-  family = Gamma(link = "log"),
-  data = d2
-); summary(subm_pupt)
-```
-
-
 ### RGR
 
 ```{r}
@@ -605,7 +587,7 @@ sem_fit <- psem(
 )
 sem_summary <- suppressWarnings(suppressMessages(
   summary_psem(sem_fit, 
-               no_standardize_x =  c("var_high","beta_red","beta_white"), 
+               no_standardize_x =  c(), 
                .progressBar = FALSE, 
                direction = "var_toxic_12_scale -> area_herb_log_scale")
 ))
@@ -634,7 +616,7 @@ sem_summary$R2
 ### Standardized coefficients
 ```{r}
 knitr::kable(
-  cbind(sem_summary$coefficients,"arrow_size"=(abs(as.numeric(sem_summary$coefficients$Std.Estimate))*10))
+  cbind(sem_summary$coefficients,"arrow_size"=(abs(as.numeric(sem_summary$coefficients$Std.Estimate))*20))
 )
 ```
 
@@ -643,7 +625,7 @@ knitr::kable(
 
 ```{r}
 contrast_by_pre_wt(subm_herb, "var_high", "trt")
-1/sd(subm_herb$frame$area_herb_log_scale)
+sd(subm_herb$frame$var_high)/sd(subm_herb$frame$area_herb_log_scale)
 ```
 
 
@@ -668,7 +650,7 @@ sd(subm_on_toxic$frame$beta_numeric_scale) * sd(subm_on_toxic$frame$on_toxic_log
 
 
 ```{r}
-knitr::include_graphics(paste0(getwd(), "/graphs/manuscript1_figures/SEM_joined.png"), rel_path = FALSE)
+# knitr::include_graphics(paste0(getwd(), "/graphs/manuscript1_figures/SEM_joined.png"), rel_path = FALSE)
 ```
 
 # Session Info
