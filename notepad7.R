@@ -38,14 +38,17 @@ subm_sl <- glmmTMB(
     beta_numeric_scale + 
     var_high +  
     cat_pre_wt_log_scale + 
-    cat_pre_wt_log_scale_sq + 
+    I(cat_pre_wt_log_scale^2) + 
     (1|session_id),
   data = d2,
 ); summary(subm_sl)
 
+plot_model(subm_sl, type = "eff", terms = c("cat_pre_wt_log_scale"))
+
+
 subm_toxin_ingested <- glmmTMB(
   mean_toxic_conc_scale ~ 
-    beta_numeric_scale * cat_pre_wt_log_scale + 
+    beta_numeric_scale + cat_pre_wt_log_scale + 
     var_high * cat_pre_wt_log_scale + 
     cat_pre_wt_log_scale_sq +  
     (1|session_id),
@@ -55,7 +58,7 @@ subm_toxin_ingested <- glmmTMB(
 
 subm_on_toxic <- glmmTMB(
   on_toxic_logit_scale ~ 
-    `state1:less_toxic` + `state2:less_toxic` + 
+    scale(`state1:less_toxic`) + scale(`state2:less_toxic`) + 
     var_high + beta_numeric_scale + 
     (1|session_id),
   family = gaussian(),
@@ -78,18 +81,19 @@ subm_select <- glmmTMB(
 ); summary(subm_select)
 
 subm_select <- glmmTMB(
-  `state2:less_toxic` ~ 
-    beta_numeric_scale + var_high + cat_pre_wt_log_scale + 
-    (1|session_id),
-  data = d2,
-); summary(subm_select)
-
-subm_sl <- glmmTMB(
-  log(sl_mean_pred1) ~ 
+  `state1:less_toxic` ~ 
     beta_numeric_scale + var_high + cat_pre_wt_log_scale + 
     (1|session_id),
   data = d2 %>% 
-    filter(sl_mean_pred1 < 1000),
+    filter(abs(`state1:less_toxic`) < 5),
+); summary(subm_select)
+
+subm_sl <- glmmTMB(
+  log(sl_mean_pred4) ~ 
+    beta_numeric_scale + var_high + cat_pre_wt_log_scale + 
+    (1|session_id),
+  data = d2 %>% 
+    filter(),
 ); summary(subm_sl)
 
 # subm_ava <- glmmTMB(
@@ -99,6 +103,8 @@ subm_sl <- glmmTMB(
 #   family = gaussian(),
 #   data = d2,
 # ); summary(subm_ava)
+
+expand.grid(c("state1","state2"),c("toxic", "less_toxic"))
 
 subm_exp <- glmmTMB(
   prop_explore_logit_scale ~ 
@@ -113,7 +119,9 @@ plot_model(subm_exp, type = "eff", terms = c("cat_pre_wt_log_scale", "beta_numer
 
 
 d2 %>% 
-  filter(`state2:less_toxic` < 5) %>% 
+  filter(sl_mean_pred1 > 0) %>% 
+  filter(abs(`state2:less_toxic`) < 5) %>% 
+  #filter(`state2:less_toxic` < 5) %>% 
   ggplot(aes(x = cat_pre_wt_log_scale, y = `state2:less_toxic`)) + 
   geom_point() + 
   geom_smooth(method = "lm")
@@ -127,10 +135,22 @@ plot_track_overlay(repID = 95, plot_elements = "track", colored_track = "states"
 
 
 d2 %>% 
+  filter(sl_mean_pred1 > 0) %>% 
   # filter(sl_mean_pred1 < 1000) %>% 
-  ggplot(aes(x = cat_pre_wt_log_scale, y = (sl_mean_pred1))) + 
+  ggplot(aes(x = log(sl_mean_pred1), y = log(sl_mean_pred3))) +
+  geom_abline(slope = 1, intercept = 0) + 
   geom_point() + 
   geom_smooth(method = "lm")
+
+
+d2 %>% 
+  filter(sl_mean_pred1 > 0) %>% 
+  # filter(sl_mean_pred1 < 1000) %>% 
+  ggplot(aes(x = cat_pre_wt_log_scale, y = log(sl_mean_pred1))) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+
 
 
 z <- fetch_events(121) %>% 
@@ -181,8 +201,18 @@ make_fit("wald", params = c("mu", "lambda"), auto_init = function(x){
 
 
 
+.get_prop_state1_engine(55)
 
-
+fetch_events(55) %>% 
+  clean_events() %$%
+  move_seq(head_x, head_y) %>% 
+  as.moveData() %>% 
+  fit_HMM() %>% 
+  viterbi() %>% 
+  vapply(function(x){
+    x == 1
+  }, numeric(1)) %>% 
+  mean()
 
 
 

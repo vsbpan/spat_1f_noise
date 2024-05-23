@@ -81,11 +81,11 @@ d <- ref_data %>%
                                                         nudge.method = "none", 
                                                         na.action = "ignore"))),
     #select_scale = as.numeric(scale(less_toxic)),
-    ava_qual_scale = as.numeric(scale(ava_qual)),
-    ava_qual_logit_scale = as.numeric(scale(adjust_prop(ava_qual, 
-                                                        trans = "emp", 
-                                                        nudge.method = "none", 
-                                                        na.action = "ignore"))),
+    #ava_qual_scale = as.numeric(scale(ava_qual)),
+    # ava_qual_logit_scale = as.numeric(scale(adjust_prop(ava_qual, 
+    #                                                     trans = "emp", 
+    #                                                     nudge.method = "none", 
+    #                                                     na.action = "ignore"))),
     sl_mean_obs_log_scale = as.numeric(scale(log(sl_mean_obs))),
     cat_pre_wt_log_scale_sq = as.numeric(scale(log(cat_pre_wt)^2)),
     RGR_scale = as.numeric(scale(RGR)), 
@@ -93,6 +93,8 @@ d <- ref_data %>%
     #sl_mean_pred2 = exp(sdlog_1^2/2 * meanlog_2),
     sl_mean_pred1 = shape_1 * scale_1,
     sl_mean_pred2 = shape_2 * scale_2,
+    sl_mean_pred3 = shape_3 * scale_3,
+    sl_mean_pred4 = shape_4 * scale_4,
     prop_explore_logit = qlogis(prop_explore),
     prop_explore_logit_scale = as.numeric(scale(prop_explore_logit))
   )
@@ -108,7 +110,7 @@ d2 <- d %>%
     !is.na(mean_toxic_conc_scale) &
     !is.na(on_toxic_logit_scale) &
     #!is.na(select_scale) &
-    !is.na(ava_qual_scale) &
+    #!is.na(ava_qual_scale) &
     !is.na(sl_mean_obs) &
     !is.na(prop_explore) & 
     !is.na(RGR)) %>% 
