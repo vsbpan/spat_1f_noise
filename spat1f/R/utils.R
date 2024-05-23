@@ -126,6 +126,7 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
       list(FUN(i, ...))
     }, error = function(e){
       if(!has_clust){
+        message(e)
         message("\nClosing parallel workers. . .")
         stopCluster(cl)
       }

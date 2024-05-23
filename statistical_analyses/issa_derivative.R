@@ -54,8 +54,7 @@ fit_list <- pb_par_lapply(
     
     if(has_toxic){
       mod_form <- formula(
-        case ~
-          # state:less_toxic + # Habitat selection estimation
+        case ~ 
           (less_toxic_f:state:cos_theta_pi + less_toxic_f:state:cos_2theta) + # Turn angle update 
           (state:less_toxic_f:sl + state:less_toxic_f:logsl) + # step length update
           strata(step_id) # Stratify be step ID
@@ -97,15 +96,16 @@ fit_list <- pb_par_lapply(
 )
 names(fit_list) <- unname(unlist(id_list$var))[!unname(unlist(id_list$var)) %in% problem_ids]
 
-saveRDS(object = c(fit_list), "invisible/issf_fit_list2.rds")
+saveRDS(object = c(fit_list), "invisible/issf_fit_list.rds")
 rm("fit_list")
 
-issf_fit_l <- readRDS("invisible/issf_fit_list2.rds")
+issf_fit_l <- readRDS("invisible/issf_fit_list.rds")
 
 issf_fit_l <- issf_fit_l %>% 
   purrr:::keep(function(x){
     length(x) > 1 # filter out NULL
   })
+
 
 
 i <- seq_along(issf_fit_l)
@@ -138,8 +138,6 @@ res <- extract_temporal_var(names(issf_fit_l)[i],
                                      cores = 6), 
     by = "rep_id"
   )
-
-
 
 # write_csv(res, "cleaned_data/event_derivative_arrestment.csv")
 
