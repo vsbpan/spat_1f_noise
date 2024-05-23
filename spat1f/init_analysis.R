@@ -128,11 +128,15 @@ ref_data <- ref_data %>%
     by = "rep_id" 
   ) %>% 
   left_join(
-    read_csv("cleaned_data/event_derivative.csv", progress = FALSE) %>% 
+    read_csv("cleaned_data/event_derivative_arrestment.csv", progress = FALSE) %>% 
       rename_all(.funs = function(x){
-        o <- gsub("state","s",gsub("__", "_",gsub("estimate", "est", gsub(":","\\.", x))))
+        o <- gsub("state","s",gsub("estimate", "est", gsub(":","\\.", x)))
         vapply(o, function(z){
-          paste0(rev(str_split_1(z, pattern = "\\.")), collapse = ".")
+          z <- str_split_1(z, pattern = "__")
+          z2 <- z
+          z2[1] <- z[length(z)]
+          z2[length(z)] <- z[1]
+          paste0(z2, collapse = ".")
         }, FUN.VALUE = character(1))
       }) %>% 
       suppressMessages() %>% 
@@ -168,7 +172,8 @@ ref_data <- ref_data %>%
                        # censor at pupation date bc not sure when they died. 
                        as.numeric(as.difftime(pupation_date - date_start, units = "d"))
     )
-  )
+  ) %>% 
+  dplyr::select(-today)
 
 
 id_list <- list("var" = ref_data %>% 

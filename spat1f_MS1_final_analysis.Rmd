@@ -80,8 +80,6 @@ d <- ref_data %>%
                                                         trans = "emp", 
                                                         nudge.method = "none", 
                                                         na.action = "ignore"))),
-    select1_scale = as.numeric(scale(less_toxic.est_s1)),
-    select2_scale = as.numeric(scale(less_toxic.est_s2)),
     ava_qual_scale = as.numeric(scale(ava_qual)),
     ava_qual_logit_scale = as.numeric(scale(adjust_prop(ava_qual, 
                                                         trans = "emp", 
@@ -92,6 +90,10 @@ d <- ref_data %>%
     RGR_scale = as.numeric(scale(RGR)), 
     sl_mean_pred1 = shape_1 * scale_1,
     sl_mean_pred2 = shape_2 * scale_2,
+    sl_mean_pred3 = shape_3 * scale_3,
+    sl_mean_pred4 = shape_4 * scale_4,
+    k1 = scale_1 / scale_2,
+    k2 = scale_3 / scale_4,
     prop_explore_logit = qlogis(prop_explore),
     prop_explore_logit_scale = as.numeric(scale(prop_explore_logit))
   )
@@ -102,18 +104,12 @@ d2 <- d %>%
     var_trt != "constant"
   ) %>% 
   filter(
-    sl_mean_pred1 > 0 & 
-    sl_mean_pred2 > 0 &
     !is.na(area_herb_log_scale) & 
-    !is.na(var_toxic_12_scale) & 
-    !is.na(mean_toxic_conc_scale) &
-    !is.na(on_toxic_logit_scale) &
-    !is.na(select1_scale) &
-    !is.na(select2_scale) &
-    !is.na(ava_qual_scale) &
-    !is.na(sl_mean_obs) &
-    !is.na(prop_explore) & 
-    !is.na(RGR)) %>% 
+      !is.na(var_toxic_12_scale) & 
+      !is.na(mean_toxic_conc_scale) &
+      !is.na(sl_mean_obs) &
+      !is.na(prop_explore) & 
+      !is.na(RGR)) %>% 
   mutate(
     var_high = ifelse(var_trt == "high_var", 1, 0),
     beta_red = ifelse(as.character(beta) == 5, 1, 0),
@@ -124,6 +120,42 @@ d2 <- d %>%
     beta_numeric_scale = as.numeric(scale(as.numeric(beta)))
   )
 
+# Subset of data.frame for more detailed analyses
+d3 <- d %>% 
+  filter(
+    var_trt != "constant"
+  ) %>% 
+  filter(
+    sl_mean_pred2 < 2000 &
+    sl_mean_pred1 > 0 & 
+      sl_mean_pred2 > 0 &
+      sl_mean_pred3 > 0 & 
+      sl_mean_pred4 > 0 &
+      scale_1 > 0 & 
+      shape_1 > 0 & 
+      scale_2 > 0 & 
+      shape_2 > 0 & 
+      scale_3 > 0 & 
+      shape_3 > 0 & 
+      scale_4 > 0 & 
+      shape_4 > 0 & 
+      !is.na(area_herb_log_scale) & 
+      !is.na(var_toxic_12_scale) & 
+      !is.na(mean_toxic_conc_scale) &
+      !is.na(on_toxic_logit_scale) &
+      !is.na(ava_qual_scale) &
+      !is.na(sl_mean_obs) &
+      !is.na(prop_explore) & 
+      !is.na(RGR)) %>% 
+  mutate(
+    var_high = ifelse(var_trt == "high_var", 1, 0),
+    beta_red = ifelse(as.character(beta) == 5, 1, 0),
+    beta_white = ifelse(as.character(beta) == 0, 1, 0),
+    beta_red_cat_pre_wt_log_scale = beta_red * cat_pre_wt_log_scale,
+    beta_white_cat_pre_wt_log_scale = beta_white * cat_pre_wt_log_scale,
+    var_high_cat_pre_wt_log_scale = var_high * cat_pre_wt_log_scale,
+    beta_numeric_scale = as.numeric(scale(as.numeric(beta)))
+  )
 ```
 
 
@@ -434,17 +466,37 @@ cox.zph(surv_m)
 
 ## Sub-models {.tabset}
 
+### Time to pupation
+```{r}
+subm_pupt <- glmmTMB(
+  time_to_pupation ~ 
+    cat_pre_wt_log_scale + 
+    cat_pre_wt_log_scale_sq + 
+    sl_mean_obs_log_scale +
+    prop_explore_logit_scale *  
+    var_toxic_12_scale + 
+    mean_toxic_conc_scale + 
+    area_herb_log_scale + 
+    (1|session_id),
+  family = Gamma(link = "log"),
+  data = d2
+); summary(subm_pupt)
+```
+
+
 ### RGR
 
 ```{r}
 subm_rgr <- glmmTMB(
   RGR_scale ~ 
     cat_pre_wt_log_scale + 
-    cat_pre_wt_log_scale_sq +
+    cat_pre_wt_log_scale_sq + 
+    sl_mean_obs_log_scale +
+    prop_explore_logit_scale *  
+    var_toxic_12_scale + 
     mean_toxic_conc_scale + 
-    area_herb_log_scale * cat_pre_wt_log_scale + 
-    sl_mean_obs_log_scale + 
-    var_toxic_12_scale +
+    area_herb_log_scale + 
+    beta_numeric_scale + 
     (1|session_id),
   data = d2
 ); summary(subm_rgr)
@@ -456,11 +508,9 @@ subm_rgr <- glmmTMB(
 ```{r}
 subm_var_toxic <- glmmTMB(
   var_toxic_12_scale ~ 
+    sl_mean_obs_log_scale +
     beta_numeric_scale + 
     var_high + 
-    sl_mean_obs_log_scale + 
-    select_scale + 
-    ava_qual_logit_scale + 
     (1|session_id),
   data = d2
 ); summary(subm_var_toxic)
@@ -473,12 +523,10 @@ subm_var_toxic <- glmmTMB(
 ```{r}
 subm_sl <- glmmTMB(
   sl_mean_obs_log_scale ~ 
-    beta_numeric_scale + 
-    on_toxic_logit_scale + 
-    var_high +  
-    select_scale + 
+    prop_explore_logit_scale +  
     cat_pre_wt_log_scale + 
     cat_pre_wt_log_scale_sq + 
+    on_toxic_logit_scale + 
     (1|session_id),
   data = d2,
 ); summary(subm_sl)
@@ -492,9 +540,8 @@ subm_sl <- glmmTMB(
 subm_toxin_ingested <- glmmTMB(
   mean_toxic_conc_scale ~ 
     beta_numeric_scale + 
-    var_high * cat_pre_wt_log_scale + 
     on_toxic_logit_scale + 
-    cat_pre_wt_log_scale_sq +  
+    var_high + 
     (1|session_id),
   data = d2 
 ); summary(subm_toxin_ingested)
@@ -507,7 +554,7 @@ subm_toxin_ingested <- glmmTMB(
 ```{r}
 subm_on_toxic <- glmmTMB(
   on_toxic_logit_scale ~ 
-    select_scale + ava_qual_logit_scale  + 
+    var_high + beta_numeric_scale * cat_pre_wt_log_scale + 
     (1|session_id),
   family = gaussian(),
   data = d2
@@ -521,51 +568,37 @@ subm_on_toxic <- glmmTMB(
 ```{r}
 subm_herb <- glmmTMB(
   area_herb_log_scale ~ 
-    beta_numeric_scale + var_high * cat_pre_wt_log_scale + 
+    var_high * cat_pre_wt_log_scale +
     (1|session_id),
   data = d2,
 ); summary(subm_herb)
 
 ```
 
-
-### Toxin selection
-
+### Exploration
 ```{r}
-subm_select <- glmmTMB(
-  select_scale ~ 
-    beta_numeric_scale + var_high * cat_pre_wt_log_scale + 
-    ava_qual_logit_scale + 
-    (1|session_id),
-  data = d2,
-); summary(subm_select)
-```
-
-
-### Neighborhood diet quality
-
-```{r}
-subm_ava <- glmmTMB(
-  ava_qual_logit_scale ~ 
+subm_exp <- glmmTMB(
+  prop_explore_logit_scale ~ 
     var_high + beta_numeric_scale * cat_pre_wt_log_scale + 
     (1|session_id),
   family = gaussian(),
-  data = d2,
-); summary(subm_ava)
+  data = d2
+); summary(subm_exp)
 
 ```
+
+
 
 ## d-separation test
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE, include=TRUE}
 sem_fit <- psem(
     subm_rgr,
+    subm_herb,
     subm_var_toxic,
     subm_on_toxic,
     subm_toxin_ingested,
-    subm_select,
-    subm_ava,
-    subm_herb,
+    subm_exp,
     subm_sl, 
     var_toxic_12_scale %~~% on_toxic_logit_scale, # correlated errors
     data = d2
@@ -574,14 +607,8 @@ sem_summary <- suppressWarnings(suppressMessages(
   summary_psem(sem_fit, 
                no_standardize_x =  c("var_high","beta_red","beta_white"), 
                .progressBar = FALSE, 
-               # Remove 'ava_qual_logit_scale' from the independence claim when 'on_toxic_logit_scale' is conditioned. 'on_toxic_logit_scale' is a more proximal predictor and is highly collinear with ava_qual_logit_scale. 
-               basis.set = keep(basisSet(sem_fit), function(x){ 
-                 res1 <- (basisSet_predictor(x) == "ava_qual_logit_scale")
-                 res2 <- ("on_toxic_logit_scale" %in% basisSet_conditioned(x))
-                 res <- res1 & res2
-                 return(!res)
-               }))
-  ))
+               direction = "var_toxic_12_scale -> area_herb_log_scale")
+))
 
 ```
 
@@ -613,15 +640,6 @@ knitr::kable(
 
 ### Post hoc contrast
 
-```{r}
-contrast_by_pre_wt(subm_toxin_ingested, "var_high", "trt")
-1/sd(subm_toxin_ingested$frame$mean_toxic_conc_scale)
-```
-
-```{r}
-contrast_by_pre_wt(subm_select, "var_high", "trt")
-1/sd(subm_select$frame$select_scale)
-```
 
 ```{r}
 contrast_by_pre_wt(subm_herb, "var_high", "trt")
@@ -629,21 +647,21 @@ contrast_by_pre_wt(subm_herb, "var_high", "trt")
 ```
 
 
-```{r}
-emmeans::emtrends(subm_rgr, 
-                 ~ area_herb_log_scale | cat_pre_wt_log_scale, 
-                 var = "area_herb_log_scale", 
-                 at = list(cat_pre_wt_log_scale = c(-2,2)))
-sd(subm_rgr$frame$area_herb_log_scale) / sd(subm_rgr$frame$RGR_scale)
-```
-
 
 ```{r}
-emmeans::emtrends(subm_ava, 
+emmeans::emtrends(subm_exp, 
                  ~ beta_numeric_scale | cat_pre_wt_log_scale, 
                  var = "beta_numeric_scale", 
                  at = list(cat_pre_wt_log_scale = c(-2,2)))
-sd(subm_ava$frame$beta_numeric_scale) * sd(subm_ava$frame$ava_qual_logit_scale)
+sd(subm_exp$frame$beta_numeric_scale) * sd(subm_exp$frame$prop_explore_logit_scale)
+```
+
+```{r}
+emmeans::emtrends(subm_on_toxic, 
+                 ~ beta_numeric_scale | cat_pre_wt_log_scale, 
+                 var = "beta_numeric_scale", 
+                 at = list(cat_pre_wt_log_scale = c(-2,2)))
+sd(subm_on_toxic$frame$beta_numeric_scale) * sd(subm_on_toxic$frame$on_toxic_logit_scale)
 ```
 
 ## SEM plots
@@ -652,37 +670,6 @@ sd(subm_ava$frame$beta_numeric_scale) * sd(subm_ava$frame$ava_qual_logit_scale)
 ```{r}
 knitr::include_graphics(paste0(getwd(), "/graphs/manuscript1_figures/SEM_joined.png"), rel_path = FALSE)
 ```
-
-## SEM forest plot
-
-```{r}
-knitr::include_graphics(paste0(getwd(),"/graphs/manuscript1_figures/SEM_forest.png"), rel_path = FALSE)
-```
-
-
-## Misc
-
-### Time to pupation
-
-```{r}
-subm_pupt <- glmmTMB(
-  time_to_pupation ~ 
-    cat_pre_wt_log_scale + 
-    cat_pre_wt_log_scale_sq +
-    mean_toxic_conc_scale + 
-    area_herb_log_scale  + 
-    sl_mean_obs_log_scale + 
-    var_toxic_12_scale +
-    (1|session_id),
-  family = Gamma(link = "log"),
-  data = d2 %>% 
-    filter(!is.na(time_to_pupation))
-); summary(subm_pupt)
-
-r2(subm_pupt)
-```
-
-
 
 # Session Info
 
