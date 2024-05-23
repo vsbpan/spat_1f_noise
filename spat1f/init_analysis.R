@@ -129,6 +129,12 @@ ref_data <- ref_data %>%
   ) %>% 
   left_join(
     read_csv("cleaned_data/event_derivative.csv", progress = FALSE) %>% 
+      rename_all(.funs = function(x){
+        o <- gsub("state","s",gsub("__", "_",gsub("estimate", "est", gsub(":","\\.", x))))
+        vapply(o, function(z){
+          paste0(rev(str_split_1(z, pattern = "\\.")), collapse = ".")
+        }, FUN.VALUE = character(1))
+      }) %>% 
       suppressMessages() %>% 
       mutate(
         rep_id = as.character(rep_id)
