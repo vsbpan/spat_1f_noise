@@ -125,28 +125,9 @@ d3 <- d %>%
   filter(
     var_trt != "constant"
   ) %>% 
-  filter(
-    sl_mean_pred2 < 2000 &
-    sl_mean_pred1 > 0 & 
-      sl_mean_pred2 > 0 &
-      sl_mean_pred3 > 0 & 
-      sl_mean_pred4 > 0 &
-      scale_1 > 0 & 
-      shape_1 > 0 & 
-      scale_2 > 0 & 
-      shape_2 > 0 & 
-      scale_3 > 0 & 
-      shape_3 > 0 & 
-      scale_4 > 0 & 
-      shape_4 > 0 & 
-      !is.na(area_herb_log_scale) & 
-      !is.na(var_toxic_12_scale) & 
-      !is.na(mean_toxic_conc_scale) &
-      !is.na(on_toxic_logit_scale) &
-      !is.na(ava_qual_scale) &
-      !is.na(sl_mean_obs) &
-      !is.na(prop_explore) & 
-      !is.na(RGR)) %>% 
+  filter_at(vars(contains("shape_"), contains("scale_[0-9]"), contains("sl_mean_pred")), 
+            all_vars(. > 0)) %>% 
+  filter(sl_mean_pred2 < 2000) %>% 
   mutate(
     var_high = ifelse(var_trt == "high_var", 1, 0),
     beta_red = ifelse(as.character(beta) == 5, 1, 0),
@@ -650,7 +631,7 @@ sd(subm_on_toxic$frame$beta_numeric_scale) * sd(subm_on_toxic$frame$on_toxic_log
 
 
 ```{r}
-# knitr::include_graphics(paste0(getwd(), "/graphs/manuscript1_figures/SEM_joined.png"), rel_path = FALSE)
+knitr::include_graphics(paste0(getwd(), "/graphs/manuscript1_figures/SEM_simplified.png"), rel_path = FALSE)
 ```
 
 # Session Info
