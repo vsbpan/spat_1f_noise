@@ -1,6 +1,6 @@
 source("spat1f/init.R")
 
-for (j in 6:12){
+for (j in 1:10){
   sim_d <- expand.grid(
     "b" = c(5, 0, -5),
     "rss" = c(log(0.75), 0, log(1.333333)), 
@@ -40,14 +40,20 @@ for (j in 6:12){
     inorder = FALSE
   )
   
-  write_csv(do.call("rbind", out), file = sprintf("check_point_%s.csv",j))
+  write_csv(do.call("rbind", out), file = sprintf("simulation/check_points/check_point_%s.csv",j))
 }
 
 
 
+# out <- list.files("simulation/check_points", full.names = TRUE) %>% 
+#   lapply(function(x){
+#     suppressMessages(read_csv(x, progress = FALSE))
+#   }) %>% 
+#   do.call("rbind", .)
 
+# write_csv(out, "simulation/move_rules_sim.csv")
 
-
+# file.remove(list.files("simulation/check_points", full.names = TRUE))
 
 
 
