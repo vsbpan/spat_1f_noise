@@ -98,5 +98,8 @@ fit_HMM <- function(data,
                   ...)
 }
 
+trans_mat <- function(x){
+  x$mle$gamma
+}
 
 

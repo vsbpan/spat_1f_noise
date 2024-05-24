@@ -17,8 +17,10 @@ for (j in 1:10){
           make_genvonmises(kappa1 = 0.4, kappa2 = 0.3)
         ),
         "sl_updated" = list(
-          make_gamma(shape = 0.8, scale = sim_d[i, "scale"]),
-          make_gamma(shape = 0.8, scale = sim_d[i, "scale"] / sim_d[i, "k"]) 
+          make_gamma(shape = 0.8, 
+                     scale = sim_d[i, "scale"] * sim_d[i, "k"]), # More toxic diet
+          make_gamma(shape = 0.8, 
+                     scale = sim_d[i, "scale"])  # Less toxic diet
         )
       )
       
@@ -45,16 +47,129 @@ for (j in 1:10){
 
 
 
-# out <- list.files("simulation/check_points", full.names = TRUE) %>% 
+# out <- list.files("simulation/check_points", full.names = TRUE) %>%
 #   lapply(function(x){
 #     suppressMessages(read_csv(x, progress = FALSE))
-#   }) %>% 
+#   }) %>%
 #   do.call("rbind", .)
-
+# 
 # write_csv(out, "simulation/move_rules_sim.csv")
-
+# 
 # file.remove(list.files("simulation/check_points", full.names = TRUE))
 
 
 
-out
+out <- read_csv("simulation/move_rules_sim.csv")
+
+
+out <- out %>% 
+  mutate(
+    scale = round(scale / 1000 * 12, 2),
+    rss = as.factor(round(exp(rss), 2))
+  )
+
+reverse_names <- function(x){
+  val <- x
+  nms <- names(x)
+  names(nms) <- val
+  return(nms)
+}
+
+k_lab <- unique(out$k)
+names(k_lab) = sprintf("k = %s", k_lab)
+scale_lab <- unique(out$scale)
+names(scale_lab) = sprintf("scale = %s", scale_lab)
+
+
+out %>% 
+  ggplot(aes(x = (rss), y = 1 - ava_toxic, color = factor(b))) + 
+  geom_point(position = position_jitterdodge(jitter.width = 0.2, 
+                                             jitter.height = 0, 
+                                             dodge.width = 0.5), 
+             alpha = 0.2) + 
+  geom_pointrange(stat = "summary", 
+                  position = position_dodge(width = 0.5), 
+                  color = "black",
+                  aes(group = factor(b)), linewidth = 1) + 
+  facet_grid(k ~ scale, labeller = labeller(
+    k = reverse_names(k_lab), scale = reverse_names(scale_lab)
+  )) + 
+  theme_bw() + 
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + 
+  labs(x = "Less toxic diet selection strength (Odds)", 
+       y = "Neighborhood quality (Proportion)", 
+       color = expression(beta)) + 
+  scale_color_brewer(type = "qual")->g;g
+
+
+
+out %>% 
+  ggplot(aes(x = as.factor(rss), y = 1 - on_toxic, color = factor(b))) + 
+  geom_point(position = position_jitterdodge(jitter.width = 0.2, 
+                                             jitter.height = 0, 
+                                             dodge.width = 0.5), 
+             alpha = 0.2) + 
+  geom_pointrange(stat = "summary", 
+                  position = position_dodge(width = 0.5), 
+                  color = "black",
+                  aes(group = factor(b)), linewidth = 1) + 
+  facet_grid(k ~ scale, labeller = labeller(
+    k = reverse_names(k_lab), scale = reverse_names(scale_lab)
+  )) + 
+  theme_bw() + 
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + 
+  labs(x = "Less toxic diet selection strength (Odds)", 
+       y = "Time on less toxic diet (Proportion)", 
+       color = expression(beta)) + 
+  scale_color_brewer(type = "qual")->g;g
+
+
+
+
+out %>% 
+  filter(scale == 1) %>% 
+  ggplot(aes(x = as.factor(rss), y = r / 1000 * 12, color = factor(b))) + 
+  geom_point(position = position_jitterdodge(jitter.width = 0.2, 
+                                             jitter.height = 0, 
+                                             dodge.width = 0.5), 
+             alpha = 0.2) + 
+  geom_pointrange(stat = "summary", 
+                  position = position_dodge(width = 0.5), 
+                  color = "black",
+                  aes(group = factor(b)), linewidth = 1) + 
+  facet_grid(k ~ ., labeller = labeller(
+    k = reverse_names(k_lab), scale = reverse_names(scale_lab), 
+  ), scale = "free") + 
+  theme_bw() + 
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + 
+  labs(x = "Less toxic diet selection strength (LogOdds)", 
+       y = "Average step length (cm)", 
+       subtitle = "Fixed at scale = 1",
+       color = expression(beta)) + 
+  scale_color_brewer(type = "qual") -> g;g
+
+
+
+out %>% 
+  filter(k == 1 & rss == 1) %>% 
+  group_by(scale, b) %>% 
+  do(as.data.frame(t(probe_dist(.$on_toxic, probe = c("mean","se")))))
+
+
+
+
+
+
+
+
+source("spat1f/init_analysis.R")
+
+
+
+extract_trans_mat_diag(repIDs = 1:5)
+
+debug(extract_trans_mat_diag)
+
+
+
+

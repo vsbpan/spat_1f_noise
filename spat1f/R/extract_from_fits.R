@@ -125,6 +125,17 @@
     mean()
 }
 
+# Internal function that takes a repID and compute the probability of remaining at the same state
+.get_trans_mat_diag_engine <- function(x, .ref_data = get("ref_data", pos = globalenv())){
+  fetch_events(x, append_detection_summary = FALSE) %>% 
+    clean_events(ref_data = ref_data) %$% 
+    move_seq(head_x, head_y) %>% 
+    as.moveData() %>% 
+    fit_HMM() %>% 
+    trans_mat() %>% 
+    diag()
+}
+
 
 
 # Nice wrapper for `.get_ava_neighborhood_quality_engine()` with list as input
@@ -278,4 +289,26 @@ extract_prop_state1 <- function(repIDs,
   return(out)
 }
 
+# Nice wrapper for `.get_prop_state1_engine()` with repIDs as input
+extract_trans_mat_diag <- function(repIDs, 
+                                .ref_data = get("ref_data", pos = globalenv()),
+                                cores = 1){
+  v <- seq_along(repIDs) %>%
+    pb_par_lapply(
+      function(i, repIDs, .ref_data){
+        id <- repIDs[i]
+        .get_trans_mat_diag_engine(id, .ref_data = .ref_data)
+      }, 
+      repIDs = repIDs,
+      .ref_data = .ref_data,
+      cores = cores
+    ) %>% 
+    do.call("rbind", .)
+  
+  v <- as.data.frame(v)
+  names(v) <- sprintf("state%s_stay", seq(ncol(v)))
+  out <- data.frame("rep_id" = repIDs, v)
+  cat("\n")
+  return(out)
+}
 
