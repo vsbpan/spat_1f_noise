@@ -128,7 +128,7 @@
 # Internal function that takes a repID and compute the probability of remaining at the same state
 .get_trans_mat_diag_engine <- function(x, .ref_data = get("ref_data", pos = globalenv())){
   fetch_events(x, append_detection_summary = FALSE) %>% 
-    clean_events(ref_data = ref_data) %$% 
+    clean_events(ref_data = .ref_data) %$% 
     move_seq(head_x, head_y) %>% 
     as.moveData() %>% 
     fit_HMM() %>% 

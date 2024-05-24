@@ -348,15 +348,220 @@ ggsave("graphs/generalized_von_mises_fit.png",g, dpi = 600)
 #### Predicted vs Observed step length #####
 
 
-d %>% 
-  ggplot(aes(x = sl_mean_obs / (1000 / 12), y = sl_mean_pred / (1000 / 12))) + 
-  scale_x_continuous(trans = "log10") + 
+# d %>% 
+#   ggplot(aes(x = sl_mean_obs / (1000 / 12), y = sl_mean_pred / (1000 / 12))) + 
+#   scale_x_continuous(trans = "log10") + 
+#   scale_y_continuous(trans = "log10") + 
+#   geom_abline(slope = 1, size = 1) + 
+#   labs(y = "Selection free mean step length (cm)", 
+#        x = "Observed mean step length (cm)") + 
+#   geom_point(size = 3, alpha = 0.5, color = "steelblue") + 
+#   theme_bw(base_size = 15)
+# 
+# 
+# cor(log(d$sl_mean_obs),log(d$sl_mean_pred), "complete")^2
+# 
+
+
+#### ####
+
+
+g1 <- marginal_effects(m_select_s1, terms = c("cat_pre_wt_log_scale")) %>% 
+  cbind(state = "1") %>% 
+  rbind(marginal_effects(m_select_s2, terms = c("cat_pre_wt_log_scale")) %>% 
+          cbind(state = "2")) %>% 
+  ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(yhat), color = state)) + 
+  geom_ribbon(aes(ymax = exp(upper), ymin = exp(lower), fill = state, color = NULL), alpha = 0.2) + 
+  geom_line(linewidth = 2) + 
+  geom_point(
+    data = m_select_s1$frame %>% 
+      cbind(state = "1"),
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(s1.less_toxic.est)),
+    size = 3, alpha = 0.5
+  ) +  
+  geom_point(
+    data = m_select_s2$frame %>% 
+      cbind(state = "2"),
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(s2.less_toxic.est)),
+    size = 3, alpha = 0.5
+  ) + 
+  theme_bw(base_size = 15) + 
+  geom_hline(aes(yintercept = 1), color = "black", linetype = "dashed", linewidth = 1) + 
+  theme(legend.position = "top") +
   scale_y_continuous(trans = "log10") + 
-  geom_abline(slope = 1, size = 1) + 
-  labs(y = "Selection free mean step length (cm)", 
-       x = "Observed mean step length (cm)") + 
-  geom_point(size = 3, alpha = 0.5, color = "steelblue") + 
-  theme_bw(base_size = 15)
+  scale_x_continuous(trans = "log10", labels = fancy_scientific) +
+  scale_color_manual(values = rev(.getPalette(2)), 
+                     aesthetics = c("color", "fill"), 
+                     labels = c("Exploration", "Resting/feeding")) + 
+  labs(x = "Cat pre-weight (g)", y = "Less toxic diet selection \nstrength (odds ratio)")
 
 
-cor(log(d$sl_mean_obs),log(d$sl_mean_pred), "complete")^2
+g2 <- marginal_effects(m_arrest_s1, terms = c("cat_pre_wt_log_scale", "beta")) %>% 
+  cbind(state = "1") %>% 
+  rbind(
+    marginal_effects(m_arrest_s2, terms = c("cat_pre_wt_log_scale", "beta")) %>% 
+      cbind(state = "2")
+  ) %>% 
+ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = (yhat), color = state)) + 
+  geom_ribbon(aes(ymax = (upper), ymin = lower, fill = state, linetype = beta), alpha = 0.2) + 
+  geom_line(aes(linetype = beta), linewidth = 2) + 
+  geom_point(
+    data = m_arrest_s1$frame %>% 
+      cbind(state = "1"),
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(`log(k1)`), shape = beta),
+    size = 3, alpha = 0.3
+  ) +  
+  geom_point(
+    data = m_arrest_s2$frame %>% 
+      cbind(state = "2"),
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(`log(k2)`), shape = beta),
+    size = 3, alpha = 0.3
+  ) + 
+  theme_bw(base_size = 15) + 
+  geom_hline(aes(yintercept = 1), color = "black", linetype = "dashed", linewidth = 1) + 
+  theme(legend.position = "top") +
+  scale_y_continuous(trans = "log10") + 
+  scale_x_continuous(trans = "log10", labels = fancy_scientific) +
+  scale_linetype_manual(values = c("dotted", "dashed", "solid")) +
+  scale_color_manual(values = rev(.getPalette(2)), 
+                     aesthetics = c("color", "fill"), 
+                     labels = c("Exploration", "Resting/feeding")) + 
+  labs(x = "Cat pre-weight (g)", y = "Less toxic diet arresetment \nstrength (ratio)", 
+       linetype = expression(beta), shape = expression(beta)) + 
+  guides(color = guide_legend())
+
+
+
+g3 <- marginal_effects(m_sl_pred_s1, terms = c("cat_pre_wt_log_scale")) %>% 
+  cbind(state = "1") %>% 
+  rbind(
+    marginal_effects(m_sl_pred_s2, terms = c("cat_pre_wt_log_scale")) %>% 
+      cbind(state = "2")
+  ) %>% 
+  ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = (yhat) / 1000 * 12, color = state)) + 
+  geom_ribbon(aes(ymax = (upper)/ 1000 * 12, ymin = lower/ 1000 * 12, color = NULL, fill = state), 
+              alpha = 0.2) + 
+  geom_line(linewidth = 2) + 
+  geom_point(
+    data = m_sl_pred_s1$frame %>% 
+      cbind(state = "1"),
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), 
+        y = exp(`log(sl_mean_pred1)`) / 1000 * 12),
+    size = 3, alpha = 0.5
+  ) +  
+  geom_point(
+    data = m_sl_pred_s2$frame %>% 
+      cbind(state = "2"),
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), 
+        y = exp(`log(sl_mean_pred3)`) / 1000 * 12),
+    size = 3, alpha = 0.5
+  ) +  
+  theme_bw(base_size = 15) + 
+  theme(legend.position = "top") +
+  scale_y_continuous(trans = "log10") + 
+  scale_x_continuous(trans = "log10", labels = fancy_scientific) +
+  scale_color_brewer(type = "qual", aesthetics = c("color","fill")) + 
+  scale_color_manual(values = rev(.getPalette(2)), 
+                     aesthetics = c("color", "fill"), 
+                     labels = c("Exploration", "Resting/feeding")) + 
+  labs(x = "Cat pre-weight (g)", y = "Selection free mean step \nlength on toxic diet (cm)")
+
+
+
+
+
+
+foo <- function(d, draw_dist, label){
+  n <- length(draw_dist)
+  den_data <- vector(mode = "list", length = n)
+  
+  for (i in seq_len(n)){
+    dist_name <- draw_dist[[i]]$name
+    
+    den <- do.call(
+      paste0("d",dist_name),
+      c(
+        list(d$x), 
+        draw_dist[[i]]$params
+      )
+    )
+    
+    den[!is.finite(den)] <- NA_real_
+    
+    p <- den * d$x 
+    
+    den_data[[i]] <- data.frame(
+      "x" = d$x, 
+      "p" = p,
+      "state" = label[i]
+    )
+  }
+  do.call("rbind", den_data)
+}
+
+
+
+temp <- fetch_events(55) %>% 
+  clean_events() %$%
+  move_seq(head_x, head_y)
+temp$state <- viterbi(fit_HMM(as.moveData(temp)))
+hist_d <- as.numeric(na.omit(temp$r)) %>% 
+  log() %>% 
+  hist(plot = FALSE, nclass = 40)
+hist_d$x <- exp(hist_d$mids)
+hist_d$pred_dens <- foo(hist_d,
+                        list(
+                          fit_gamma(as.numeric(na.omit(temp$r[temp$state == 1]))),
+                          fit_gamma(as.numeric(na.omit(temp$r[temp$state == 2])))
+                        ), 
+                        c("1", "2")) %>% 
+  mutate(
+    p = ifelse(state == 1, p * mean(temp$state == 1), p * mean(temp$state == 2))
+  )
+hist_d$pred_dens <- hist_d$pred_dens %>% 
+  rbind(
+    hist_d$pred_dens %>% 
+      group_by(x) %>% 
+      summarise(p = sum(p), state = "total")
+  )
+  
+
+
+
+g4 <- data.frame(
+  "x" = hist_d$x,
+  "p" = hist_d$density
+) %>% 
+  ggplot(aes(x = x / 1000 * 12, y = p)) + 
+  geom_col(fill = "lightgrey") + 
+  scale_xy_log(axis = "x") + 
+  theme_bw(base_size = 15) + 
+  geom_line(
+    data = hist_d$pred_dens %>% 
+      mutate(
+        lt = ifelse(state == "total", "dashed", "solid")
+      ),
+    aes(color = state, linetype = lt), 
+    size = 1.5
+  ) + 
+  scale_linetype_identity() + 
+  scale_color_manual(values = c(rev(.getPalette(2)), "black"), 
+                     labels = c("Exploration", "Resting/feeding", "Total")) + 
+  labs(x = "Selection free mean step \nlength on toxic diet (cm)", y = "Density")
+
+
+
+
+
+
+
+g_final <- ggarrange(g2, g1, g3, g4, 
+          common.legend = TRUE, 
+          align = "hv", 
+          labels = "AUTO",
+          legend = "top")
+
+ggsave("graphs/manuscript1_figures/issf_params.png", g_final, dpi = 600, width = 9, height = 8.5)
+
+
+
