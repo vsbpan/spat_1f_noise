@@ -76,6 +76,12 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
       doSNOW::registerDoSNOW(cl)
     }
     
+    # Remove spat1f package from list. foreach::`%dopar%` calls library(package) as some point, which would give an error
+    pkg <- .packages()
+    pkg <- pkg[pkg != "spat1f"]
+    spat1f_path <- path.package("spat1f")
+    load_spat1f <- load_all2
+    
     
     environment(FUN) <- environment()
     indices <- seq_along(x)
@@ -90,11 +96,6 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
       # Otherwise export other global variables as well
       export <- ls(globalenv())
     }
-    
-    # Remove spat1f package from list. foreach::`%dopar%` calls library(package) as some point, which would give an error
-    pkg <- .packages()
-    pkg <- pkg[pkg != "spat1f"]
-    spat1f_path <- path.package("spat1f")
     
     out <- tryCatch(foreach(
       i = x, # Passing large list directly as elements to avoid memory overflow
@@ -119,10 +120,9 @@ pb_par_lapply <- function(x, FUN, cores = 1, ...,
       ),
       .packages = pkg
     ) %dopar% {
-      devtools::load_all(path = spat1f_path, 
-                         export_all = TRUE, 
-                         quiet = TRUE) # Load spat1f package
-      
+      load_spat1f(path = spat1f_path, 
+                  export_all = TRUE, 
+                  quiet = TRUE)
       list(FUN(i, ...))
     }, error = function(e){
       if(!has_clust){

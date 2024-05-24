@@ -198,8 +198,9 @@ issf_fit_l <- pb_par_lapply(
     if(has_toxic){
       mod_form <- formula(
         case ~ 
-          (less_toxic_f:state:cos_theta_pi + less_toxic_f:state:cos_2theta) + # Turn angle update 
-          (state:less_toxic_f:sl + state:less_toxic_f:logsl) + # step length update
+          state:less_toxic + # Habitat selection 
+          (state:cos_theta_pi + state:cos_2theta) + # Turn angle update 
+          (state:sl + state:logsl) + # step length update
           strata(step_id) # Stratify be step ID
       )
     } else {
@@ -217,14 +218,12 @@ issf_fit_l <- pb_par_lapply(
       sl_estimators = pick_default_estimators(
         "gamma", 
         list(
-          c("less_toxic_f0", "less_toxic_f1"),
           c("state1", "state2")
         )
       ), 
       ta_estimators = pick_default_estimators(
         "genvonmises", 
         list(
-          c("less_toxic_f0", "less_toxic_f1"),
           c("state1", "state2")
         )
       ), 
