@@ -410,3 +410,10 @@ flatten_mat_name <- function(x){
   )
 }
 
+# Reverse name and value
+reverse_names <- function(x){
+  val <- x
+  nms <- names(x)
+  names(nms) <- val
+  return(nms)
+}

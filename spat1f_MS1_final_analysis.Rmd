@@ -692,7 +692,7 @@ marginal_effects(m_select_s1, terms = c("cat_pre_wt_log_scale")) %>%
   theme(legend.position = "top") +
   scale_y_continuous(trans = "log10", breaks = c(0.5, 2, 1)) + 
   scale_x_continuous(trans = "log10", labels = fancy_scientific) +
-  labs(x = "Cat pre-weight (g)", y = "Less toxic diet selection strength (odds ratio)")
+  labs(x = "Pre-weight (g)", y = "Less toxic diet selection strength (odds ratio)")
 ```
 
 
@@ -751,7 +751,7 @@ marginal_effects(m_select_s2, terms = c("cat_pre_wt_log_scale")) %>%
   theme(legend.position = "top") +
   scale_y_continuous(trans = "log10", breaks = c(0.5, 2, 1)) + 
   scale_x_continuous(trans = "log10", labels = fancy_scientific) +
-  labs(x = "Cat pre-weight (g)", y = "Less toxic diet selection strength (odds ratio)")
+  labs(x = "Pre-weight (g)", y = "Less toxic diet selection strength (odds ratio)")
 ```
 
 
@@ -813,7 +813,7 @@ marginal_effects(m_arrest_s1, terms = c("cat_pre_wt_log_scale", "beta")) %>%
   scale_y_continuous(trans = "log10") + 
   scale_x_continuous(trans = "log10", labels = fancy_scientific) +
   scale_color_brewer(type = "qual", aesthetics = c("color","fill")) + 
-  labs(x = "Cat pre-weight (g)", y = "Less toxic diet arresetment strength (ratio)", 
+  labs(x = "Pre-weight (g)", y = "Less toxic diet arresetment strength (ratio)", 
        color = expression(beta), fill = expression(beta))
 ```
 
@@ -878,7 +878,7 @@ marginal_effects(m_arrest_s2, terms = c("cat_pre_wt_log_scale", "beta")) %>%
   scale_y_continuous(trans = "log10") + 
   scale_x_continuous(trans = "log10", labels = fancy_scientific) +
   scale_color_brewer(type = "qual", aesthetics = c("color","fill")) + 
-  labs(x = "Cat pre-weight (g)", y = "Less toxic diet arresetment strength (ratio)", 
+  labs(x = "Pre-weight (g)", y = "Less toxic diet arresetment strength (ratio)", 
        color = expression(beta), fill = expression(beta))
 ```
 
@@ -1003,10 +1003,141 @@ marginal_effects(m_sl_pred_s2, terms = c("cat_pre_wt_log_scale")) %>%
   scale_y_continuous(trans = "log10") + 
   scale_x_continuous(trans = "log10", labels = fancy_scientific) +
   scale_color_brewer(type = "qual", aesthetics = c("color","fill")) + 
-  labs(x = "Cat pre-weight (g)", y = "Selection free step length \non toxic diet (cm)")
+  labs(x = "Pre-weight (g)", y = "Selection free step length \non toxic diet (cm)")
+```
+
+# ISSF simulation 
+
+## Group means
+
+```{r}
+out <- read_csv("simulation/move_rules_sim.csv")
+
+out <- out %>% 
+  mutate(
+    scale = round(scale / 1000 * 12, 2),
+    rss = as.factor(round(exp(rss), 2))
+  )
+
+out %>% 
+  group_by(b, rss, scale, k) %>% 
+  summarise(
+    mean = mean(on_toxic), se = se(on_toxic), sd = sd(on_toxic), 
+    lower = quantile(on_toxic, probs = 0.025), upper = quantile(on_toxic, probs = 0.975)
+  ) %>% 
+  mutate(
+    z = (mean - 0.5) / se,
+    P = pnorm(abs(z), lower.tail = FALSE) * 2
+  ) %>% 
+  knitr::kable()
+```
+
+## Plots {.tabset}
+
+### Simplified plot
+```{r}
+out <- read_csv("simulation/move_rules_sim.csv")
+
+out <- out %>% 
+  mutate(
+    scale = round(scale / 1000 * 12, 2),
+    rss = as.factor(round(exp(rss), 2))
+  )
+
+out %>% 
+  filter(b != 0) %>% 
+  filter(scale == 1) %>% 
+  group_by(b, rss, k) %>%
+  dplyr::select(on_toxic) %>% 
+  mutate(
+    id = seq_along(on_toxic)
+  ) %>% 
+  arrange(b, rss, k, id) %>% 
+  group_by(rss, k, id) %>% 
+  summarise(
+    delta = diff(on_toxic)
+  ) %>% 
+  ggplot(aes(x = as.factor(k), y = delta, color = factor(rss))) +
+  geom_hline(aes(yintercept = 0), color = "grey", 
+             size = 1, linetype = "dashed") + 
+  geom_point(position = position_jitterdodge(jitter.width = 0.2, 
+                                             jitter.height = 0, 
+                                             dodge.width = 0.5), 
+             alpha = 0.2, 
+             size = 2) + 
+  geom_point(stat = "summary", 
+             position = position_dodge(width = 0.5),
+             shape = "—",
+             size = 4,
+             color = "black",
+             aes(group = factor(rss))) + 
+  theme_bw(base_size = 15) +
+  theme(legend.position = "top") + 
+  guides(colour = guide_legend(
+    override.aes = list(alpha = 1, size = 4), 
+    title.position = "top"
+  )) + 
+  labs(x = "Less toxic diet arresetment strength (ratio)", 
+       y = expression(atop(Change~"in"~proprtion~time~on, paste("more toxic diet",~(beta[5]-beta[-5])))),
+       color = "Less toxic diet selection strength (odds)") + 
+  scale_color_brewer(type = "seq") -> g;g
+
+
+
+
+ggsave("graphs/manuscript1_figures/issf_simplified_sim_result.png", g, dpi = 600, width = 5, height = 4.5)
+
+
 ```
 
 
+
+### Full result
+```{r}
+out <- read_csv("simulation/move_rules_sim.csv")
+
+out <- out %>% 
+  mutate(
+    scale = round(scale / 1000 * 12, 2),
+    rss = as.factor(round(exp(rss), 2))
+  )
+
+k_lab <- unique(out$k)
+names(k_lab) = sprintf("k = %s", k_lab)
+scale_lab <- unique(out$scale)
+names(scale_lab) = sprintf("scale = %s", scale_lab)
+rss_lab <- unique(out$rss)
+names(rss_lab) = sprintf("rss = %s", rss_lab)
+
+
+out %>% 
+  ggplot(aes(x = as.factor(k), y = on_toxic, color = factor(b))) + 
+  geom_point(position = position_jitterdodge(jitter.width = 0.2, 
+                                             jitter.height = 0, 
+                                             dodge.width = 0.5), 
+             alpha = 0.2,
+             size = 1) + 
+  geom_point(stat = "summary", 
+             position = position_dodge(width = 0.5),
+             shape = "—",
+             size = 3,
+             color = "black",
+             aes(group = factor(b))) + 
+  theme_bw(base_size = 15) +
+  guides(colour = guide_legend(
+    override.aes = list(alpha = 1, size = 3), 
+  )) + 
+  facet_grid(scale ~ rss, labeller = labeller(
+    rss = reverse_names(rss_lab), scale = reverse_names(scale_lab)
+  )) + 
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + 
+  labs(x = "Less toxic diet arresetment strength (ratio)", 
+       y = "Proportion time on toxic diet", 
+       color = expression(beta)) + 
+  scale_color_brewer(type = "qual")->g;g
+
+
+```
 
 
 # Session Info

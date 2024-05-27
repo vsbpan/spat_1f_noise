@@ -33,118 +33,6 @@ g_bind <- ggarrange(
 
 
 
-#### SEM supplement simulation plot #####
-
-
-
-sem_sim_d <- read_csv("cleaned_data/SEM_sim_node_removal.csv")
-
-
-sem_sim_d <- sem_sim_d %>% 
-  mutate(
-    exclude = ifelse(is.na(exclude), "total", exclude),
-    only = ifelse(is.na(only), "total", only),
-    cat_size = factor(ifelse(cat_size < 0, "small", "large"), 
-                      level = rev(c("small", "large"))),
-    only = factor(only, 
-                  level = rev(c("total", "var_toxic_12_scale", "mean_toxic_conc_scale", "sl_mean_obs_log_scale","area_herb_log_scale"))),
-    var = case_when(
-      var == "beta_numeric_scale" ~ "Clusteredness~(beta)",
-      var == "var_high" ~ "Var.~high~vs.~Var.~low"
-    )
-  )
-
-sem_sim_d %>% 
-  ggplot(
-    aes(
-      x = only, y = val, color = cat_size, shape = exclude
-    )
-  ) +
-  geom_hline(aes(yintercept = 0), linetype = "dashed") + 
-  stat_pointinterval(
-    position = position_dodge(width = 0.7), stroke = 2
-  ) + 
-  scale_x_discrete(label = rev(c("Total", "Temporal var. toxin", "Mean toxin ingested","Mean step length","Diet consumption"))) +
-  coord_flip() + 
-  theme_bw(base_size = 15) +
-  theme(legend.position = "top", legend.box="vertical", legend.margin=margin(b = -5, t = -5)) +
-  scale_shape_discrete(label = c("yes", "no")) +
-  facet_wrap(~ var, labeller = label_parsed, scales = "free_x") +
-  scale_color_discrete(type = c("steelblue","limegreen")) + 
-  labs(y = "Standardized total effect on RGR", 
-       x = "Proximal mediator", color = "Pre-weight", 
-       shape = "Neighborhood diet quality constant") + 
-  geom_text(
-    data = sem_sim_d %>% 
-      group_by(var,cat_size,exclude,only) %>% 
-      summarise(
-        lower = quantile(val, probs = 0.055),
-        upper = quantile(val, probs = 0.955)
-      ) %>% 
-      ungroup() %>% 
-      mutate(
-        sig = (lower < 0 & upper < 0) | (lower > 0 & upper > 0),
-        star = ifelse(sig, "*", "ns")
-      ) %>% 
-      group_by(var) %>% 
-      mutate(
-        max_val = max(upper)
-      ),
-    aes(label = star, y = max_val * 1.2, fill = cat_size, color = NULL),
-    size = 4,
-    position = position_dodge(width = 0.7)
-  ) + 
-  geom_text(
-    data = sem_sim_d %>% 
-      group_by(var,cat_size,exclude,only) %>% 
-      summarise(
-        lower = quantile(val, probs = 0.055),
-        upper = quantile(val, probs = 0.955)
-      ) %>% 
-      ungroup() %>% 
-      mutate(
-        sig = (lower < 0 & upper < 0) | (lower > 0 & upper > 0),
-        star = ifelse(sig, "*", "ns")
-      ) %>% 
-      group_by(var) %>% 
-      mutate(
-        max_val = max(upper)
-      ),
-    aes(label = star, y = max_val * 1.3, group = cat_size, color = NULL),
-    alpha = 0,
-    size = 4,
-    position = position_dodge(width = 0.7)
-  ) + 
-  scale_y_continuous(labels = fancy_linear) -> g3;g3
-
-
-ggsave("graphs/manuscript1_figures/SEM_forest.png", g3, width = 6.5, height = 5.5, dpi = 600)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#### Manuscript SEM table ####
-
-
-sem_sim_d <- read_csv("cleaned_data/SEM_sim_hypotheses.csv")
-sem_sim_d %>% 
-  group_by(var, target, only, cat_size) %>% 
-  do(as.data.frame(t(
-    sigfig(summarise_vec(.$val, interval = 0.89), digits = 2)
-  ))) %>% 
-  View()
-
-
 #### Methods figure insets ####
 
 source("spat1f/init_analysis.R")
@@ -345,25 +233,8 @@ ggsave("graphs/generalized_von_mises_fit.png",g, dpi = 600)
 
 
 
-#### Predicted vs Observed step length #####
 
-
-# d %>% 
-#   ggplot(aes(x = sl_mean_obs / (1000 / 12), y = sl_mean_pred / (1000 / 12))) + 
-#   scale_x_continuous(trans = "log10") + 
-#   scale_y_continuous(trans = "log10") + 
-#   geom_abline(slope = 1, size = 1) + 
-#   labs(y = "Selection free mean step length (cm)", 
-#        x = "Observed mean step length (cm)") + 
-#   geom_point(size = 3, alpha = 0.5, color = "steelblue") + 
-#   theme_bw(base_size = 15)
-# 
-# 
-# cor(log(d$sl_mean_obs),log(d$sl_mean_pred), "complete")^2
-# 
-
-
-#### ####
+#### ISSF Params ####
 
 
 g1 <- marginal_effects(m_select_s1, terms = c("cat_pre_wt_log_scale")) %>% 
@@ -393,7 +264,7 @@ g1 <- marginal_effects(m_select_s1, terms = c("cat_pre_wt_log_scale")) %>%
   scale_color_manual(values = rev(.getPalette(2)), 
                      aesthetics = c("color", "fill"), 
                      labels = c("Exploration", "Resting/feeding")) + 
-  labs(x = "Cat pre-weight (g)", y = "Less toxic diet selection \nstrength (odds ratio)")
+  labs(x = "Pre-weight (g)", y = "Less toxic diet selection \nstrength (odds ratio)")
 
 
 g2 <- marginal_effects(m_arrest_s1, terms = c("cat_pre_wt_log_scale", "beta")) %>% 
@@ -419,14 +290,14 @@ ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = (yhat), c
   ) + 
   theme_bw(base_size = 15) + 
   geom_hline(aes(yintercept = 1), color = "black", linetype = "dashed", linewidth = 1) + 
-  theme(legend.position = "top") +
+  theme(legend.position = "top", legend.box = "verticle", legend.margin=margin(-1,-1,-1,-1)) +
   scale_y_continuous(trans = "log10") + 
   scale_x_continuous(trans = "log10", labels = fancy_scientific) +
   scale_linetype_manual(values = c("dotted", "dashed", "solid")) +
   scale_color_manual(values = rev(.getPalette(2)), 
                      aesthetics = c("color", "fill"), 
                      labels = c("Exploration", "Resting/feeding")) + 
-  labs(x = "Cat pre-weight (g)", y = "Less toxic diet arresetment \nstrength (ratio)", 
+  labs(x = "Pre-weight (g)", y = "Less toxic diet arresetment \nstrength (ratio)", 
        linetype = expression(beta), shape = expression(beta)) + 
   guides(color = guide_legend())
 
@@ -464,7 +335,7 @@ g3 <- marginal_effects(m_sl_pred_s1, terms = c("cat_pre_wt_log_scale")) %>%
   scale_color_manual(values = rev(.getPalette(2)), 
                      aesthetics = c("color", "fill"), 
                      labels = c("Exploration", "Resting/feeding")) + 
-  labs(x = "Cat pre-weight (g)", y = "Selection free mean step \nlength on toxic diet (cm)")
+  labs(x = "Pre-weight (g)", y = "Selection free mean step \nlength on toxic diet (cm)")
 
 
 
@@ -500,23 +371,38 @@ foo <- function(d, draw_dist, label){
 }
 
 
+# Arbitrary caterpillar -- same one as in the demo
 
-temp <- fetch_events(55) %>% 
-  clean_events() %$%
-  move_seq(head_x, head_y)
+ID <- 55
+temp <- fetch_events(ID) %>% 
+  clean_events(ref_data = ref_data) %$%
+  move_seq(head_x, head_y) %>% 
+  mutate(toxic = read_value(x2, y2, ref_img = fetch_trt_spec(ID, .ref_data = ref_data)))
 temp$state <- viterbi(fit_HMM(as.moveData(temp)))
-hist_d <- as.numeric(na.omit(temp$r)) %>% 
+temp <- temp %>% filter(!is.na(r))
+x1 <- as.numeric(na.omit(temp$r[temp$state == 1 & temp$toxic == 0]))
+x2 <- as.numeric(na.omit(temp$r[temp$state == 2 & temp$toxic == 0]))
+x3 <- as.numeric(na.omit(temp$r[temp$state == 1 & temp$toxic == 1]))
+x4 <- as.numeric(na.omit(temp$r[temp$state == 2 & temp$toxic == 1]))
+hist_d <- c(x1, x2, x3, x4) %>% 
   log() %>% 
-  hist(plot = FALSE, nclass = 40)
+  hist(plot = FALSE, nclass = 50)
 hist_d$x <- exp(hist_d$mids)
 hist_d$pred_dens <- foo(hist_d,
                         list(
-                          fit_gamma(as.numeric(na.omit(temp$r[temp$state == 1]))),
-                          fit_gamma(as.numeric(na.omit(temp$r[temp$state == 2])))
+                          fit_gamma(x1),
+                          fit_gamma(x2),
+                          fit_gamma(x3),
+                          fit_gamma(x4)
                         ), 
-                        c("1", "2")) %>% 
+                        c("1_less", "2_less","1_more","2_more")) %>% 
   mutate(
-    p = ifelse(state == 1, p * mean(temp$state == 1), p * mean(temp$state == 2))
+    p = case_when(
+      state == "1_less" ~ p * mean(temp$state == 1 & temp$toxic == 0, na.rm = TRUE),
+      state == "2_less" ~ p * mean(temp$state == 2 & temp$toxic == 0, na.rm = TRUE),
+      state == "1_more" ~ p * mean(temp$state == 1 & temp$toxic == 1, na.rm = TRUE),
+      state == "2_more" ~ p * mean(temp$state == 2 & temp$toxic == 1, na.rm = TRUE)
+    )
   )
 hist_d$pred_dens <- hist_d$pred_dens %>% 
   rbind(
@@ -524,7 +410,15 @@ hist_d$pred_dens <- hist_d$pred_dens %>%
       group_by(x) %>% 
       summarise(p = sum(p), state = "total")
   )
-  
+hist_d$pred_dens <- hist_d$pred_dens %>% 
+  mutate(
+    is_total = state == "total",
+    lt = ifelse(state == "total", "dotted", 
+                ifelse(
+                  grepl("less", state), "solid", "dashed"
+                )),
+    state = ifelse(grepl("1", state), "1", "2")
+  )
 
 
 
@@ -538,30 +432,139 @@ g4 <- data.frame(
   theme_bw(base_size = 15) + 
   geom_line(
     data = hist_d$pred_dens %>% 
-      mutate(
-        lt = ifelse(state == "total", "dashed", "solid")
-      ),
+      filter(!is_total),
     aes(color = state, linetype = lt), 
-    size = 1.5
+    size = 1.5,
+    alpha = 0.8
+  ) +
+  geom_line(
+    data = hist_d$pred_dens %>% 
+      filter(is_total),
+    aes(linetype = lt), 
+    size = 1.5,
+    color = "black"
   ) + 
   scale_linetype_identity() + 
-  scale_color_manual(values = c(rev(.getPalette(2)), "black"), 
-                     labels = c("Exploration", "Resting/feeding", "Total")) + 
-  labs(x = "Selection free mean step \nlength on toxic diet (cm)", y = "Density")
+  scale_color_manual(values = c(rev(.getPalette(2)), "black")) +
+  labs(x = "Observed step lengths (cm)", y = "Density", color = "State");g4
 
 
 
 
 
-
-
-g_final <- ggarrange(g2, g1, g3, g4, 
+g_final <- ggarrange(g2, g1, g3,
+                     ncol = 1,
           common.legend = TRUE, 
           align = "hv", 
           labels = "AUTO",
           legend = "top")
 
-ggsave("graphs/manuscript1_figures/issf_params.png", g_final, dpi = 600, width = 9, height = 8.5)
+ggsave("graphs/manuscript1_figures/issf_params.png", g_final, dpi = 600, width = 4, 
+       height = 11, bg = "white")
+
+
+#### Main text simplified ISSF simulation result ####
+out <- read_csv("simulation/move_rules_sim.csv")
+
+out <- out %>% 
+  mutate(
+    scale = round(scale / 1000 * 12, 2),
+    rss = as.factor(round(exp(rss), 2))
+  )
+
+out %>% 
+  filter(b != 0) %>% 
+  filter(scale == 1) %>% 
+  group_by(b, rss, k) %>%
+  dplyr::select(on_toxic) %>% 
+  mutate(
+    id = seq_along(on_toxic)
+  ) %>% 
+  arrange(b, rss, k, id) %>% 
+  group_by(rss, k, id) %>% 
+  summarise(
+    delta = diff(on_toxic)
+  ) %>% 
+  ggplot(aes(x = as.factor(k), y = delta, color = factor(rss))) +
+  geom_hline(aes(yintercept = 0), color = "grey", 
+             size = 1, linetype = "dashed") + 
+  geom_point(position = position_jitterdodge(jitter.width = 0.2, 
+                                             jitter.height = 0, 
+                                             dodge.width = 0.5), 
+             alpha = 0.2, 
+             size = 2) + 
+  geom_point(stat = "summary", 
+             position = position_dodge(width = 0.5),
+             shape = "—",
+             size = 4,
+             color = "black",
+             aes(group = factor(rss))) + 
+  theme_bw(base_size = 15) +
+  theme(legend.position = "top") + 
+  guides(colour = guide_legend(
+    override.aes = list(alpha = 1, size = 4), 
+    title.position = "top"
+  )) + 
+  labs(x = "Less toxic diet arresetment strength (ratio)", 
+       y = expression(atop(Change~"in"~proprtion~time~on, paste("more toxic diet",~(beta[5]-beta[-5])))),
+       color = "Less toxic diet selection strength (odds)") + 
+  scale_color_brewer(type = "seq") -> g;g
+
+
+
+
+ggsave("graphs/manuscript1_figures/issf_simplified_sim_result.png", g, dpi = 600, width = 5, height = 4.5)
+
+
+
+#### Supplement full ISSF simulation result ####
+out <- read_csv("simulation/move_rules_sim.csv")
+
+out <- out %>% 
+  mutate(
+    scale = round(scale / 1000 * 12, 2),
+    rss = as.factor(round(exp(rss), 2))
+  )
+
+k_lab <- unique(out$k)
+names(k_lab) = sprintf("k = %s", k_lab)
+scale_lab <- unique(out$scale)
+names(scale_lab) = sprintf("scale = %s", scale_lab)
+rss_lab <- unique(out$rss)
+names(rss_lab) = sprintf("rss = %s", rss_lab)
+
+
+out %>% 
+  ggplot(aes(x = as.factor(k), y = on_toxic, color = factor(b))) + 
+  geom_point(position = position_jitterdodge(jitter.width = 0.2, 
+                                             jitter.height = 0, 
+                                             dodge.width = 0.5), 
+             alpha = 0.2,
+             size = 1) + 
+  geom_point(stat = "summary", 
+             position = position_dodge(width = 0.5),
+             shape = "—",
+             size = 3,
+             color = "black",
+             aes(group = factor(b))) + 
+  theme_bw(base_size = 15) +
+  guides(colour = guide_legend(
+    override.aes = list(alpha = 1, size = 3), 
+  )) + 
+  facet_grid(scale ~ rss, labeller = labeller(
+    rss = reverse_names(rss_lab), scale = reverse_names(scale_lab)
+  )) + 
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + 
+  labs(x = "Less toxic diet arresetment strength (ratio)", 
+       y = "Proportion time on toxic diet", 
+       color = expression(beta)) + 
+  scale_color_brewer(type = "qual")->g;g
+
+
+ggsave("graphs/manuscript1_figures/issf_on_toxic_sim_result.png", g, dpi = 600, width = 8, height = 6)
+
+
+
 
 
 
