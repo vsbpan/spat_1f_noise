@@ -68,8 +68,7 @@ The custom code written for this project are bundled as a pseudo simulated packa
     * `cleaned_data/events/` Houses `.csv` files on the location and associated metadata at each time point for each caterpillar. Called by `fetch_events()`. Named after each trial ID. 
     * `cleaned_data/data_dicts/` Houses `data_dict` class objects that represents a cleaned and formatted version of the Mask-R-CNN output of each frame. `data_dict` objects are at the center of all data analyses and are supported by various S3 methods. The `.rds` files are called by `fetch_data_dict()`. Named after each trial ID. 
     * `consumption_mask_derivative.csv` Results from end of experiment herbivory masks. 
-    * `event_derivative.csv` Results from movement tracks and ISSF fits. 
-    * `SEM_sim*.csv` Simulation results from `SEM_pred_coef()` for each bootstrap refit of the data. Basically the results of total effects through certain paths or after removing certain nodes. 
+    * `event_derivative*.csv` Results from movement tracks and iSSF fits with different structures. The master file is a merged version of the different outputs.  
     * `sus_frames_list.rds` A list of frames for each rep for which they are flagged as having false head movements. 
 
 * `data_processing/` Houses various scripts used to complete certain computer vision / data processing goals. 
@@ -84,7 +83,6 @@ The custom code written for this project are bundled as a pseudo simulated packa
     * `time_lapse_export.R` Code for exporting and renaming image files from USB drive containing raw image files from raspberry pi. 
 
 * `statistical_analyses/`
-    * `SEM_simulation.R` Bootstrap refit of SEM and subsequent calculation of the total effects of selected paths. 
     * `manuscript_plots.R` Code for generating some plots in manuscript 1.
     * `prediction_evaluator.R` Code for evaluating the performance of Mask-R-CNN, computing sample size, and error flagging rate  
     * `conditional_experiment.R` Some preliminary analysis code for a conditioning experiment not in manuscript 1
@@ -115,6 +113,10 @@ The custom code written for this project are bundled as a pseudo simulated packa
     * `master_modelv7_1_7999iter_train_inference.csv` Mask-R-CNN inference on training dataset along with ground truths
     * `1_f_noise_experiment data_DATE.csv` Experimental metadata, including herbivore performance outcomes saved at different dates. The file with the latest date is the one used in all analyses. 
     * `T ni conditioning study.csv` *T. ni* conditioning experiment data. Not part of manuscript 1.
+
+* `simulation/` Houses code and results of simulation. 
+    * `simulate_rules.R` Code for simulating different behavioral rules for the first manuscript. 
+    * `move_rules_sim.csv` Result of the merged checkpoint files, containg the result of the `simulate_rules.R` simulation. 
 
 * `time_lapse_feed/` Houses sub-directories named after the trial ID (e.g. `rep50/`) containing raw time lapse images. The naming convention is as such: `repID_camID_sTimeInSeconds.jpg` e.g. `rep3_cam3_s4325.jpg`. This directory is not uploaded to GitHub due to its size. 
 
