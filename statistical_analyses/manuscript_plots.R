@@ -464,57 +464,57 @@ ggsave("graphs/manuscript1_figures/issf_params.png", g_final, dpi = 600, width =
 
 
 #### Main text simplified ISSF simulation result ####
-out <- read_csv("simulation/move_rules_sim.csv")
-
-out <- out %>% 
-  mutate(
-    scale = round(scale / 1000 * 12, 2),
-    rss = as.factor(round(exp(rss), 2))
-  )
-
-out %>% 
-  filter(b != 0) %>% 
-  filter(scale == 1) %>% 
-  group_by(b, rss, k) %>%
-  dplyr::select(on_toxic) %>% 
-  mutate(
-    id = seq_along(on_toxic)
-  ) %>% 
-  arrange(b, rss, k, id) %>% 
-  group_by(rss, k, id) %>% 
-  summarise(
-    delta = diff(on_toxic)
-  ) %>% 
-  ggplot(aes(x = as.factor(k), y = delta, color = factor(rss))) +
-  geom_hline(aes(yintercept = 0), color = "grey", 
-             size = 1, linetype = "dashed") + 
-  geom_point(position = position_jitterdodge(jitter.width = 0.2, 
-                                             jitter.height = 0, 
-                                             dodge.width = 0.5), 
-             alpha = 0.2, 
-             size = 2) + 
-  geom_point(stat = "summary", 
-             position = position_dodge(width = 0.5),
-             shape = "—",
-             size = 4,
-             color = "black",
-             aes(group = factor(rss))) + 
-  theme_bw(base_size = 15) +
-  theme(legend.position = "top") + 
-  guides(colour = guide_legend(
-    override.aes = list(alpha = 1, size = 4), 
-    title.position = "top"
-  )) + 
-  labs(x = "Less toxic diet arresetment strength (ratio)", 
-       y = expression(atop(Change~"in"~proprtion~time~on, paste("more toxic diet",~(beta[5]-beta[-5])))),
-       color = "Less toxic diet selection strength (odds)") + 
-  scale_color_brewer(type = "seq") -> g;g
-
-
-
-
-ggsave("graphs/manuscript1_figures/issf_simplified_sim_result.png", g, dpi = 600, width = 5, height = 4.5)
-
+# out <- read_csv("simulation/move_rules_sim.csv")
+# 
+# out <- out %>% 
+#   mutate(
+#     scale = round(scale / 1000 * 12, 2),
+#     rss = as.factor(round(exp(rss), 2))
+#   )
+# 
+# out %>% 
+#   filter(b != 0) %>% 
+#   filter(scale == 1) %>% 
+#   group_by(b, rss, k) %>%
+#   dplyr::select(on_toxic) %>% 
+#   mutate(
+#     id = seq_along(on_toxic)
+#   ) %>% 
+#   arrange(b, rss, k, id) %>% 
+#   group_by(rss, k, id) %>% 
+#   summarise(
+#     delta = diff(on_toxic)
+#   ) %>% 
+#   ggplot(aes(x = as.factor(k), y = delta, color = factor(rss))) +
+#   geom_hline(aes(yintercept = 0), color = "grey", 
+#              size = 1, linetype = "dashed") + 
+#   geom_point(position = position_jitterdodge(jitter.width = 0.2, 
+#                                              jitter.height = 0, 
+#                                              dodge.width = 0.5), 
+#              alpha = 0.2, 
+#              size = 2) + 
+#   geom_point(stat = "summary", 
+#              position = position_dodge(width = 0.5),
+#              shape = "—",
+#              size = 4,
+#              color = "black",
+#              aes(group = factor(rss))) + 
+#   theme_bw(base_size = 15) +
+#   theme(legend.position = "top") + 
+#   guides(colour = guide_legend(
+#     override.aes = list(alpha = 1, size = 4), 
+#     title.position = "top"
+#   )) + 
+#   labs(x = "Less toxic diet arresetment strength (ratio)", 
+#        y = expression(atop(Change~"in"~proprtion~time~on, paste("more toxic diet",~(beta[5]-beta[-5])))),
+#        color = "Less toxic diet selection strength (odds)") + 
+#   scale_color_brewer(type = "seq") -> g;g
+# 
+# 
+# 
+# 
+# ggsave("graphs/manuscript1_figures/issf_simplified_sim_result.png", g, dpi = 600, width = 5, height = 4.5)
+# 
 
 
 #### Supplement full ISSF simulation result ####
@@ -566,5 +566,26 @@ ggsave("graphs/manuscript1_figures/issf_on_toxic_sim_result.png", g, dpi = 600, 
 
 
 
+#### On toxic observed plot ####
+
+m <- readRDS("invisible/fitted_models/on_toxic_brm.rds")
 
 
+g <- brms::conditional_effects(m,effects = c("cat_pre_wt_log_scale:beta"), re_formula = NA)[[1]] %>% 
+  ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = estimate__, color = beta)) + 
+  geom_ribbon(aes(ymax = upper__, ymin = lower__, color = NULL, fill = beta), alpha = 0.2) + 
+  geom_line(size = 2) + 
+  geom_point(
+    data = m$data,
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = on_toxic),
+    size = 5, 
+    alpha = 0.5
+  ) + 
+  theme_bw(base_size = 15) + 
+  scale_x_continuous(trans = "log10", labels = fancy_scientific) +
+  scale_color_brewer(type = "qual", aesthetics = c("fill", "color")) + 
+  labs(x = "Pre-weight (g)", y = "Proprtion of time on toxic diet", color = expression(beta), fill = expression(beta)) +
+  theme(legend.position = "top")
+
+
+ggsave("graphs/manuscript1_figures/observed_on_toxic.png", g, dpi = 600, width = 5, height = 5)

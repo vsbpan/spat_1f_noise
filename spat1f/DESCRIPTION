@@ -11,7 +11,7 @@ Description: Conding library for INTERN funded 1/f noise project
 License: GPL (>= 3)
 Depends:
     imager,
-	extraDistr,
+    extraDistr,
     tidyverse,
     herbivar,
     R (>= 2.10)
@@ -24,14 +24,17 @@ Imports:
     amt,
     survival,
     imagerExtra,
-	insight,
-	matrixStats,
-	jsonlite,
-	spatstat.geom,
-	spatstat.utils,
-	moveHMM,
-	fitdistrplus,
-	circular
+    insight,
+    matrixStats,
+    jsonlite,
+    spatstat.geom,
+    spatstat.utils,
+    moveHMM,
+    fitdistrplus,
+    circular, 
+    rlang,
+    pkgload,
+    devtools
 Suggests:
     piecewiseSEM,
     sjPlot,

@@ -399,8 +399,8 @@ lapply_name <- function(x, FUN, ...){
 }
 
 # Wrapper for formatC()
-sigfig <- function(x, digits = 4){
-  formatC(x, digits = 2, format = "fg", flag = "#")
+sigfig <- function(x, digits = 2){
+  formatC(x, digits = digits, format = "fg", flag = "#")
 }
 
 # Turn named matrix into a named vector
@@ -417,3 +417,21 @@ reverse_names <- function(x){
   names(nms) <- val
   return(nms)
 }
+
+
+# Bind matrices together into an array along the z dimension
+zbind <- function(...){
+  mcall <- as.list(match.call(expand.dots = TRUE))[-1]
+  
+  array(c(...), 
+        dim = c(
+          dim(eval(mcall[[1]])),
+          length(mcall)
+        ), dimnames = c(
+          dimnames(eval(mcall[[1]])),
+          list(
+            #do.call("c",lapply(mcall,deparse1))
+          )
+        ))
+}
+

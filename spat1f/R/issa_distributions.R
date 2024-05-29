@@ -3,10 +3,10 @@ ddist <- function(dist, x_max = 1500, len = 100, return_x = TRUE){
   
   f <- function(dist){
     dist_name <- dist$name
-    if(dist_name == "vonmises" | dist_name == "genvonmises"){
+    
+    if(inherits(dist, "ta_distr")){
       x <- seq(-pi, pi, len = len)
-    }
-    if(dist_name == "gamma" | dist_name == "lnorm"){
+    } else {
       x <- seq(0, x_max, len = len)
     }
     
@@ -161,6 +161,21 @@ make_zigamma <- function(p, shape, scale){
               "vcov" = NULL)
   
   class(out) <- c("zigamma_distr", "sl_distr", "amt_distr", "list")
+  return(out)
+}
+
+# make amt dist 
+make_unif <- function(min = -pi, max = pi){
+  param_names <- c("min", "max")
+  
+  params <- as.list(c(min, max))
+  names(params) <- param_names
+  
+  out <- list("name" = "unif",
+              "params" = params,
+              "vcov" = NULL)
+  
+  class(out) <- c("unif_distr", "ta_distr", "amt_distr", "list")
   return(out)
 }
 
