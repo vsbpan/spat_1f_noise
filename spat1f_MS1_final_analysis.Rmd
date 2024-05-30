@@ -56,6 +56,18 @@ check_mod <- function(model){
   performance::posterior_predictive_check(model)
 }
 
+# Get posterior draws
+epred_draws <- function(model, newdata){
+  res <- brms::posterior_epred(model, 
+                  newdata = newdata, 
+                  allow_new_levels = TRUE, 
+                  re_formula = NA) %>% 
+    t()
+  colnames(res) <- paste0("draw_", seq_len(ncol(res)))
+  cbind(newdata,res) %>% 
+    gather(key = draw, value = val, contains("draw_"))
+}
+
 
 ```
 
@@ -1056,121 +1068,6 @@ marginal_effects(m_sl_pred_s2, terms = c("cat_pre_wt_log_scale")) %>%
 
 # ISSF simulation 
 
-## Group means
-
-```{r}
-out <- read_csv("simulation/move_rules_sim.csv")
-
-out <- out %>% 
-  mutate(
-    scale = round(scale / 1000 * 12, 2),
-    rss = as.factor(round(exp(rss), 2))
-  )
-
-out %>% 
-  group_by(b, rss, scale, k) %>% 
-  summarise(
-    mean = mean(on_toxic), se = se(on_toxic), sd = sd(on_toxic), 
-    lower = quantile(on_toxic, probs = 0.025), upper = quantile(on_toxic, probs = 0.975)
-  ) %>% 
-  mutate(
-    z = (mean - 0.5) / se,
-    P = pnorm(abs(z), lower.tail = FALSE) * 2
-  ) %>% 
-  knitr::kable()
-```
-
-## Some fun
-```{r}
-# Precompute some summarize grid
-z <- out %>% 
-  filter(b != 0) %>% 
-  filter(scale == 1) %>% 
-  group_by(b, rss, k) %>%
-  dplyr::select(on_toxic) %>% 
-  mutate(
-    rss = as.numeric(as.character(rss)),
-    id = seq_along(on_toxic)
-  )
-
-
-# Some simple wrapper for hypothesis testing later in the model scenarios
-compute_delta <- function(hypothesis, res){
-  hypothesis %>% 
-    left_join(res, by = c("k", "rss","b"), relationship = "many-to-many") %>% 
-    group_by(cat_size, id) %>% 
-    summarise(
-      delta = diff(on_toxic)
-    ) %>% 
-    group_by(cat_size) %>% 
-    do(as.data.frame(t(summarise_vec(.$delta)))) %>% 
-    arrange(rev(cat_size))
-}
-
-# Get posterior draws
-epred_draws <- function(model, newdata){
-  res <- brms::posterior_epred(model, 
-                  newdata = newdata, 
-                  allow_new_levels = TRUE, 
-                  re_formula = NA) %>% 
-    t()
-  colnames(res) <- paste0("draw_", seq_len(ncol(res)))
-  cbind(newdata,res) %>% 
-    gather(key = draw, value = val, contains("draw_"))
-}
-
-```
-
-
-## Model scenarios
-```{r}
-# No arrestment, no selection
-data.frame("k" = c(1, 1, 1, 1), 
-           "rss" = c(1,1, 1, 1),
-           "cat_size" = c("s", "s", "l", "l"),
-           "b" = c(-5, 5, -5, 5)) %>% 
-  compute_delta(z) 
-
-
-# Size dependent arrestment, no selection
-data.frame("k" = c(0.2, 0.2, 5, 5), 
-           "rss" = c(1,1, 1, 1),
-           "cat_size" = c("s", "s", "l", "l"),
-           "b" = c(-5, 5, -5, 5)) %>% 
-  compute_delta(z) 
-
-# No arrestment, size dependent selection
-data.frame("k" = c(1, 1, 1, 1), 
-           "rss" = c(0.75,0.75, 1.33, 1.33),
-           "cat_size" = c("s", "s", "l", "l"),
-           "b" = c(-5, 5, -5, 5)) %>% 
-  compute_delta(z)
-
-# Size dependent arrestment, size dependent selection
-data.frame("k" = c(0.2, 0.2, 5, 5), 
-           "rss" = c(0.75,0.75, 1.33, 1.33),
-           "cat_size" = c("s", "s", "l", "l"),
-           "b" = c(-5, 5, -5, 5)) %>% 
-  compute_delta(z) 
-
-
-
-# Size dependent arrestment in clustered treatment, no selection
-data.frame("k" = c(1, 0.2, 1, 5), 
-           "rss" = c(1,1, 1, 1),
-           "cat_size" = c("s", "s", "l", "l"),
-           "b" = c(-5, 5, -5, 5)) %>% 
-  compute_delta(z) 
-
-# Size dependent arrestment in clustered treatment, size dependent selection
-data.frame("k" = c(1, 0.2, 1, 5), 
-           "rss" = c(0.75,0.75, 1.33, 1.33),
-           "cat_size" = c("s", "s", "l", "l"),
-           "b" = c(-5, 5, -5, 5)) %>% 
-  compute_delta(z) 
-
-```
-
 ## Observed means {.tabset}
 
 ### Summary
@@ -1247,6 +1144,152 @@ epred_draws(m, expand.grid("cat_pre_wt_log_scale" = c(-2, 2),
   do(as.data.frame(t(summarise_vec(.$delta))))
 ```
 
+
+## Group means
+
+```{r}
+out <- read_csv("simulation/move_rules_sim.csv")
+
+out <- out %>% 
+  mutate(
+    scale = round(scale / 1000 * 12, 2),
+    rss = as.factor(round(exp(rss), 2))
+  )
+
+out %>% 
+  group_by(b, rss, scale, k) %>% 
+  summarise(
+    mean = mean(on_toxic), se = se(on_toxic), sd = sd(on_toxic), 
+    lower = quantile(on_toxic, probs = 0.025), upper = quantile(on_toxic, probs = 0.975)
+  ) %>% 
+  mutate(
+    z = (mean - 0.5) / se,
+    P = pnorm(abs(z), lower.tail = FALSE) * 2
+  ) %>% 
+  knitr::kable()
+```
+
+## Some fun
+```{r}
+# Precompute some summarize grid
+z <- out %>% 
+  filter(b != 0) %>% 
+  filter(scale == 1) %>% 
+  group_by(b, rss, k) %>%
+  dplyr::select(on_toxic) %>% 
+  mutate(
+    rss = as.numeric(as.character(rss)),
+    id = seq_along(on_toxic)
+  )
+
+# Observed draws
+a <- epred_draws(m, expand.grid("cat_pre_wt_log_scale" = c(-2, 2), 
+                           "beta" = c(-5, 5),
+                           "var_trt" = c("low_var","high_var"),
+                           "session_id" = "foo")) %>% 
+  group_by(cat_pre_wt_log_scale, beta, draw) %>% 
+  summarise(val = mean(val)) %>% 
+  group_by(
+    cat_pre_wt_log_scale, draw
+  ) %>% 
+  summarise(
+    delta = diff(val)
+  ) %>% 
+  group_split(cat_pre_wt_log_scale, .keep = FALSE) %>% 
+  lapply(
+    function(x){
+      x$delta
+    }
+  )
+
+names(a) <- c("small", "large")
+
+
+
+# Some simple wrapper for hypothesis testing later in the model scenarios
+compute_delta <- function(hypothesis, res, ref_list){
+  temp <- hypothesis %>% 
+    left_join(res, by = c("k", "rss","b"), relationship = "many-to-many") %>% 
+    group_by(cat_size, id) %>% 
+    summarise(
+      delta = diff(on_toxic)
+    )
+  out1 <- temp %>% 
+    group_by(cat_size) %>% 
+    do(as.data.frame(t(summarise_vec(.$delta)))) %>% 
+    arrange(rev(cat_size))
+  
+  out2 <- temp %>% 
+    group_split(cat_pre_wt_log_scale, .keep = FALSE) %>% 
+    suppressMessages() %>% 
+    suppressWarnings() %>% 
+    lapply(function(x){
+      x$delta
+    })
+  
+  names(out2) <- c("large", "small")
+  
+  r1 <- bayestestR::overlap(ref_list$small, out2$small)
+  r2 <- bayestestR::overlap(ref_list$large, out2$large)
+  return(
+    list(
+      "effects" = out1,
+      "overlap_coef" = sigfig(c("small" = r1, "large" = r2))
+    )
+  )
+}
+
+```
+
+
+## Model scenarios
+```{r}
+# No arrestment, no selection
+data.frame("k" = c(1, 1, 1, 1), 
+           "rss" = c(1,1, 1, 1),
+           "cat_size" = c("s", "s", "l", "l"),
+           "b" = c(-5, 5, -5, 5)) %>% 
+  compute_delta(z, a) 
+
+
+# Size dependent arrestment, no selection
+data.frame("k" = c(0.2, 0.2, 5, 5), 
+           "rss" = c(1,1, 1, 1),
+           "cat_size" = c("s", "s", "l", "l"),
+           "b" = c(-5, 5, -5, 5)) %>% 
+  compute_delta(z, a)
+
+# No arrestment, size dependent selection
+data.frame("k" = c(1, 1, 1, 1), 
+           "rss" = c(0.75,0.75, 1.33, 1.33),
+           "cat_size" = c("s", "s", "l", "l"),
+           "b" = c(-5, 5, -5, 5)) %>% 
+  compute_delta(z, a)
+
+# Size dependent arrestment, size dependent selection
+data.frame("k" = c(0.2, 0.2, 5, 5), 
+           "rss" = c(0.75,0.75, 1.33, 1.33),
+           "cat_size" = c("s", "s", "l", "l"),
+           "b" = c(-5, 5, -5, 5)) %>% 
+  compute_delta(z, a)
+
+
+
+# Size dependent arrestment in clustered treatment, no selection
+data.frame("k" = c(1, 0.2, 1, 5), 
+           "rss" = c(1,1, 1, 1),
+           "cat_size" = c("s", "s", "l", "l"),
+           "b" = c(-5, 5, -5, 5)) %>% 
+  compute_delta(z, a)
+
+# Size dependent arrestment in clustered treatment, size dependent selection
+data.frame("k" = c(1, 0.2, 1, 5), 
+           "rss" = c(0.75,0.75, 1.33, 1.33),
+           "cat_size" = c("s", "s", "l", "l"),
+           "b" = c(-5, 5, -5, 5)) %>% 
+  compute_delta(z, a)
+
+```
 
 
 ## Plots {.tabset}
