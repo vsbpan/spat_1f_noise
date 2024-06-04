@@ -18,9 +18,9 @@ for (j in 1:10){
         ),
         "sl_updated" = list(
           make_gamma(shape = 0.8, 
-                     scale = sim_d[i, "scale"] * sim_d[i, "k"]), # More toxic diet
+                     scale = sim_d[i, "scale"]), # More toxic diet
           make_gamma(shape = 0.8, 
-                     scale = sim_d[i, "scale"])  # Less toxic diet
+                     scale = sim_d[i, "scale"] / sim_d[i, "k"])  # Less toxic diet
         )
       )
       
@@ -47,13 +47,13 @@ for (j in 1:10){
 
 
 
-# out <- list.files("simulation/check_points", full.names = TRUE) %>%
-#   lapply(function(x){
-#     suppressMessages(read_csv(x, progress = FALSE))
-#   }) %>%
-#   do.call("rbind", .)
-# 
-# write_csv(out, "simulation/move_rules_sim.csv")
+out <- list.files("simulation/check_points", full.names = TRUE) %>%
+  lapply(function(x){
+    suppressMessages(read_csv(x, progress = FALSE))
+  }) %>%
+  do.call("rbind", .)
+
+# write_csv(out, "simulation/move_rules_sim_reduce.csv")
 # 
 # file.remove(list.files("simulation/check_points", full.names = TRUE))
 
