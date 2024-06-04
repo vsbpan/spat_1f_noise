@@ -518,7 +518,7 @@ ggsave("graphs/manuscript1_figures/issf_params.png", g_final, dpi = 600, width =
 
 
 #### Supplement full ISSF simulation result ####
-out <- read_csv("simulation/move_rules_sim.csv")
+out <- read_csv("simulation/move_rules_sim_reduce.csv")
 
 out <- out %>% 
   mutate(

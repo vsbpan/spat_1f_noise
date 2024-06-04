@@ -1,6 +1,6 @@
 ---
 title: "1/f Noise Project Manuscript 1 Final Analysis\n"
-subtitle: "Fine-Scale Spatial Heterogeneity in Phytochemistry Increases Herbivore Performance by Enhancing Herbivore Foraging"
+subtitle: "Fine-Scale Spatial Heterogeneity in Phytochemistry and Simple Herbivore Behaviors Create Nontrivial Emergent Effects on Herbivore Performance"
 author: "Vincent S. Pan, Enakshi Ghosh, Paul J. Ode, William C. Wetzel, Kadeem J. Gilbert, Ian S. Pearse"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: 
@@ -100,12 +100,12 @@ d <- ref_data %>%
     sl_mean_obs_log_scale = as.numeric(scale(log(sl_mean_obs))),
     cat_pre_wt_log_scale_sq = as.numeric(scale(log(cat_pre_wt)^2)),
     RGR_scale = as.numeric(scale(RGR)), 
-    sl_mean_pred1 = shape_1 * scale_1,
-    sl_mean_pred2 = shape_2 * scale_2,
-    sl_mean_pred3 = shape_3 * scale_3,
-    sl_mean_pred4 = shape_4 * scale_4,
-    k1 = scale_1 / scale_2,
-    k2 = scale_3 / scale_4,
+    sl_mean_pred1 = shape_1 * scale_1, # Exploration state & on more toxic diet 
+    sl_mean_pred2 = shape_2 * scale_2, # Exploration state & on less toxic diet
+    sl_mean_pred3 = shape_3 * scale_3, # Resting/feeding state & on more toxic diet
+    sl_mean_pred4 = shape_4 * scale_4, # Resting/feeding state & on less toxic diet
+    k1 = scale_1 / scale_2, # state 1 (exploration)
+    k2 = scale_3 / scale_4, # state 2 (resting/feeding)
     prop_explore_logit = qlogis(prop_explore),
     prop_explore_logit_scale = as.numeric(scale(prop_explore_logit))
   )

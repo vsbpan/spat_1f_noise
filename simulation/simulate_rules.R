@@ -53,7 +53,7 @@ out <- list.files("simulation/check_points", full.names = TRUE) %>%
   }) %>%
   do.call("rbind", .)
 
-# write_csv(out, "simulation/move_rules_sim_reduce.csv")
+# write_csv(out, "simulation/move_rules_sim.csv")
 # 
 # file.remove(list.files("simulation/check_points", full.names = TRUE))
 
