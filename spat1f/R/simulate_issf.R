@@ -122,6 +122,6 @@ iterate_random_steps2 <- function(issf_fit = NULL,
 #   return(out)
 # }
 
-make_start2 <- function(theta = 0, x = 500, y = 500, on_toxic = 1){
-  data.frame("theta" = theta, "x" = x, "y" = y, "on_toxic" = on_toxic)
+make_start2 <- function(theta = 0, x = 500, y = 500, on_toxic = 1, state = 1){
+  data.frame("theta" = theta, "x" = x, "y" = y, "on_toxic" = on_toxic, "state" = state)
 }

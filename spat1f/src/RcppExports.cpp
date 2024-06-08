@@ -76,22 +76,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// flatten_xy
-NumericVector flatten_xy(NumericVector x, NumericVector y, double max_x, double max_y, double dim_x, double dim_y);
-RcppExport SEXP _spat1f_flatten_xy(SEXP xSEXP, SEXP ySEXP, SEXP max_xSEXP, SEXP max_ySEXP, SEXP dim_xSEXP, SEXP dim_ySEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< double >::type max_x(max_xSEXP);
-    Rcpp::traits::input_parameter< double >::type max_y(max_ySEXP);
-    Rcpp::traits::input_parameter< double >::type dim_x(dim_xSEXP);
-    Rcpp::traits::input_parameter< double >::type dim_y(dim_ySEXP);
-    rcpp_result_gen = Rcpp::wrap(flatten_xy(x, y, max_x, max_y, dim_x, dim_y));
-    return rcpp_result_gen;
-END_RCPP
-}
 // read_valueC
 NumericVector read_valueC(NumericVector x, NumericVector y, double max_x, double max_y, NumericMatrix img);
 RcppExport SEXP _spat1f_read_valueC(SEXP xSEXP, SEXP ySEXP, SEXP max_xSEXP, SEXP max_ySEXP, SEXP imgSEXP) {
@@ -104,23 +88,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type max_y(max_ySEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type img(imgSEXP);
     rcpp_result_gen = Rcpp::wrap(read_valueC(x, y, max_x, max_y, img));
-    return rcpp_result_gen;
-END_RCPP
-}
-// pick_new_theta_xy
-List pick_new_theta_xy(List sl_rand, List ta_rand, int index, int n, double direction_start, double x_start, double y_start);
-RcppExport SEXP _spat1f_pick_new_theta_xy(SEXP sl_randSEXP, SEXP ta_randSEXP, SEXP indexSEXP, SEXP nSEXP, SEXP direction_startSEXP, SEXP x_startSEXP, SEXP y_startSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< List >::type sl_rand(sl_randSEXP);
-    Rcpp::traits::input_parameter< List >::type ta_rand(ta_randSEXP);
-    Rcpp::traits::input_parameter< int >::type index(indexSEXP);
-    Rcpp::traits::input_parameter< int >::type n(nSEXP);
-    Rcpp::traits::input_parameter< double >::type direction_start(direction_startSEXP);
-    Rcpp::traits::input_parameter< double >::type x_start(x_startSEXP);
-    Rcpp::traits::input_parameter< double >::type y_start(y_startSEXP);
-    rcpp_result_gen = Rcpp::wrap(pick_new_theta_xy(sl_rand, ta_rand, index, n, direction_start, x_start, y_start));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -164,6 +131,74 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// pick_new_state
+int pick_new_state(int state, NumericMatrix transition_mat);
+RcppExport SEXP _spat1f_pick_new_state(SEXP stateSEXP, SEXP transition_matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type state(stateSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type transition_mat(transition_matSEXP);
+    rcpp_result_gen = Rcpp::wrap(pick_new_state(state, transition_mat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// add_random_steps_iterate_statesC
+DataFrame add_random_steps_iterate_statesC(int n, int n_draws, double x_start, double y_start, double direction_start, double diet_start, int state_start, List sl_rand, List ta_rand, double rss_coef, NumericMatrix transition_mat, bool same_move, NumericVector ref_grid_flat);
+RcppExport SEXP _spat1f_add_random_steps_iterate_statesC(SEXP nSEXP, SEXP n_drawsSEXP, SEXP x_startSEXP, SEXP y_startSEXP, SEXP direction_startSEXP, SEXP diet_startSEXP, SEXP state_startSEXP, SEXP sl_randSEXP, SEXP ta_randSEXP, SEXP rss_coefSEXP, SEXP transition_matSEXP, SEXP same_moveSEXP, SEXP ref_grid_flatSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< int >::type n_draws(n_drawsSEXP);
+    Rcpp::traits::input_parameter< double >::type x_start(x_startSEXP);
+    Rcpp::traits::input_parameter< double >::type y_start(y_startSEXP);
+    Rcpp::traits::input_parameter< double >::type direction_start(direction_startSEXP);
+    Rcpp::traits::input_parameter< double >::type diet_start(diet_startSEXP);
+    Rcpp::traits::input_parameter< int >::type state_start(state_startSEXP);
+    Rcpp::traits::input_parameter< List >::type sl_rand(sl_randSEXP);
+    Rcpp::traits::input_parameter< List >::type ta_rand(ta_randSEXP);
+    Rcpp::traits::input_parameter< double >::type rss_coef(rss_coefSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type transition_mat(transition_matSEXP);
+    Rcpp::traits::input_parameter< bool >::type same_move(same_moveSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type ref_grid_flat(ref_grid_flatSEXP);
+    rcpp_result_gen = Rcpp::wrap(add_random_steps_iterate_statesC(n, n_draws, x_start, y_start, direction_start, diet_start, state_start, sl_rand, ta_rand, rss_coef, transition_mat, same_move, ref_grid_flat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// flatten_xy
+NumericVector flatten_xy(NumericVector x, NumericVector y, double max_x, double max_y, double dim_x, double dim_y);
+RcppExport SEXP _spat1f_flatten_xy(SEXP xSEXP, SEXP ySEXP, SEXP max_xSEXP, SEXP max_ySEXP, SEXP dim_xSEXP, SEXP dim_ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< double >::type max_x(max_xSEXP);
+    Rcpp::traits::input_parameter< double >::type max_y(max_ySEXP);
+    Rcpp::traits::input_parameter< double >::type dim_x(dim_xSEXP);
+    Rcpp::traits::input_parameter< double >::type dim_y(dim_ySEXP);
+    rcpp_result_gen = Rcpp::wrap(flatten_xy(x, y, max_x, max_y, dim_x, dim_y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// pick_new_theta_xy
+List pick_new_theta_xy(List sl_rand, List ta_rand, int index, int n, double direction_start, double x_start, double y_start);
+RcppExport SEXP _spat1f_pick_new_theta_xy(SEXP sl_randSEXP, SEXP ta_randSEXP, SEXP indexSEXP, SEXP nSEXP, SEXP direction_startSEXP, SEXP x_startSEXP, SEXP y_startSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< List >::type sl_rand(sl_randSEXP);
+    Rcpp::traits::input_parameter< List >::type ta_rand(ta_randSEXP);
+    Rcpp::traits::input_parameter< int >::type index(indexSEXP);
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< double >::type direction_start(direction_startSEXP);
+    Rcpp::traits::input_parameter< double >::type x_start(x_startSEXP);
+    Rcpp::traits::input_parameter< double >::type y_start(y_startSEXP);
+    rcpp_result_gen = Rcpp::wrap(pick_new_theta_xy(sl_rand, ta_rand, index, n, direction_start, x_start, y_start));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_spat1f_g_genvonmisesC", (DL_FUNC) &_spat1f_g_genvonmisesC, 3},
@@ -171,11 +206,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_spat1f_rgenvonmisesC", (DL_FUNC) &_spat1f_rgenvonmisesC, 4},
     {"_spat1f_iouC", (DL_FUNC) &_spat1f_iouC, 2},
     {"_spat1f_mask_insersectC", (DL_FUNC) &_spat1f_mask_insersectC, 2},
-    {"_spat1f_flatten_xy", (DL_FUNC) &_spat1f_flatten_xy, 6},
     {"_spat1f_read_valueC", (DL_FUNC) &_spat1f_read_valueC, 5},
-    {"_spat1f_pick_new_theta_xy", (DL_FUNC) &_spat1f_pick_new_theta_xy, 7},
     {"_spat1f_add_random_stepsC", (DL_FUNC) &_spat1f_add_random_stepsC, 9},
     {"_spat1f_add_random_steps_iterateC", (DL_FUNC) &_spat1f_add_random_steps_iterateC, 11},
+    {"_spat1f_pick_new_state", (DL_FUNC) &_spat1f_pick_new_state, 2},
+    {"_spat1f_add_random_steps_iterate_statesC", (DL_FUNC) &_spat1f_add_random_steps_iterate_statesC, 13},
+    {"_spat1f_flatten_xy", (DL_FUNC) &_spat1f_flatten_xy, 6},
+    {"_spat1f_pick_new_theta_xy", (DL_FUNC) &_spat1f_pick_new_theta_xy, 7},
     {NULL, NULL, 0}
 };
 

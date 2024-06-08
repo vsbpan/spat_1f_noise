@@ -55,7 +55,7 @@ iterate_random_steps2(
   start = make_start2(0,500,500, 1), 
   n = 5000, 
   ref_grid = spec, 
-  same_move = TRUE, 
+  same_move = FALSE, 
   rss_coef = 0.5
 ) %>% 
   mutate(head_x = x, head_y = y) %>% 
