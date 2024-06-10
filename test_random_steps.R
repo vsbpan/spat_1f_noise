@@ -148,9 +148,9 @@ iterate_random_steps_states(ta_sl_list = list(
     make_genvonmises(0.48, 0.267)
   )
 ), 
-  n = 1000, 
-  ref_grid = syn_spec(beta = 3, plot = FALSE), 
-  rss_coef = 0.5,
+  n = 50000, 
+  ref_grid = syn_spec(n = 100, beta = 5, plot = FALSE), 
+  rss_coef = 0,
   transition_mat =  diag(2), 
   max_xy = c(5000,5000)
 ) %>% 
@@ -159,6 +159,30 @@ iterate_random_steps_states(ta_sl_list = list(
     plot_elements = "track"
   )
 
+
+
+
+
+iterate_random_steps_states(ta_sl_list = list(
+  "sl" = list(
+    make_gamma(1, 150),
+    make_gamma(1, 50)
+  ),
+  "ta" = list(
+    make_unif(),
+    make_unif()
+  )
+), 
+n = 5000, 
+ref_grid = syn_spec(n = 100, beta = 5, plot = FALSE), 
+rss_coef = 0,
+transition_mat =  diag(1), 
+max_xy = c(5000,5000)
+) %>% 
+  plot_track_overlay(
+    colored_track = "none", 
+    plot_elements = "track"
+  )
 
 
 

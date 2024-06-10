@@ -10,8 +10,8 @@ DataFrame add_random_stepsC2(int n_draws,
                             List sl_rand, 
                             List ta_rand, 
                             int index,
-                            double rss_coef_exp,
                             NumericVector ref_grid_flat,
+                            NumericVector val_new,
                             double max_x = 1000, double max_y = 1000, 
                             double dim_x = 12, double dim_y = 12){
   
@@ -31,18 +31,13 @@ DataFrame add_random_stepsC2(int n_draws,
   
   NumericVector i = picked_list["i_new"];
 
-  NumericVector val_new = ifelse(ref_grid_flat > 0.5, 1.0, 1.0 * rss_coef_exp);
   val_new = val_new[i - 1];
   IntegerVector ind = sample_int(val_new.length(), 1, true, val_new) - 1;
   
-  NumericVector theta = picked_list["theta_new"];
-  NumericVector thetai = theta[ind];
-  NumericVector x = picked_list["x_new"];
-  NumericVector xi = x[ind];
-  NumericVector y = picked_list["y_new"];
-  NumericVector yi = y[ind];
-  NumericVector r = picked_list["r_new"];
-  NumericVector ri = r[ind];
+  NumericVector thetai = as<NumericVector>(picked_list["theta_new"])[ind];
+  NumericVector xi = as<NumericVector>(picked_list["x_new"])[ind];
+  NumericVector yi = as<NumericVector>(picked_list["y_new"])[ind];
+  NumericVector ri = as<NumericVector>(picked_list["r_new"])[ind];
   
   NumericVector ii = i[ind];
 
@@ -63,10 +58,14 @@ int pick_new_state(int state, NumericMatrix transition_mat){
     stop("Transition matrix is not a square matrix!");
   }
   
-  NumericVector v = transition_mat(state - 1 , _ );
-  IntegerVector state_new = sample_int(v.length(), 1, true, v);
-  int res = (int)state_new[0];
-  return res;
+  if(transition_mat.ncol() == 1){
+    return 1;
+  } else {
+    NumericVector v = transition_mat(state - 1 , _ );
+    IntegerVector state_new = sample_int(v.length(), 1, true, v);
+    int res = (int)state_new[0];
+    return res;
+  }
 } 
 
 
@@ -87,7 +86,9 @@ DataFrame add_random_steps_iterate_statesC(int n,
                                      double max_x = 1000, double max_y = 1000, 
                                      double dim_x = 12, double dim_y = 12){
   
-  double rss_coef_exp = exp(rss_coef); 
+  NumericVector val_new = ifelse(ref_grid_flat > 0.5, 1.0, 1.0 * exp(rss_coef));
+  
+  
   DataFrame tempdf = DataFrame::create(
     Named("theta") = direction_start,
     Named("x") = x_start,
@@ -95,7 +96,8 @@ DataFrame add_random_steps_iterate_statesC(int n,
     Named("r") = NA_REAL,
     Named("on_toxic") = diet_start,
     Named("state") = state_start
-  ); 
+  );
+  
   NumericVector theta = NumericVector(n);
   NumericVector x = NumericVector(n);
   NumericVector y = NumericVector(n);
@@ -107,6 +109,7 @@ DataFrame add_random_steps_iterate_statesC(int n,
   int index;
   int slr_len = sl_rand.length();
   int tar_len = ta_rand.length();
+  
   
   // Define nstates
   int nstates = transition_mat.nrow();
@@ -144,8 +147,8 @@ DataFrame add_random_steps_iterate_statesC(int n,
     tempdf = add_random_stepsC2(n_draws, tempdf["x"], tempdf["y"], tempdf["theta"],
                                sl_rand, ta_rand, 
                                index, 
-                               rss_coef_exp, 
                                ref_grid_flat,
+                               val_new,
                                max_x, max_y, 
                                dim_x, dim_y);
     
