@@ -41,7 +41,9 @@ NumericVector flatten_xy(NumericVector x, NumericVector y,
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
 List pick_new_theta_xy(List sl_rand, List ta_rand, int index, int n, 
-                       double direction_start, double x_start, double y_start){
+                       double direction_start, double x_start, double y_start,
+                       double max_x = 1000, double max_y = 1000, 
+                       double dim_x = 12, double dim_y = 12){
 
   NumericVector theta_new, x_new, y_new, r_new;
   
@@ -55,7 +57,7 @@ List pick_new_theta_xy(List sl_rand, List ta_rand, int index, int n,
     x_new = x_start + r * cos(theta_new);
     y_new = y_start + r * sin(theta_new);
 
-    LogicalVector out_of_bound = ((x_new < 0) | (x_new > 1000)) | ((y_new < 0) | (y_new > 1000));
+    LogicalVector out_of_bound = ((x_new < 0) | (x_new > max_x)) | ((y_new < 0) | (y_new > max_y));
     x_new = x_new[!out_of_bound];
     y_new = y_new[!out_of_bound];
     theta_new = theta_new[!out_of_bound];
@@ -72,7 +74,7 @@ List pick_new_theta_xy(List sl_rand, List ta_rand, int index, int n,
   }
   
 
-  NumericVector i_new = flatten_xy(x_new, y_new);
+  NumericVector i_new = flatten_xy(x_new, y_new, max_x, max_y, dim_x, dim_y);
   List out = List::create(Named("x_new") = x_new, 
                           Named("y_new") = y_new, 
                           Named("theta_new") = theta_new,

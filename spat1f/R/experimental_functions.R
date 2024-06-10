@@ -1,17 +1,20 @@
 iterate_random_steps_states <- function(
                                   issf_fit = NULL,
                                   ta_sl_list = extract_ta_sl(issf_fit, updated = TRUE),
-                                  start = make_start2(),
+                                  start = make_start2(x = max_xy[1]/2, y = max_xy[2]/2),
                                   transition_mat = dummy_transition_mat(),
                                   n = 100,
                                   same_move = FALSE,
+                                  max_xy = c(1000, 1000),
                                   ref_grid = dummy_spec(),
-                                  rss_coef = 0){
+                                  rss_coef = 0, 
+                                  keep_ref_grid = TRUE){
   stopifnot(nrow(start) == 1)
   
   
   ref_grid_flat <- c(ref_grid)
-  stopifnot(isTRUE(length(ref_grid_flat) == 144))
+  dim_x <- nrow(ref_grid)
+  dim_y <- ncol(ref_grid)
   
   
   if(is.null(ta_sl_list)){
@@ -76,16 +79,25 @@ iterate_random_steps_states <- function(
     rss_coef = rss_coef, 
     transition_mat = transition_mat,
     same_move = same_move,
-    ref_grid_flat = ref_grid_flat
+    ref_grid_flat = ref_grid_flat, 
+    max_x = max_xy[1],
+    max_y = max_xy[2],
+    dim_x = dim_x,
+    dim_y = dim_y
   )
   
-  return(rbind.fill(start, sim))
+  res <- rbind.fill(start, sim)
+  attr(res, "max_xy") <- max_xy
+  attr(res, "ref_grid") <- ref_grid
+  class(res) <- c("sim_steps", class(res))
+  
+  return(res)
 }
 
 
 
 dummy_transition_mat <- function(size = 2, sticky = TRUE){
-  a <- rgamma(size, 10, scale = 0.2)
+  a <- rgamma(size, 10, scale = 0.03)
   res <- rdirichlet(size, a)
   
   if(sticky){

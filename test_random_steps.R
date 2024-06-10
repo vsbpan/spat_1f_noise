@@ -123,144 +123,45 @@ issf_fit <- list(
 )
 
 
+# more toxic state 1
+# less toxic state 1
+# more toxic state 2
+# less toxic state 2
 
-x
 
+spec <- rbinom(50^2, 1, 0.9) %>% image_unflatten()
+spec <- syn_spec(beta = 3, plot = FALSE)
+mat <- matrix(c(0.9, 0.1, 0.03, 0.97), nrow = 2, ncol = 2, byrow = TRUE)
+mat <- matrix(1)
 
-
-for (j in 1:5){
-  sim_d <- expand.grid(
-    "b" = c(5, 0, -5),
-    "rss" = c(0, 0.5, 1), 
-    "scale" = c(10, 30, 100),
-    "k" = c(0.33, 1, 3)
-  ) %>% 
-    rep_data.frame(40)
-  
-  out <- pb_par_lapply(
-    seq_len(nrow(sim_d)), function(i, sim_d){
-      issf_fit2 <- list(
-        "ta_updated" = list(
-          make_genvonmises(kappa1 = 0.4867337, kappa2 = 0.2466265),
-          make_genvonmises(kappa1 = 0.4867337, kappa2 = 0.2466265)
-        ),
-        "sl_updated" = list(
-          make_gamma(shape = 0.5717441, scale = sim_d[i, "scale"]),
-          make_gamma(shape = 0.5717441, scale = sim_d[i, "scale"] / sim_d[i, "k"]) 
-        )
-      )
-      
-      spec <- as.cimg(syn_spec(12, sim_d[i,"b"], plot = FALSE))
-      x <- iterate_random_steps2(issf_fit2, 
-                                 start = make_start2(0,500,500, 1), 
-                                 n = 10000, 
-                                 ref_grid = spec, 
-                                 rss_coef = sim_d[i,"rss"])
-      x <- x[, c("on_toxic", "r", "ava_toxic")]
-      
-      data.frame(
-        sim_d[i, ,drop = FALSE],
-        as.data.frame(t(colMeans(x, na.rm = TRUE)))
-      )
-    },
-    sim_d = sim_d,
-    cores = 8, 
-    inorder = FALSE
+iterate_random_steps_states(ta_sl_list = list(
+  "sl" = list(
+    make_gamma(1, 150),
+    make_gamma(1, 50),
+    make_gamma(1, 6),
+    make_gamma(1, 6)
+  ),
+  "ta" = list(
+    make_unif(),
+    make_unif(),
+    make_genvonmises(0.48, 0.267),
+    make_genvonmises(0.48, 0.267)
   )
-  
-  write_csv(do.call("rbind", out), file = sprintf("check_point_%s.csv",j))
-}
-
-
-
-d <- read_csv("cleaned_data/issf_sim_experiment_(k_rss_sl_beta).csv")
-
-reverse_names <- function(x){
-  val <- x
-  nms <- names(x)
-  names(nms) <- val
-  return(nms)
-}
-
-k_lab <- unique(d$k)
-names(k_lab) = sprintf("k = %s", k_lab)
-scale_lab <- unique(d$scale)
-names(scale_lab) = sprintf("scale = %s", scale_lab)
-
-
-d %>% 
-  ggplot(aes(x = as.factor(rss), y = 1 - ava_toxic, color = factor(b))) + 
-  geom_point(position = position_jitterdodge(jitter.width = 0.2, 
-                                             jitter.height = 0, 
-                                             dodge.width = 0.5), 
-             alpha = 0.2) + 
-  geom_pointrange(stat = "summary", 
-                  position = position_dodge(width = 0.5), 
-                  color = "black",
-                  aes(group = factor(b)), linewidth = 1) + 
-  facet_grid(k ~ scale, labeller = labeller(
-    k = reverse_names(k_lab), scale = reverse_names(scale_lab)
-  )) + 
-  theme_bw() + 
-  guides(colour = guide_legend(override.aes = list(alpha = 1))) + 
-  labs(x = "Less toxic diet selection strength (LogOdds)", 
-       y = "Neighborhood quality (Proportion)", 
-       color = expression(beta)) + 
-  scale_color_brewer(type = "qual")->g;g
-
-ggsave("graphs/issf_sim_neighborhood_quality.png", plot = g, dpi = 400, height = 7, width = 8)
-
-
-d %>% 
-  ggplot(aes(x = as.factor(rss), y = 1 - on_toxic, color = factor(b))) + 
-  geom_point(position = position_jitterdodge(jitter.width = 0.2, 
-                                             jitter.height = 0, 
-                                             dodge.width = 0.5), 
-             alpha = 0.2) + 
-  geom_pointrange(stat = "summary", 
-                  position = position_dodge(width = 0.5), 
-                  color = "black",
-                  aes(group = factor(b)), linewidth = 1) + 
-  facet_grid(k ~ scale, labeller = labeller(
-    k = reverse_names(k_lab), scale = reverse_names(scale_lab)
-  )) + 
-  theme_bw() + 
-  guides(colour = guide_legend(override.aes = list(alpha = 1))) + 
-  labs(x = "Less toxic diet selection strength (LogOdds)", 
-       y = "Time on less toxic diet (Proportion)", 
-       color = expression(beta)) + 
-  scale_color_brewer(type = "qual")->g;g
-
-ggsave("graphs/issf_sim_on_less_toxic.png", plot = g, dpi = 400, height = 7, width = 8)
-
-
-
-d %>% 
-  filter(k == 1) %>% 
-  ggplot(aes(x = as.factor(rss), y = r / 1000 * 12, color = factor(b))) + 
-  geom_point(position = position_jitterdodge(jitter.width = 0.2, 
-                                             jitter.height = 0, 
-                                             dodge.width = 0.5), 
-             alpha = 0.2) + 
-  geom_pointrange(stat = "summary", 
-                  position = position_dodge(width = 0.5), 
-                  color = "black",
-                  aes(group = factor(b)), linewidth = 1) + 
-  facet_grid(scale ~ ., labeller = labeller(
-    k = reverse_names(k_lab), scale = reverse_names(scale_lab), 
-  ), scale = "free") + 
-  theme_bw() + 
-  guides(colour = guide_legend(override.aes = list(alpha = 1))) + 
-  labs(x = "Less toxic diet selection strength (LogOdds)", 
-       y = "Average step length (cm)", 
-       subtitle = "Fixed at k = 1",
-       color = expression(beta)) + 
-  scale_color_brewer(type = "qual") -> g;g
-
-ggsave("graphs/issf_sim_step_length2.png", plot = g, dpi = 400, height = 7, width = 8)
+), 
+  n = 1000, 
+  ref_grid = syn_spec(beta = 3, plot = FALSE), 
+  rss_coef = 0.5,
+  transition_mat =  diag(2), 
+  max_xy = c(5000,5000)
+) %>% 
+  plot_track_overlay(
+    colored_track = "none", 
+    plot_elements = "track"
+  )
 
 
 
 
+reload()
 
 

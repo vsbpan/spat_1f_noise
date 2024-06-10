@@ -19,7 +19,9 @@ NumericVector flatten_xy(NumericVector x, NumericVector y,
                          double dim_x = 12, double dim_y = 12);
 
 List pick_new_theta_xy(List sl_rand, List ta_rand, int index, int n, 
-                       double direction_start, double x_start, double y_start);
+                       double direction_start, double x_start, double y_start,
+                       double max_x = 1000, double max_y = 1000, 
+                       double dim_x = 12, double dim_y = 12);
 
 
 #endif // SHARED_FUNCTIONS_H

@@ -11,7 +11,9 @@ DataFrame add_random_stepsC2(int n_draws,
                             List ta_rand, 
                             int index,
                             double rss_coef_exp,
-                            NumericVector ref_grid_flat){
+                            NumericVector ref_grid_flat,
+                            double max_x = 1000, double max_y = 1000, 
+                            double dim_x = 12, double dim_y = 12){
   
   List picked_list = pick_new_theta_xy(
     sl_rand,
@@ -20,7 +22,11 @@ DataFrame add_random_stepsC2(int n_draws,
     n_draws,
     direction_start,
     x_start,
-    y_start
+    y_start,
+    max_x,
+    max_y,
+    dim_x,
+    dim_y
   ); 
   
   NumericVector i = picked_list["i_new"];
@@ -77,7 +83,9 @@ DataFrame add_random_steps_iterate_statesC(int n,
                                      double rss_coef,
                                      NumericMatrix transition_mat,
                                      bool same_move,
-                                     NumericVector ref_grid_flat){
+                                     NumericVector ref_grid_flat,
+                                     double max_x = 1000, double max_y = 1000, 
+                                     double dim_x = 12, double dim_y = 12){
   
   double rss_coef_exp = exp(rss_coef); 
   DataFrame tempdf = DataFrame::create(
@@ -136,7 +144,10 @@ DataFrame add_random_steps_iterate_statesC(int n,
     tempdf = add_random_stepsC2(n_draws, tempdf["x"], tempdf["y"], tempdf["theta"],
                                sl_rand, ta_rand, 
                                index, 
-                               rss_coef_exp, ref_grid_flat);
+                               rss_coef_exp, 
+                               ref_grid_flat,
+                               max_x, max_y, 
+                               dim_x, dim_y);
     
     x[i] = tempdf["x"];
     y[i] = tempdf["y"];

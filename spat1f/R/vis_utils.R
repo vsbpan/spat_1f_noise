@@ -165,12 +165,12 @@ forward_plot <- function(x,init_frame, mask_col = "white", ...){
 }
 
 # Visualize sequential animal track
-plot_track <- function(data, x, y, type = c("track", "density")){
+plot_track <- function(data, x, y, type = c("track", "density"), max_xy = c(1000, 1000)){
   .expose_columns_interal()
   type <- match.arg(type, several.ok = TRUE)
   
   g <- ggplot(data, aes(x = x, y = y)) +
-    coord_cartesian(xlim = c(0, 1000), ylim = c(0, 1000))
+    coord_cartesian(xlim = c(0, max_xy[1]), ylim = c(0, max_xy[2]))
   
   if("density" %in% type){
     g <- g + geom_density_2d_filled()
@@ -309,12 +309,15 @@ unscalelog <- function(logx){
 
 
 # Plot track and treatment spec together
-plot_track_overlay <- function(events = NULL, repID = NULL, 
+plot_track_overlay.default <- function(events = NULL, repID = NULL, 
                                ref_data = get("ref_data", envir = globalenv()), 
                                score_thresh = 0.7,
                                plot_elements = c("ud","track"),
                                colored_track = c("none", "states","time"),
-                               trt_spec = "auto"
+                               max_xy = c(1000, 1000),
+                               trt_spec = "auto",
+                               plot_title = sprintf("repID: %s", repID_clean(repID)), 
+                               ...
                                ){
   colored_track <- match.arg(colored_track)
   plot_elements <- match.arg(plot_elements, several.ok = TRUE)
@@ -354,10 +357,13 @@ plot_track_overlay <- function(events = NULL, repID = NULL,
     hmm_fit <- fit_HMM(as.moveData(move_seq(events$head_x, events$head_y)))
   }
   
+  dim_x <- ncol(trt_spec) # swap col and row bc of flip_xy()
+  dim_y <- nrow(trt_spec)
+  
   events <- events %>% 
     mutate(
-      head_x = head_x / 1000 * 12 + 0.5,
-      head_y = head_y / 1000 * 12 + 0.5
+      head_x = head_x / max_xy[1] * dim_x + 0.5,
+      head_y = head_y / max_xy[2] * dim_y + 0.5
     )
   
   g <- plot_d %>% 
@@ -410,12 +416,65 @@ plot_track_overlay <- function(events = NULL, repID = NULL,
   g <- g +
     theme_void() + 
     geom_point(aes(x = 0.5, y = 0.5), alpha = 0) + # Force the edges to align
-    geom_point(aes(x = 12.5, y = 12.5), alpha = 0) + # Force the edges to align
+    geom_point(aes(x = dim_x + 0.5, y = dim_y + 0.5), alpha = 0) + # Force the edges to align
     theme(legend.position = "right", plot.title = element_text(hjust = 0.5)) + 
-    labs(title = sprintf("repID: %s", repID_clean(repID))) 
+    labs(title = plot_title) 
   
   return(g)
 }
+
+
+plot_track_overlay <- function(events, 
+                               plot_elements = c("ud","track"),
+                               colored_track = c("none", "states","time"),
+                               max_xy = NULL,
+                               trt_spec = NULL,
+                               ...){
+  UseMethod("plot_track_overlay")
+}
+
+registerS3method(genname = "plot_track_overlay", 
+                 class = "default", 
+                 method = plot_track_overlay.default)
+
+
+
+plot_track_overlay.sim_steps <- function(events, 
+                                         plot_elements = c("ud","track"),
+                                         colored_track = c("none", "states","time"),
+                                         max_xy = NULL,
+                                         trt_spec = NULL,
+                                         ...){
+  
+  if(is.null(max_xy)){
+    max_xy <- attr(events, "max_xy")
+  }
+  
+  if(is.null(trt_spec)){
+    trt_spec <- attr(events, "ref_grid")
+  }
+  
+  
+  plot_track_overlay.default(
+    events = events %>% 
+      rename(head_x = x, 
+             head_y = y),
+    repID = "foo",
+    plot_elements = plot_elements, 
+    colored_track = colored_track,
+    max_xy = max_xy,
+    trt_spec = flip_xy(trt_spec), 
+    plot_title = sprintf("Simulated tracks for %s steps", nrow(events) - 1),
+    ...
+  )
+}
+
+
+registerS3method(genname = "plot_track_overlay", 
+                 class = "sim_steps", 
+                 method = plot_track_overlay.sim_steps)
+
+
 
 # Make log-log histogram
 loghist <- function(x, nclass = 50, log.p = FALSE, log.x = TRUE, geom = c("line", "col"), draw_dist = NULL, ...){

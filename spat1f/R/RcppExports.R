@@ -37,15 +37,15 @@ pick_new_state <- function(state, transition_mat) {
     .Call(`_spat1f_pick_new_state`, state, transition_mat)
 }
 
-add_random_steps_iterate_statesC <- function(n, n_draws, x_start, y_start, direction_start, diet_start, state_start, sl_rand, ta_rand, rss_coef, transition_mat, same_move, ref_grid_flat) {
-    .Call(`_spat1f_add_random_steps_iterate_statesC`, n, n_draws, x_start, y_start, direction_start, diet_start, state_start, sl_rand, ta_rand, rss_coef, transition_mat, same_move, ref_grid_flat)
+add_random_steps_iterate_statesC <- function(n, n_draws, x_start, y_start, direction_start, diet_start, state_start, sl_rand, ta_rand, rss_coef, transition_mat, same_move, ref_grid_flat, max_x = 1000, max_y = 1000, dim_x = 12, dim_y = 12) {
+    .Call(`_spat1f_add_random_steps_iterate_statesC`, n, n_draws, x_start, y_start, direction_start, diet_start, state_start, sl_rand, ta_rand, rss_coef, transition_mat, same_move, ref_grid_flat, max_x, max_y, dim_x, dim_y)
 }
 
 flatten_xy <- function(x, y, max_x = 1000, max_y = 1000, dim_x = 12, dim_y = 12) {
     .Call(`_spat1f_flatten_xy`, x, y, max_x, max_y, dim_x, dim_y)
 }
 
-pick_new_theta_xy <- function(sl_rand, ta_rand, index, n, direction_start, x_start, y_start) {
-    .Call(`_spat1f_pick_new_theta_xy`, sl_rand, ta_rand, index, n, direction_start, x_start, y_start)
+pick_new_theta_xy <- function(sl_rand, ta_rand, index, n, direction_start, x_start, y_start, max_x = 1000, max_y = 1000, dim_x = 12, dim_y = 12) {
+    .Call(`_spat1f_pick_new_theta_xy`, sl_rand, ta_rand, index, n, direction_start, x_start, y_start, max_x, max_y, dim_x, dim_y)
 }
 
