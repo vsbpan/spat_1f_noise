@@ -187,6 +187,11 @@ clean_events <- function(x,
   sus_frames <- fetch_sus_frames(repID)
   cut_off <- fetch_cutoff(repID, ref_data)
   
+  if(length(cut_off) == 0){
+    cut_off <- max(x$time)
+    warning(sprintf("No cut off found. Defaulting to the last frame at time = %s", cut_off))
+  }
+  
   x <- x %>%
     mutate(
       is_sus = ifelse(seq_len(nrow(x)) %in% sus_frames, TRUE, FALSE)

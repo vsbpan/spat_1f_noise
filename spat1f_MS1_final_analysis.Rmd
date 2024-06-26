@@ -1,6 +1,5 @@
 ---
-title: "1/f Noise Project Manuscript 1 Final Analysis\n"
-subtitle: "Fine-Scale Spatial Heterogeneity in Phytochemistry and Simple Herbivore Behaviors Create Nontrivial Emergent Effects on Herbivore Performance"
+title: "Large Differences in Herbivore Performance Emerge from Simple Herbivore Behaviors and Fine-Scale Spatial Heterogeneity in Phytochemistry"
 author: "Vincent S. Pan, Enakshi Ghosh, Paul J. Ode, William C. Wetzel, Kadeem J. Gilbert, Ian S. Pearse"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: 
