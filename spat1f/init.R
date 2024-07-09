@@ -7,9 +7,8 @@ library(survival)
   source(paste0(path,"/R/", "package_load.R"), local = TRUE)
   load_all2(path = path,
            export_all = TRUE, 
-           quiet = TRUE)
+           quiet = TRUE, 
+           recompile = FALSE)
 }
 
 .simulate_load_package(path = "C:/R_projects/spat_1f_noise/spat1f")
-
-

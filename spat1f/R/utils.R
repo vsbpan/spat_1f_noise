@@ -367,13 +367,26 @@ rbind.fill <- function(...){
 }
 
 # Lazy wrapper for reloading spat1f if it is already loaded
-reload <- function(){
-  source(paste(path.package("spat1f"), "init.R", sep = "/"))
+reload <- function(dev = FALSE){
+  if(dev){
+    source(paste(path.package("spat1f"), "init_dev.R", sep = "/"))
+  } else {
+    source(paste(path.package("spat1f"), "init.R", sep = "/")) 
+  }
 }
 
 # Recompile C++ code
 recompile <- function(){
-  pkgload::load_all(path.package("spat1f"))
+  # pkg <- "spat1f"
+  # path <- pkgload::pkg_path(pkg)
+  # dllname <- sprintf("%s.dll", pkg)
+  # dllpath <- pkgload:::package_file("src", dllname, path = path)
+  # library.dynam.unload(pkg, paste0(path,"/src"))
+  # pkgload:::unload_dll(pkg)
+  # file.remove(dllpath)
+  # load_all2(path)
+  pkgload::load_all(pkgload::pkg_path("spat1f"))
+  
 }
 
 # Convert Nan to NA
@@ -434,4 +447,8 @@ zbind <- function(...){
           )
         ))
 }
+
+
+
+
 

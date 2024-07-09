@@ -83,7 +83,8 @@ stateProbs <- function(model){
 
 # Wrapper for moveHMM::fitHMM()
 fit_HMM <- function(data, 
-                    stepPar0 = c(2.5, 1.5, 1.5, 0.8), anglePar0 = c(0, pi, 0.1, 0.1), 
+                    stepPar0 = c(2.5, 1.5, 1.5, 0.8), 
+                    anglePar0 = c(0, pi, 0.1, 0.1), 
                     stepDist = "lnorm", angleDist = "wrpcauchy", 
                     formula = ~1, 
                     ...){
