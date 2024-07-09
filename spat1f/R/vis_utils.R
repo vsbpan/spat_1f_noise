@@ -415,8 +415,8 @@ plot_track_overlay.default <- function(events = NULL, repID = NULL,
   }
   g <- g +
     theme_void() + 
-    geom_point(aes(x = 0.5, y = 0.5), alpha = 0) + # Force the edges to align
-    geom_point(aes(x = dim_x + 0.5, y = dim_y + 0.5), alpha = 0) + # Force the edges to align
+    geom_point(data = data.frame(), aes(x = 0.5, y = 0.5), alpha = 0) + # Force the edges to align
+    geom_point(data = data.frame(), aes(x = dim_x + 0.5, y = dim_y + 0.5), alpha = 0) + # Force the edges to align
     theme(legend.position = "right", plot.title = element_text(hjust = 0.5)) + 
     labs(title = plot_title) 
   

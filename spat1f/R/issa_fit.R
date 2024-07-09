@@ -319,10 +319,10 @@ update_lnorm <- function(dist, mulog_estimator, sdlog_estimator ){
 }
 
 # Update vonmises distribution params using fitted betas from ISSA
-update_vonmises <- function(dist, kappa_esimator){
-  lapply(seq_along(kappa_esimator), function(i){
+update_vonmises <- function(dist, kappa_estimator){
+  lapply(seq_along(kappa_estimator), function(i){
     amt::update_vonmises(
-      dist, beta_cos_ta = kappa_esimator[i]
+      dist, beta_cos_ta = kappa_estimator[i]
     )
   })
 }

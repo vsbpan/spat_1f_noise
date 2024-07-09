@@ -235,6 +235,6 @@ dvonmises <- function(x, kappa, log = FALSE){
                       log = log)
 }
 
-
+#### Add beta prime distribution
 
 

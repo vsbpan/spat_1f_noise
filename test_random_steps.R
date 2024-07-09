@@ -7,7 +7,7 @@ fetch_events(ID) %>%
   move_seq(head_x, head_y) %>% 
   filter(!is.na(r)) %>% 
   add_random_steps(n = 100L,
-                   sl_distr = fit_invgamma(.$r),
+                   sl_distr = fit_gamma(.$r),
                    ta_distr = fit_genvonmises(.$theta_rel)
   ) %>%
   flag_invalid_steps(remove = TRUE) %>%
@@ -23,7 +23,7 @@ fetch_events(ID) %>%
     case ~
       less_toxic +
       (cos_theta_pi + cos_2theta) +  
-      (invsl + logsl) + 
+      (sl + logsl) + 
       strata(step_id),
     data = .) -> issf_fit
 
@@ -158,6 +158,13 @@ iterate_random_steps_states(ta_sl_list = list(
     colored_track = "none", 
     plot_elements = "track"
   )
+
+
+
+
+
+
+
 
 
 
