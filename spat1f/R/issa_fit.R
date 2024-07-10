@@ -310,6 +310,7 @@ update_genvonmises <- function(dist, kappa1_estimator, kappa2_estimator){
   })
 }
 
+
 # Update lognormal distribution params using fitted betas from ISSA
 update_lnorm <- function(dist, mulog_estimator, sdlog_estimator ){
   stopifnot(length(mulog_estimator) == length(sdlog_estimator ))

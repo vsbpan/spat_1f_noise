@@ -91,20 +91,15 @@ d <- ref_data %>%
                                                         trans = "emp", 
                                                         nudge.method = "none", 
                                                         na.action = "ignore"))),
-    ava_qual_scale = as.numeric(scale(ava_qual)),
-    ava_qual_logit_scale = as.numeric(scale(adjust_prop(ava_qual, 
-                                                        trans = "emp", 
-                                                        nudge.method = "none", 
-                                                        na.action = "ignore"))),
     sl_mean_obs_log_scale = as.numeric(scale(log(sl_mean_obs))),
     cat_pre_wt_log_scale_sq = as.numeric(scale(log(cat_pre_wt)^2)),
     RGR_scale = as.numeric(scale(RGR)), 
     sl_mean_pred1 = shape_1 * scale_1, # Exploration state & on more toxic diet 
-    sl_mean_pred2 = shape_2 * scale_2, # Exploration state & on less toxic diet
-    sl_mean_pred3 = shape_3 * scale_3, # Resting/feeding state & on more toxic diet
+    sl_mean_pred2 = shape_2 * scale_2, # Resting/feeding state & on more toxic diet
+    sl_mean_pred3 = shape_3 * scale_3, # Exploration state & on less toxic diet
     sl_mean_pred4 = shape_4 * scale_4, # Resting/feeding state & on less toxic diet
-    k1 = scale_1 / scale_2, # state 1 (exploration)
-    k2 = scale_3 / scale_4, # state 2 (resting/feeding)
+    k1 = scale_1 / scale_3, # state 1 (exploration)
+    k2 = scale_2 / scale_4, # state 2 (resting/feeding)
     prop_explore_logit = qlogis(prop_explore),
     prop_explore_logit_scale = as.numeric(scale(prop_explore_logit))
   )
@@ -138,7 +133,6 @@ d3 <- d %>%
   ) %>% 
   filter_at(vars(contains("shape_"), contains("scale_[0-9]"), contains("sl_mean_pred")), 
             all_vars(. > 0)) %>% 
-  filter(sl_mean_pred2 < 2000) %>% 
   mutate(
     var_high = ifelse(var_trt == "high_var", 1, 0),
     beta_red = ifelse(as.character(beta) == 5, 1, 0),
@@ -653,7 +647,7 @@ knitr::include_graphics(paste0(getwd(), "/graphs/manuscript1_figures/SEM_simplif
 ### Model summary
 ```{r}
 m_select_s1_full <- glmmTMB(
-  s1.less_toxic.est ~ 
+  s1.less_toxic_end.est ~ 
     cat_pre_wt_log_scale * (beta + var_trt) + 
     (1|session_id),
   data = d3,
@@ -662,7 +656,7 @@ m_select_s1_full <- glmmTMB(
 car::Anova(m_select_s1_full, type = "III")
 
 m_select_s1 <- glmmTMB(
-  s1.less_toxic.est ~ 
+  s1.less_toxic_end.est ~ 
     cat_pre_wt_log_scale + beta + var_trt + 
     (1|session_id),
   data = d3,
@@ -700,12 +694,12 @@ marginal_effects(m_select_s1, terms = c("cat_pre_wt_log_scale")) %>%
   geom_line(linewidth = 2) + 
   geom_point(
     data = m_select_s1$frame,
-    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(s1.less_toxic.est)),
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(s1.less_toxic_end.est)),
     size = 3, alpha = 0.8
   ) +  
   theme_bw(base_size = 15) + 
   theme(legend.position = "top") +
-  scale_y_continuous(trans = "log10", breaks = c(0.5, 2, 1)) + 
+  scale_y_continuous(trans = "log10") + 
   scale_x_continuous(trans = "log10", labels = fancy_scientific) +
   labs(x = "Pre-weight (g)", y = "Less toxic diet selection strength (odds ratio)")
 ```
@@ -716,36 +710,23 @@ marginal_effects(m_select_s1, terms = c("cat_pre_wt_log_scale")) %>%
 ### Model summary
 ```{r}
 m_select_s2_full <- glmmTMB(
-  s2.less_toxic.est ~ 
+  s2.less_toxic_end.est ~ 
     cat_pre_wt_log_scale * (beta + var_trt) + 
     (1|session_id),
-  data = d3,
+  data = d3 %>% 
+      filter(s2.less_toxic_end.se < 10) # Filter out estimates that did not converge
 ); summary(m_select_s2_full)
 
-# Somehow the wald chisquare test is significant
+
 car::Anova(m_select_s2_full, type = "III")
 
-m_select_s2_2 <- glmmTMB(
-  s2.less_toxic.est ~ 
-    cat_pre_wt_log_scale * beta + var_trt + 
-    (1|session_id),
-  data = d3,
-); summary(m_select_s2_2)
-
-# Somehow the wald chisquare test is significant
-car::Anova(m_select_s2_2, type = "III")
-
-# hmmm actually??
-# Drop the interaction and compare with LRT directly
+# Refit
 m_select_s2 <- glmmTMB(
-  s2.less_toxic.est ~ 
-    cat_pre_wt_log_scale + var_trt +  beta + 
+  s2.less_toxic_end.est ~ 
+    cat_pre_wt_log_scale + (var_trt +  beta) + 
     (1|session_id),
-  data = d3,
+  data = d3 %>% filter(s2.less_toxic_end.se < 10) # Filter out estimates that did not converge
 ); summary(m_select_s2)
-
-# LRT
-anova(m_select_s2, m_select_s2_2)
 
 car::Anova(m_select_s2, type = "II")
 
@@ -780,12 +761,12 @@ marginal_effects(m_select_s2, terms = c("cat_pre_wt_log_scale")) %>%
   geom_line(linewidth = 2) + 
   geom_point(
     data = m_select_s2$frame,
-    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(s2.less_toxic.est)),
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(s2.less_toxic_end.est)),
     size = 3, alpha = 0.8
   ) +  
   theme_bw(base_size = 15) + 
   theme(legend.position = "top") +
-  scale_y_continuous(trans = "log10", breaks = c(0.5, 2, 1)) + 
+  scale_y_continuous(trans = "log10") + 
   scale_x_continuous(trans = "log10", labels = fancy_scientific) +
   labs(x = "Pre-weight (g)", y = "Less toxic diet selection strength (odds ratio)")
 ```
@@ -814,7 +795,6 @@ m_arrest_s1 <- glmmTMB(
   data = d3,
 ); summary(m_arrest_s1)
 
-car::Anova(m_arrest_s1, type = "II")
 car::Anova(m_arrest_s1, type = "III")
 
 ```
@@ -823,7 +803,6 @@ car::Anova(m_arrest_s1, type = "III")
 
 ```{r}
 contrast_by_pre_wt(m_arrest_s1, "beta")
-emmeans::emtrends(m_arrest_s1, var = "cat_pre_wt_log_scale", specs = "beta")
 ```
 
 
@@ -894,7 +873,7 @@ car::Anova(m_arrest_s2, type = "II")
 ### Post-hoc contrasts
 
 ```{r}
-emmeans::emmeans(m_arrest_s2, ~ 1)
+emmeans::emmeans(m_arrest_s2, ~ "var_trt")
 ```
 
 
@@ -963,6 +942,7 @@ car::Anova(m_sl_pred_s1, type = "II")
 ### Post-hoc contrasts
 
 ```{r}
+emmeans::emmeans(m_sl_pred_s1, ~ "var_trt")
 emmeans::emmeans(m_sl_pred_s1, ~ 1)
 ```
 
@@ -1007,28 +987,30 @@ marginal_effects(m_sl_pred_s1, terms = c("cat_pre_wt_log_scale")) %>%
 ### Model summary
 ```{r}
 m_sl_pred_s2_full <- glmmTMB(
-  log(sl_mean_pred3) ~ 
+  log(sl_mean_pred2) ~ 
     cat_pre_wt_log_scale * (beta + var_trt) + 
     (1|session_id),
   data = d3,
 ); summary(m_sl_pred_s2_full)
 
+# Somehow the Wald chisquare test is significant.
 car::Anova(m_sl_pred_s2_full, type = "III")
 
 m_sl_pred_s2 <- glmmTMB(
-  log(sl_mean_pred3) ~ 
-    cat_pre_wt_log_scale + beta + var_trt + 
+  log(sl_mean_pred2) ~ 
+    cat_pre_wt_log_scale * beta + var_trt + 
     (1|session_id),
   data = d3,
 ); summary(m_sl_pred_s2)
 
-car::Anova(m_sl_pred_s2, type = "II")
+car::Anova(m_sl_pred_s2, type = "III")
 
 ```
 
 ### Post-hoc contrasts
 
 ```{r}
+contrast_by_pre_wt(m_sl_pred_s2, "beta")
 emmeans::emmeans(m_sl_pred_s2, ~ 1)
 ```
 
@@ -1047,14 +1029,18 @@ check_mod(m_sl_pred_s2)
 
 ### Plot
 ```{r}
-marginal_effects(m_sl_pred_s2, terms = c("cat_pre_wt_log_scale")) %>% 
-  ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = (yhat) / 1000 * 12)) + 
-  geom_ribbon(aes(ymax = (upper)/ 1000 * 12, ymin = lower/ 1000 * 12), alpha = 0.2) + 
+marginal_effects(m_sl_pred_s2, terms = c("cat_pre_wt_log_scale", "beta")) %>% 
+  ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), 
+             y = (yhat) / 1000 * 12, 
+             color = beta)) + 
+  geom_ribbon(aes(ymax = (upper)/ 1000 * 12, ymin = lower/ 1000 * 12, 
+                  fill = beta, color = NULL), 
+              alpha = 0.2) + 
   geom_line(linewidth = 2) + 
   geom_point(
     data = m_sl_pred_s2$frame,
     aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), 
-        y = exp(`log(sl_mean_pred3)`) / 1000 * 12),
+        y = exp(`log(sl_mean_pred2)`) / 1000 * 12),
     size = 3, alpha = 0.5
   ) +  
   theme_bw(base_size = 15) + 
@@ -1272,8 +1258,6 @@ data.frame("k" = c(0.2, 0.2, 5, 5),
            "b" = c(-5, 5, -5, 5)) %>% 
   compute_delta(z, a)
 
-
-
 # Size dependent arrestment in clustered treatment, no selection
 data.frame("k" = c(1, 0.2, 1, 5), 
            "rss" = c(1,1, 1, 1),
@@ -1287,6 +1271,7 @@ data.frame("k" = c(1, 0.2, 1, 5),
            "cat_size" = c("s", "s", "l", "l"),
            "b" = c(-5, 5, -5, 5)) %>% 
   compute_delta(z, a)
+
 
 ```
 

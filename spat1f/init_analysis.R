@@ -128,7 +128,7 @@ ref_data <- ref_data %>%
     by = "rep_id" 
   ) %>% 
   left_join(
-    read_csv("cleaned_data/event_derivative_master.csv", progress = FALSE) %>% 
+    read_csv("cleaned_data/event_derivative_joint_estimate.csv", progress = FALSE) %>% 
       suppressMessages() %>% 
       mutate(
         rep_id = as.character(rep_id)
@@ -165,20 +165,6 @@ ref_data <- ref_data %>%
   ) %>% 
   dplyr::select(-today)
 
-
-
-
-read_csv("cleaned_data/event_derivative_arrestment.csv", progress = FALSE) %>% 
-  rename_all(.funs = function(x){
-    o <- gsub("state","s",gsub("estimate", "est", gsub(":","\\.", x)))
-    vapply(o, function(z){
-      z <- str_split_1(z, pattern = "__")
-      z2 <- z
-      z2[1] <- z[length(z)]
-      z2[length(z)] <- z[1]
-      paste0(z2, collapse = ".")
-    }, FUN.VALUE = character(1))
-  })
 
 id_list <- list("var" = ref_data %>% 
        filter(!is.na(camera_cutoff)) %>% 

@@ -3,9 +3,9 @@ source("spat1f/init.R")
 for (j in 1:10){
   sim_d <- expand.grid(
     "b" = c(5, 0, -5),
-    "rss" = c(log(0.75), 0, log(1.333333)), 
-    "scale" = c(8.3333, 25, 83.333),
-    "k" = c(0.2, 1, 5)
+    "rss" = c(log(0.8), 0, log(1.25)), 
+    "scale" = c(8.333, 25 , 83.333),
+    "k" = c(0.25, 1, 4)
   ) %>% 
     rep_data.frame(40)
   
@@ -56,16 +56,4 @@ out <- list.files("simulation/check_points", full.names = TRUE) %>%
 # write_csv(out, "simulation/move_rules_sim.csv")
 # 
 # file.remove(list.files("simulation/check_points", full.names = TRUE))
-
-
-
-
-
-
-
-
-
-
-
-
 

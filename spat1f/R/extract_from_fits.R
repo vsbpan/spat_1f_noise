@@ -219,7 +219,7 @@ extract_mean_on_toxic <- function(repIDs,
 }
 
 # Extract model coefficients from fitted issf list
-exract_model_coef <- function(issf_fit_l){
+extract_model_coef <- function(issf_fit_l){
   res <- issf_fit_l %>%
     lapply(function(x){
       as.data.frame(t(

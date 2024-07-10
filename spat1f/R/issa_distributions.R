@@ -138,6 +138,21 @@ make_genvonmises <- function(kappa1, kappa2){
   return(out)
 }
 
+# create amt dist for generalized von mises 
+make_vonmises <- function(kappa){
+  param_names <- c("kappa")
+  
+  params <- as.list(c(kappa))
+  names(params) <- param_names
+  
+  out <- list("name" = "vonmises",
+              "params" = params,
+              "vcov" = NULL)
+  
+  class(out) <- c("vonmises_distr", "ta_distr", "amt_distr", "list")
+  return(out)
+}
+
 # wrapper for amt dist gamma
 make_gamma <- function(shape, scale){
   amt::make_gamma_distr(shape = shape, scale = scale)

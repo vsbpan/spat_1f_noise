@@ -15,6 +15,15 @@ append_genvonmises_estimators <- function(x, na_as_zero = FALSE){
   }
 }
 
+append_unif_estimators <- function(x, na_as_zero = FALSE){
+  if(na_as_zero){
+    x
+  } else {
+    x
+  }
+}
+
+
 
 # Append zigamma distribution param estimators
 append_zigamma_estimators <- function(x){
@@ -90,6 +99,7 @@ append_estimators <- function(x, na_as_zero = FALSE){
   
   ta_est_method <- switch(attr(x, "ta")$name, 
                           "vonmises" = append_vonmises_estimators,
+                          "unif" = append_unif_estimators,
                           "genvonmises" = append_genvonmises_estimators)
   
   x %>% 
@@ -120,6 +130,12 @@ interaction_grid <- function(estimators, int_list){
     "scale" = "sl"
   )
 }
+
+.unif_default_estimator <- function(){
+  out <- list(
+  )
+}
+
 
 .lnorm_default_estimator <- function(){
   list(
@@ -155,7 +171,6 @@ interaction_grid <- function(estimators, int_list){
     "kappa2" = "cos_2theta"
   )
 }
-
 
 pick_default_estimators <- function(dist, int_list = NULL){
   fcall <- sprintf(".%s_default_estimator", dist)
@@ -193,7 +208,11 @@ update_distr <- function(x,
   }
   
   map_estimators <- function(estimators, coefs){
-    names(estimators) <- paste0(names(estimators), "_estimator")
+    if(length(estimators) == 0){
+      return(estimators)
+    } else {
+      names(estimators) <- paste0(names(estimators), "_estimator")
+    }
     estimators <- lapply(estimators, function(estimator_name){
       coefs[estimator_name]
     })
