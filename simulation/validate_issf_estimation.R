@@ -106,37 +106,6 @@ res <- do.call("rbind", out) %>%
   )
 
 # write_csv(res, "simulation/validate_issf_estimation_sim.csv")
-res <- read_csv("simulation/validate_issf_estimation_sim.csv")
-
-res$rss <- exp(res$rss)
-res$rss_true <- exp(res$rss_true)
-
-res %>% 
-  gather(key = variable, value = val, rss:k) %>% 
-  ggplot(aes(x = variable, y = val)) + 
-  geom_hline(
-    data = res %>%
-      group_by(scenario_id) %>% 
-      summarise(rss_true = unique(rss_true), 
-                k_true = unique(k_true)) %>% 
-      gather(key = parameter, value = val, -scenario_id),
-    aes(color = parameter, yintercept = val, linetype = parameter), 
-    size = 1) + 
-  tidybayes::stat_halfeye(alpha = 0.5) +
-  facet_wrap(~ scenario_id, labeller = labeller(
-    scenario_id = c("1" = "Pure arrestment (0% drop out)", 
-                    "2" = "Pure arrestment (66% drop out)", 
-                    "3" = "Pure immigration (0% drop out)",
-                    "4" = "Pure immigration (66% drop out)")
-  )) + 
-  theme_bw(base_size = 15) + 
-  scale_color_discrete(type = c("steelblue", "violetred"), 
-                       label = c("True arrestment", "True immigration")) + 
-  scale_linetype_discrete(label = c("True arrestment", "True immigration")) + 
-  scale_x_discrete(label = c("Arrestment", "Immigration")) + 
-  labs(x = "Parameter", y = "Maximum likelihood estimate", 
-       color = "Parameter", linetype = "Parameter") + 
-  theme(legend.position = "top")
 
 
 

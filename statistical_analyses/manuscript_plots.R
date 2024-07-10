@@ -341,7 +341,7 @@ g3 <- marginal_effects(m_sl_pred_s1, terms = c("cat_pre_wt_log_scale", "beta")) 
   scale_color_manual(values = rev(.getPalette(2)), 
                      aesthetics = c("color", "fill"), 
                      labels = c("Exploration", "Resting/feeding")) + 
-  labs(x = "Pre-weight (g)", y = "Selection free mean step \nlength on toxic diet (cm)")
+  labs(x = "Pre-weight (g)", y = "Predict mean step \nlength on toxic diet (cm)")
 
 
 
@@ -524,7 +524,7 @@ ggsave("graphs/manuscript1_figures/issf_params.png", g_final, dpi = 600, width =
 
 
 #### Supplement full ISSF simulation result ####
-out <- read_csv("simulation/move_rules_sim_reduce.csv")
+out <- read_csv("simulation/move_rules_sim.csv")
 
 out <- out %>% 
   mutate(
@@ -595,3 +595,41 @@ g <- brms::conditional_effects(m,effects = c("cat_pre_wt_log_scale:beta"), re_fo
 
 
 ggsave("graphs/manuscript1_figures/observed_on_toxic.png", g, dpi = 600, width = 5, height = 5)
+
+
+#### ISSF parameter estimation validation simulation plot #### 
+
+res <- read_csv("simulation/validate_issf_estimation_sim.csv")
+
+res$rss <- exp(res$rss)
+res$rss_true <- exp(res$rss_true)
+
+res %>% 
+  gather(key = variable, value = val, rss:k) %>% 
+  ggplot(aes(x = variable, y = val)) + 
+  geom_hline(
+    data = res %>%
+      group_by(scenario_id) %>% 
+      summarise(rss_true = unique(rss_true), 
+                k_true = unique(k_true)) %>% 
+      gather(key = parameter, value = val, -scenario_id),
+    aes(color = parameter, yintercept = val, linetype = parameter), 
+    size = 1) + 
+  tidybayes::stat_halfeye(alpha = 0.5) +
+  facet_wrap(~ scenario_id, labeller = labeller(
+    scenario_id = c("1" = "Pure arrestment (0% drop out)", 
+                    "2" = "Pure arrestment (66% drop out)", 
+                    "3" = "Pure immigration (0% drop out)",
+                    "4" = "Pure immigration (66% drop out)")
+  )) + 
+  theme_bw(base_size = 15) + 
+  scale_color_discrete(type = c("steelblue", "violetred"), 
+                       label = c("True arrestment", "True immigration")) + 
+  scale_linetype_discrete(label = c("True arrestment", "True immigration")) + 
+  scale_x_discrete(label = c("Arrestment", "Immigration")) + 
+  labs(x = "Parameter", y = "Maximum likelihood estimate", 
+       color = "Parameter", linetype = "Parameter") + 
+  theme(legend.position = "top") -> g
+
+ggsave("graphs/manuscript1_figures/issf_validation_sim.png", g, dpi = 600, width = 6, height = 6)
+

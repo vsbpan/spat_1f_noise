@@ -642,7 +642,7 @@ knitr::include_graphics(paste0(getwd(), "/graphs/manuscript1_figures/SEM_simplif
 
 # ISSF parameters
 
-## Selection strength state 1 {.tabset}
+## Selection (immigration) strength state 1 {.tabset}
 
 ### Model summary
 ```{r}
@@ -705,7 +705,7 @@ marginal_effects(m_select_s1, terms = c("cat_pre_wt_log_scale")) %>%
 ```
 
 
-## Selection strength state 2 {.tabset}
+## Selection (immigration) strength state 2 {.tabset}
 
 ### Model summary
 ```{r}
@@ -1231,14 +1231,14 @@ compute_delta <- function(hypothesis, res, ref_list){
 ```{r}
 # No arrestment, no selection
 data.frame("k" = c(1, 1, 1, 1), 
-           "rss" = c(1,1, 1, 1),
+           "rss" = c(1, 1, 1, 1),
            "cat_size" = c("s", "s", "l", "l"),
            "b" = c(-5, 5, -5, 5)) %>% 
   compute_delta(z, a) 
 
 
 # Size dependent arrestment, no selection
-data.frame("k" = c(0.2, 0.2, 5, 5), 
+data.frame("k" = c(0.25, 0.25, 4, 4), 
            "rss" = c(1,1, 1, 1),
            "cat_size" = c("s", "s", "l", "l"),
            "b" = c(-5, 5, -5, 5)) %>% 
@@ -1246,28 +1246,28 @@ data.frame("k" = c(0.2, 0.2, 5, 5),
 
 # No arrestment, size dependent selection
 data.frame("k" = c(1, 1, 1, 1), 
-           "rss" = c(0.75,0.75, 1.33, 1.33),
+           "rss" = c(0.8,0.8, 1.25, 1.25),
            "cat_size" = c("s", "s", "l", "l"),
            "b" = c(-5, 5, -5, 5)) %>% 
   compute_delta(z, a)
 
 # Size dependent arrestment, size dependent selection
-data.frame("k" = c(0.2, 0.2, 5, 5), 
-           "rss" = c(0.75,0.75, 1.33, 1.33),
+data.frame("k" = c(0.25, 0.25, 4, 4), 
+           "rss" = c(0.8,0.8, 1.25, 1.25),
            "cat_size" = c("s", "s", "l", "l"),
            "b" = c(-5, 5, -5, 5)) %>% 
   compute_delta(z, a)
 
 # Size dependent arrestment in clustered treatment, no selection
-data.frame("k" = c(1, 0.2, 1, 5), 
+data.frame("k" = c(1, 0.25, 1, 4), 
            "rss" = c(1,1, 1, 1),
            "cat_size" = c("s", "s", "l", "l"),
            "b" = c(-5, 5, -5, 5)) %>% 
   compute_delta(z, a)
 
 # Size dependent arrestment in clustered treatment, size dependent selection
-data.frame("k" = c(1, 0.2, 1, 5), 
-           "rss" = c(0.75,0.75, 1.33, 1.33),
+data.frame("k" = c(1, 0.25, 1, 4), 
+           "rss" = c(0.8,0.8, 1.25, 1.25),
            "cat_size" = c("s", "s", "l", "l"),
            "b" = c(-5, 5, -5, 5)) %>% 
   compute_delta(z, a)
@@ -1323,7 +1323,7 @@ out %>%
   )) + 
   labs(x = "Less toxic diet arresetment strength (ratio)", 
        y = expression(atop(Change~"in"~proprtion~time~on, paste("more toxic diet",~(beta[5]-beta[-5])))),
-       color = "Less toxic diet selection strength (odds)") + 
+       color = "Less toxic diet relative immigration strength (odds ratio)") + 
   scale_color_brewer(type = "seq") -> g;g
 
 
