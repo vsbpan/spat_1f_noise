@@ -237,23 +237,24 @@ ggsave("graphs/generalized_von_mises_fit.png",g, dpi = 600)
 #### ISSF Params ####
 
 
-g1 <- marginal_effects(m_select_s1, terms = c("cat_pre_wt_log_scale")) %>% 
+g1 <- marginal_effects(m_select_s1, terms = c("cat_pre_wt_log_scale", "beta")) %>% 
   cbind(state = "1") %>% 
-  rbind(marginal_effects(m_select_s2, terms = c("cat_pre_wt_log_scale")) %>% 
+  rbind(marginal_effects(m_select_s2, terms = c("cat_pre_wt_log_scale", "beta")) %>% 
           cbind(state = "2")) %>% 
-  ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(yhat), color = state)) + 
+  ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(yhat), 
+             color = state, linetype = beta)) + 
   geom_ribbon(aes(ymax = exp(upper), ymin = exp(lower), fill = state, color = NULL), alpha = 0.2) + 
   geom_line(linewidth = 2) + 
   geom_point(
     data = m_select_s1$frame %>% 
       cbind(state = "1"),
-    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(s1.less_toxic.est)),
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(s1.less_toxic_end.est), shape = beta),
     size = 3, alpha = 0.5
   ) +  
   geom_point(
     data = m_select_s2$frame %>% 
       cbind(state = "2"),
-    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(s2.less_toxic.est)),
+    aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = exp(s2.less_toxic_end.est), shape = beta),
     size = 3, alpha = 0.5
   ) + 
   theme_bw(base_size = 15) + 
@@ -264,7 +265,8 @@ g1 <- marginal_effects(m_select_s1, terms = c("cat_pre_wt_log_scale")) %>%
   scale_color_manual(values = rev(.getPalette(2)), 
                      aesthetics = c("color", "fill"), 
                      labels = c("Exploration", "Resting/feeding")) + 
-  labs(x = "Pre-weight (g)", y = "Less toxic diet selection \nstrength (odds ratio)")
+  scale_linetype_manual(values = c("dotted", "dashed", "solid")) +
+  labs(x = "Pre-weight (g)", y = "Less toxic diet relative \nimmigration strength (odds ratio)"); g1
 
 
 g2 <- marginal_effects(m_arrest_s1, terms = c("cat_pre_wt_log_scale", "beta")) %>% 
@@ -290,7 +292,7 @@ ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = (yhat), c
   ) + 
   theme_bw(base_size = 15) + 
   geom_hline(aes(yintercept = 1), color = "black", linetype = "dashed", linewidth = 1) + 
-  theme(legend.position = "top", legend.box = "verticle", legend.margin=margin(-1,-1,-1,-1)) +
+  theme(legend.position = "top") +
   scale_y_continuous(trans = "log10") + 
   scale_x_continuous(trans = "log10", labels = fancy_scientific) +
   scale_linetype_manual(values = c("dotted", "dashed", "solid")) +
@@ -303,13 +305,14 @@ ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = (yhat), c
 
 
 
-g3 <- marginal_effects(m_sl_pred_s1, terms = c("cat_pre_wt_log_scale")) %>% 
+g3 <- marginal_effects(m_sl_pred_s1, terms = c("cat_pre_wt_log_scale", "beta")) %>% 
   cbind(state = "1") %>% 
   rbind(
-    marginal_effects(m_sl_pred_s2, terms = c("cat_pre_wt_log_scale")) %>% 
+    marginal_effects(m_sl_pred_s2, terms = c("cat_pre_wt_log_scale", "beta")) %>% 
       cbind(state = "2")
   ) %>% 
-  ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = (yhat) / 1000 * 12, color = state)) + 
+  ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = (yhat) / 1000 * 12, 
+             color = state, linetype = beta)) + 
   geom_ribbon(aes(ymax = (upper)/ 1000 * 12, ymin = lower/ 1000 * 12, color = NULL, fill = state), 
               alpha = 0.2) + 
   geom_line(linewidth = 2) + 
@@ -317,20 +320,23 @@ g3 <- marginal_effects(m_sl_pred_s1, terms = c("cat_pre_wt_log_scale")) %>%
     data = m_sl_pred_s1$frame %>% 
       cbind(state = "1"),
     aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), 
-        y = exp(`log(sl_mean_pred1)`) / 1000 * 12),
+        y = exp(`log(sl_mean_pred1)`) / 1000 * 12,
+        shape = beta),
     size = 3, alpha = 0.5
   ) +  
   geom_point(
     data = m_sl_pred_s2$frame %>% 
       cbind(state = "2"),
     aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), 
-        y = exp(`log(sl_mean_pred3)`) / 1000 * 12),
+        y = exp(`log(sl_mean_pred2)`) / 1000 * 12, 
+        shape = beta),
     size = 3, alpha = 0.5
   ) +  
   theme_bw(base_size = 15) + 
   theme(legend.position = "top") +
   scale_y_continuous(trans = "log10") + 
   scale_x_continuous(trans = "log10", labels = fancy_scientific) +
+  scale_linetype_manual(values = c("dotted", "dashed", "solid")) +
   scale_color_brewer(type = "qual", aesthetics = c("color","fill")) + 
   scale_color_manual(values = rev(.getPalette(2)), 
                      aesthetics = c("color", "fill"), 
@@ -452,15 +458,15 @@ g4 <- data.frame(
 
 
 
-g_final <- ggarrange(g2, g1, g3,
-                     ncol = 1,
+g_final <- ggarrange(g2, g1, g3, g3,
+                     ncol = 2, nrow = 2,
           common.legend = TRUE, 
           align = "hv", 
           labels = "AUTO",
           legend = "top")
 
-ggsave("graphs/manuscript1_figures/issf_params.png", g_final, dpi = 600, width = 4, 
-       height = 11, bg = "white")
+ggsave("graphs/manuscript1_figures/issf_params.png", g_final, dpi = 600, width = 7.5, 
+       height = 7.5, bg = "white")
 
 
 #### Main text simplified ISSF simulation result ####
