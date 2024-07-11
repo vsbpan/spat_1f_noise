@@ -795,6 +795,7 @@ m_arrest_s1 <- glmmTMB(
   data = d3,
 ); summary(m_arrest_s1)
 
+car::Anova(m_arrest_s1, type = "II")
 car::Anova(m_arrest_s1, type = "III")
 
 ```
@@ -1229,7 +1230,7 @@ compute_delta <- function(hypothesis, res, ref_list){
 
 ## Model scenarios
 ```{r}
-# No arrestment, no selection
+# No arrestment, no immigration
 data.frame("k" = c(1, 1, 1, 1), 
            "rss" = c(1, 1, 1, 1),
            "cat_size" = c("s", "s", "l", "l"),
@@ -1237,35 +1238,35 @@ data.frame("k" = c(1, 1, 1, 1),
   compute_delta(z, a) 
 
 
-# Size dependent arrestment, no selection
+# Size dependent arrestment, no immigration
 data.frame("k" = c(0.25, 0.25, 4, 4), 
            "rss" = c(1,1, 1, 1),
            "cat_size" = c("s", "s", "l", "l"),
            "b" = c(-5, 5, -5, 5)) %>% 
   compute_delta(z, a)
 
-# No arrestment, size dependent selection
+# No arrestment, size dependent immigration
 data.frame("k" = c(1, 1, 1, 1), 
            "rss" = c(0.8,0.8, 1.25, 1.25),
            "cat_size" = c("s", "s", "l", "l"),
            "b" = c(-5, 5, -5, 5)) %>% 
   compute_delta(z, a)
 
-# Size dependent arrestment, size dependent selection
+# Size dependent arrestment, size dependent immigration
 data.frame("k" = c(0.25, 0.25, 4, 4), 
            "rss" = c(0.8,0.8, 1.25, 1.25),
            "cat_size" = c("s", "s", "l", "l"),
            "b" = c(-5, 5, -5, 5)) %>% 
   compute_delta(z, a)
 
-# Size dependent arrestment in clustered treatment, no selection
+# Size dependent arrestment in clustered treatment, no immigration
 data.frame("k" = c(1, 0.25, 1, 4), 
            "rss" = c(1,1, 1, 1),
            "cat_size" = c("s", "s", "l", "l"),
            "b" = c(-5, 5, -5, 5)) %>% 
   compute_delta(z, a)
 
-# Size dependent arrestment in clustered treatment, size dependent selection
+# Size dependent arrestment in clustered treatment, size dependent immigration
 data.frame("k" = c(1, 0.25, 1, 4), 
            "rss" = c(0.8,0.8, 1.25, 1.25),
            "cat_size" = c("s", "s", "l", "l"),
