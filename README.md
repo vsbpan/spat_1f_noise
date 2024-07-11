@@ -68,8 +68,10 @@ The custom code written for this project are bundled as a pseudo simulated packa
     * `cleaned_data/events/` Houses `.csv` files on the location and associated metadata at each time point for each caterpillar. Called by `fetch_events()`. Named after each trial ID. 
     * `cleaned_data/data_dicts/` Houses `data_dict` class objects that represents a cleaned and formatted version of the Mask-R-CNN output of each frame. `data_dict` objects are at the center of all data analyses and are supported by various S3 methods. The `.rds` files are called by `fetch_data_dict()`. Named after each trial ID. 
     * `consumption_mask_derivative.csv` Results from end of experiment herbivory masks. 
-    * `event_derivative*.csv` Results from movement tracks and iSSF fits with different structures. The master file is a merged version of the different outputs.  
+    * `event_derivative_joint_estimate.csv` Results from movement tracks and iSSF fits. 
     * `sus_frames_list.rds` A list of frames for each rep for which they are flagged as having false head movements. 
+    * `ref_data_for_Dryad_July_11_2024.csv` Cleaned data used in the statistical analyses for manuscript 1. 
+    * `README_for_Dryad_July_11_2024.md` Documentation for Dryad, with descriptions of the file `ref_data_for_Dryad_July_11_2024.csv`
 
 * `data_processing/` Houses various scripts used to complete certain computer vision / data processing goals. 
     * `crop_raw_image_auto.R` Read saved anchors and for those images that have yet to be cropped, crop them. 
@@ -116,7 +118,9 @@ The custom code written for this project are bundled as a pseudo simulated packa
 
 * `simulation/` Houses code and results of simulation. 
     * `simulate_rules.R` Code for simulating different behavioral rules for the first manuscript. 
-    * `move_rules_sim.csv` Result of the merged checkpoint files, containg the result of the `simulate_rules.R` simulation. 
+    * `move_rules_sim.csv` Result of the merged checkpoint files, containing the result of the `simulate_rules.R` simulation. 
+    * `validate_issf_estimation.R` Code for validating the identifiability of iSSF parameters (appendix 11 of manuscript 1)
+    * `validate_issf_estimation_sim.csv` Result of the merged checkpoint files, containing the sult of the `validate_issf_estimation.R` simulation. 
 
 * `time_lapse_feed/` Houses sub-directories named after the trial ID (e.g. `rep50/`) containing raw time lapse images. The naming convention is as such: `repID_camID_sTimeInSeconds.jpg` e.g. `rep3_cam3_s4325.jpg`. This directory is not uploaded to GitHub due to its size. 
 
