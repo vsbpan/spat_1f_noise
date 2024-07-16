@@ -188,6 +188,12 @@ coef.issf_fit <- function(x, se = FALSE, ...){
   }
 }
 
+
+# S3 method for logLik of issf_fit objects
+logLik.issf_fit <- function(x, ...){
+  logLik(x$model)
+}
+
 # S3 method for print and summary of issf_fit objects
 print.issf_fit <- function(x, ...){
   print(summary(x$model))
@@ -198,6 +204,7 @@ print.issf_fit <- function(x, ...){
 registerS3method("print", "issf_fit", print.issf_fit)
 registerS3method("summary", "issf_fit", print.issf_fit)
 registerS3method("coef", "issf_fit", coef.issf_fit)
+registerS3method("logLik", "issf_fit", logLik.issf_fit)
 
 
 

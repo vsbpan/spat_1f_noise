@@ -125,7 +125,55 @@ dummy_transition_mat <- function(size = 2, sticky = TRUE){
 
 
 
+delta_fun <- function(x, t, i, weight_FUN, ...){
+  tau <- t[seq_len(i)] - 1
+  w <- weight_FUN(t[i] - tau, ...)
+  
+  wt_xi <- (x[match(x = tau, table = t)]) * w
+  
+  wt_x <- sum(wt_xi, na.rm = TRUE) / sum(w[!is.na(wt_xi)])
+  
+  x[i] - wt_x
+}
 
 
+memdel <- function(x, t, case, weight_FUN, ...){
+  weight_FUN <- match.fun(weight_FUN)
+  stopifnot(length(x) == length(t))
+  
+  x <- x[order(t)]
+  x2 <- x[case]
+  t2 <- t[case]
+  
+  res <- vapply(
+    seq_along(t2),
+    function(i){
+      delta_fun(
+        x = x2, 
+        t = t2,
+        i = i,
+        weight_FUN = weight_FUN,
+        ...
+      )
+    }, 
+    numeric(1)
+  ) %>% 
+    NaN_to_NA()
+  
+  res <- redup(x = res, grid = t2, target = t)
+  
+  return(res)
+}
 
+redup <- function(x, grid, target){
+  # grid and x must be paired and the same length
+  x[match(target, table = grid)]
+}
+
+
+# memdelC2 <- function(x, t, Case, k){
+#   memdelC(x, t, Case, k) %>% 
+#     unname() %>% 
+#     do.call("redup", .)
+# }
 

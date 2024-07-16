@@ -21,7 +21,7 @@ d$size_px <- fetch_events(ID) %>%
 
 d <- d %>% 
   mutate(
-    toxic = read_value(x2, y2, c(1000, 1000),
+    toxic = read_value(x1, y1, c(1000, 1000),
                        ref_img = fetch_trt_spec(ID, 
                                                 .ref_data = ref_data, 
                                                 quiet = TRUE)), 
