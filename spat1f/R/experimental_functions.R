@@ -125,7 +125,7 @@ dummy_transition_mat <- function(size = 2, sticky = TRUE){
 
 
 
-delta_fun <- function(x, t, i, weight_FUN, ...){
+memory_fun <- function(x, t, i, weight_FUN, ...){
   tau <- t[seq_len(i)] - 1
   w <- weight_FUN(t[i] - tau, ...)
   
@@ -133,11 +133,11 @@ delta_fun <- function(x, t, i, weight_FUN, ...){
   
   wt_x <- sum(wt_xi, na.rm = TRUE) / sum(w[!is.na(wt_xi)])
   
-  x[i] - wt_x
+  wt_x
 }
 
 
-memdel <- function(x, t, case, weight_FUN, ...){
+memory <- function(x, t, case, weight_FUN, ...){
   weight_FUN <- match.fun(weight_FUN)
   stopifnot(length(x) == length(t))
   
@@ -148,7 +148,7 @@ memdel <- function(x, t, case, weight_FUN, ...){
   res <- vapply(
     seq_along(t2),
     function(i){
-      delta_fun(
+      memory_fun(
         x = x2, 
         t = t2,
         i = i,

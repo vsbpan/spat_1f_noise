@@ -22,7 +22,7 @@ fetch_trt_spec <- function(repID, .ref_data = get("ref_data", envir = globalenv(
       trt_meta_as_list()
   }
   if(!quiet){
-    cat(sprintf("Fetached synID '%s' for 'rep%s'\n", syn_id_matched, repID))
+    cat(sprintf("Fetched synID '%s' for 'rep%s'\n", syn_id_matched, repID))
   }
   
   index <- which(names(trt_meta_iml) == paste0("syn_id__",syn_id_matched))
