@@ -34,6 +34,12 @@ data_prep <- function(ID, ref_data = get("ref_data", envir = globalenv())){
     )
 }
 
+FUN <- function(t, k = 0.1){
+  1 / (1 + t * k)
+  # exp(-k * t)
+}
+
+
 
 out <- lapply(d3$rep_id, function(x){
   d4 <- data_prep(x)
@@ -41,7 +47,6 @@ out <- lapply(d3$rep_id, function(x){
     case ~ 
       state:logsl:less_toxic_start_f +
       state:sl:less_toxic_start_f +
-      is_state1:sl:less_toxic_start_f:t + 
       is_state1:sl:less_toxic_start_f:foo +
       strata(step_id),
     data = d4 %>% 
@@ -50,9 +55,7 @@ out <- lapply(d3$rep_id, function(x){
                      step_id, 
                      case,
                      weight_FUN = FUN, 
-                     k = 0.01),
-        t = step_id / 10 / 24
-      ) %>% 
+                     k = 0.1)) %>% 
       filter(
         step_id > 0
       ), 
@@ -63,13 +66,11 @@ out <- lapply(d3$rep_id, function(x){
 })
 
 
-
-  
 out2 <- lapply(out, function(x){
   x %>% 
     coef(se = TRUE) %>% 
     map(.f = function(x){
-      x[c(11,12)]
+      x[c(9,10)]
     }) %>% 
     do.call("rbind", .) %>% 
     as.data.frame() %>% 
@@ -129,6 +130,29 @@ d5 %>%
   ) 
 
 
+d5 %>% 
+  mutate(
+    lower = less_toxic_start_f1.sl.is_state1.foo__estimate - 
+      2 * less_toxic_start_f1.sl.is_state1.foo__se, 
+    upper = less_toxic_start_f1.sl.is_state1.foo__estimate + 
+      2 * less_toxic_start_f1.sl.is_state1.foo__se
+  ) %>% 
+  mutate(
+    sig = sign(lower) == sign(upper)
+  ) %>% 
+  filter(
+    abs(less_toxic_start_f1.sl.is_state1.foo__estimate) < 1
+  ) %>% 
+  ggplot(aes(x = cat_pre_wt_log_scale, y = less_toxic_start_f1.sl.is_state1.foo__estimate, color = beta, group = beta)) + 
+  geom_smooth(method = "lm") + 
+  geom_pointrange(
+    aes(ymin = less_toxic_start_f1.sl.is_state1.foo__estimate - 2 * less_toxic_start_f1.sl.is_state1.foo__se,
+        ymax = less_toxic_start_f1.sl.is_state1.foo__estimate + 2 * less_toxic_start_f1.sl.is_state1.foo__se,
+        alpha = sig),
+    position = position_jitterdodge(jitter.width = 0.5)
+  ) 
+
+
 
 
 
@@ -180,10 +204,6 @@ m <- issf(
 );summary(m) 
 d4 <- data_prep(55)
 
-FUN <- function(t, k = 0.1){
-  1 / (1 + t * k)
-  # exp(-k * t)
-}
 
 
 
