@@ -13,6 +13,9 @@ data {
   int<lower=0> J_lag_ylatent[N_ylatent]; // number of lags per observation
   int<lower=0> N_predictors; // number of predictors
   matrix[N_y, N_predictors] X; // design matrix without the intercept
+  int has_lag; // has lag
+  real<lower=0> sigma_y_prior;
+  real<lower=0> sigma_ylatent_prior;
 }
 transformed data {
   int max_lag_ylatent = Kar_ylatent; // Compute max lag
@@ -21,16 +24,16 @@ parameters {
   vector[Nmi_y] Ymi_y;  // estimated missings y
   real<lower=0> sigma_y;  // dispersion parameter for observation process 
   vector[Nmi_ylatent] Ymi_ylatent;  // estimated missings y_latent (all missing)
-  vector[Kar_ylatent] ar_ylatent;  // autoregressive coefficients (little r)
+  vector[Kar_ylatent] ar_ylatent;  // autoregressive coefficients 
   real<lower=0> sigma_ylatent;  // dispersion parameter for random walk process
   real Intercept_ylatent;
   vector[N_predictors] beta_x_ylatent; // beta coef for predictors
 }
 transformed parameters {
   real lprior = 0;  // prior contributions to the log posterior
-  lprior += normal_lpdf(sigma_y | 0,1) - 1 * normal_lccdf(0 | 0,1); // half-normal prior for sigma
-  lprior += normal_lpdf(ar_ylatent | 1, 0.1); // normal prior for ar coefs. Probably should be cauchy(1,0.01)
-  lprior += normal_lpdf(sigma_ylatent | 0,1) - 1 * normal_lccdf(0 | 0,1); // half-normal prior for sigma
+  lprior += normal_lpdf(sigma_y | 0,sigma_y_prior) - 1 * normal_lccdf(0 | 0,sigma_y_prior); // half-normal prior for sigma
+  lprior += normal_lpdf(ar_ylatent | 0, 0.1); // normal prior for lag coefs
+  lprior += normal_lpdf(sigma_ylatent | 0,sigma_ylatent_prior) - 1 * normal_lccdf(0 | 0,sigma_ylatent_prior); // half-normal prior for sigma
   lprior += normal_lpdf(Intercept_ylatent | 0,1); // normal prior for intrinsic growth rate
   lprior += normal_lpdf(beta_x_ylatent | 0,1); // normal prior for marginal effect of x on intrinsic growth rate
 }
@@ -43,11 +46,13 @@ model {
     vector[N_ylatent] Yl_ylatent = Y_ylatent;
     // initialize linear predictor term
     vector[N_y] mu_y = rep_vector(0.0, N_y);
-    // matrix storing lagged residuals
+    
+    
+    // matrix storing lagged values
     matrix[N_ylatent, max_lag_ylatent] lag_ylatent = rep_matrix(0, N_ylatent, max_lag_ylatent);
     
     // initialize linear predictor term
-    vector[N_ylatent] mu_ylatent = rep_vector(0.0, N_ylatent);
+    vector[N_ylatent] mu_ylatent = rep_vector(0.0, N_ylatent); // start from zero
     Yl_y[Jmi_y] = Ymi_y;
     Yl_ylatent[Jmi_ylatent] = Ymi_ylatent;
     
@@ -62,16 +67,27 @@ model {
     // Loop through data, dropping the first observation
     // Autoregressive struture for ylantent
     for (n in 2:N_ylatent) {
-
-      // Compute ylatent for lag i
-      for (i in 1:J_lag_ylatent[n]) {
-        lag_ylatent[n, i] = Yl_ylatent[n - i];
+      
+      // If no lag, y_latent reduces to a pure white noise process, not random walk
+      if(has_lag){
+        // Compute ylatent for lag i
+        for (i in 1:J_lag_ylatent[n]) {
+          lag_ylatent[n, i] = Yl_ylatent[n - i];
+        }
+        
+        // ar_ylatent can be modified as: 
+        // ar_ylatent = X %*% beta
+        // add lag effects to latent y
+        mu_ylatent[n] += lag_ylatent[n, 1] + lag_ylatent[n, 1:Kar_ylatent] * ar_ylatent; 
       }
       
       // drift for latent y
-      // ar_ylatent can be modified as: 
-      // ar_ylatent = X %*% beta
-      mu_ylatent[n] += lag_ylatent[n, 1:Kar_ylatent] * ar_ylatent + Intercept_ylatent + X[n, 1:N_predictors] * beta_x_ylatent;
+      mu_ylatent[n] += Intercept_ylatent;
+      
+      if(N_predictors > 0){
+        mu_ylatent[n] += X[n, 1:N_predictors] * beta_x_ylatent; 
+      }
+      
     }
     
     // Observation process
