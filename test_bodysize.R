@@ -101,17 +101,7 @@ foo <- function(r = 1, drift = 0, sigma_obs = 0.5, sigma_bm = 0.3, n_missing = 1
 }
 
 
-inherit_val <- function(x){
-  curr_val <- x[1]
-  for(i in seq_along(x)){
-    xi <- x[i]
-    if(!is.na(xi)){
-      curr_val <- xi
-    }
-    x[i] <- curr_val
-  }
-  x
-}
+
 
 
 y <- foo(r = 1.005, drift = 0.001, sigma_obs = 0.2, sigma_bm = 0.1)
@@ -241,6 +231,28 @@ out %>%
 rstan::stan_plot(fit, c("beta_x_ylatent"))
 
 extract_posterior(fit1)
+
+
+
+
+
+ID <- 55
+z <- fetch_events(ID) %>% 
+  clean_events() %>% 
+  mutate(
+    on_toxic = read_value(head_x, head_y, ref_img = fetch_trt_spec(ID)), 
+    state = c(NA, viterbi(
+      fit_HMM(as.moveData(move_seq(head_x, head_y)))
+    ))
+  )
+
+
+
+z %>% 
+  ggplot(aes(x = head_x, y = head_y)) + 
+  geom_path()
+
+
 
 
 

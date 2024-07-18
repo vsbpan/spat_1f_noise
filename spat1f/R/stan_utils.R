@@ -9,3 +9,15 @@ extract_posterior <- function(x){
   rownames(res) <- NULL
   res
 }
+
+inherit_val <- function(x){
+  curr_val <- x[1]
+  for(i in seq_along(x)){
+    xi <- x[i]
+    if(!is.na(xi)){
+      curr_val <- xi
+    }
+    x[i] <- curr_val
+  }
+  x
+}
