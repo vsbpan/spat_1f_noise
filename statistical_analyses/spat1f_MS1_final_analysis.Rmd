@@ -55,19 +55,6 @@ check_mod <- function(model){
   performance::posterior_predictive_check(model)
 }
 
-# Get posterior draws
-epred_draws <- function(model, newdata){
-  res <- brms::posterior_epred(model, 
-                  newdata = newdata, 
-                  allow_new_levels = TRUE, 
-                  re_formula = NA) %>% 
-    t()
-  colnames(res) <- paste0("draw_", seq_len(ncol(res)))
-  cbind(newdata,res) %>% 
-    gather(key = draw, value = val, contains("draw_"))
-}
-
-
 ```
 
 

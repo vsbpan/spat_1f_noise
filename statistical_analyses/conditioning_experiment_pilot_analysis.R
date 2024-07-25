@@ -1,64 +1,6 @@
 source("spat1f/init.R")
 
 
-check_brms <- function(model, integer = NULL, plot = TRUE, asFactor = FALSE, ...) {
-  if(is.null(integer)){
-    integer <- switch(insight::get_family(model)$type, 
-                      "real" = FALSE,
-                      "int" = TRUE)
-  }
-  
-  if(insight::get_family(model)$family %in% c("multinomial")){
-    resp <- brms::posterior_predict(model, ndraws = 1000)
-    y <- get_y(model)
-    pred <- colMeans(brms::posterior_epred(model, ndraws = 1000, re.form = NA))
-    
-    for (i in seq_len(ncol(y))){
-      
-      DHARMa::createDHARMa(
-        simulatedResponse = t(resp[,,i]),
-        observedResponse = y[,i], 
-        fittedPredictedResponse = pred[,i],
-        integerResponse = FALSE) %>% 
-        plot(asFactor = asFactor, title = dimnames(resp)[[3]][i], ...)
-    }
-    return(invisible(NULL))
-  }
-  
-  
-  if(insight::get_family(model)$family %in% c("categorical")){
-    levels <- unique(get_y(model))
-    y <- apply(levels,1,function(x){as.numeric(get_y(model) == x)})
-    resp <- brms::posterior_predict(model, ndraws = 1000)
-    resp <- array(do.call("c", lapply(levels,function(x){as.numeric(resp == x)})), 
-                  dim = c(1000, nrow(y), length(levels)))
-    pred <- colMeans(brms::posterior_epred(model, ndraws = 1000, re.form = NA))
-    
-    for (i in seq_len(ncol(y))){
-      
-      DHARMa::createDHARMa(
-        simulatedResponse = t(resp[,,i]),
-        observedResponse = y[,i], 
-        fittedPredictedResponse = pred[,i],
-        integerResponse = FALSE) %>% 
-        plot(asFactor = asFactor, title = dimnames(resp)[[3]][i], ...)
-    }
-    return(invisible(NULL))
-  }
-  
-  dharma.obj <- DHARMa::createDHARMa(
-    simulatedResponse = t(brms::posterior_predict(model, ndraws = 1000)),
-    observedResponse = get_y(model), 
-    fittedPredictedResponse = colMeans(brms::posterior_epred(model, ndraws = 1000, re.form = NA)),
-    integerResponse = integer)
-  
-  if (isTRUE(plot)) {
-    plot(dharma.obj, asFactor = asFactor, ...)
-  }
-  
-  invisible(dharma.obj)
-  
-}
 
 
 
@@ -68,7 +10,7 @@ d <- d %>%
   mutate_if(is.character, .funs = tolower) %>% 
   mutate(
     first_diet = ifelse(is.na(first_diet), "n", first_diet),
-    second_diet = ifelse(is.na(first_diet), "n", first_diet),
+    second_diet = ifelse(is.na(second_diet), "n", second_diet),
     cat_wt_log = log(cat_wt),
     cat_wt_log_scale = as.numeric(scale(log(cat_wt)))
   )
@@ -243,94 +185,118 @@ sjPlot::plot_model(m, type = "pred",
 
 
 
-get_mean_pred <- function(model, terms, along_n = 300, newdata2 = NULL){
-  predictors <- get_cleaned_newdata(model, terms = terms, n = along_n)
-  
-  if(!is.null(newdata2)){
-    predictors <- cbind(predictors, newdata2)
-  }
-  
-  epred <- posterior_epred(model, newdata = predictors, re_formula = NA)
-  
-  foo <- function(x){
-    data.frame(
-      predictors,
-      "y_hat" = matrixStats::colMeans2(x)
-    )
-  }
-  if(length(dim(epred)) == 2){
-    foo(epred) %>% cbind("resp" = insight::find_response(model))
-  } else {
-    lapply(
-      seq_len(dim(epred)[3]), function(i){
-        cbind(foo(epred[,,i]), "resp" = dimnames(epred)[[3]][i])
-      }
-    ) %>% 
-      do.call("rbind", .)
-  }
-}
-
-get_cleaned_newdata <- function(model, terms = NULL, n = 300){
-  
-  predictor_frame <- insight::get_data(model)
-  yname <- insight::find_response(model)
-  predictor_frame <-predictor_frame[,!names(predictor_frame) %in% yname]
-  
-  rand_names <- insight::find_random(model)$random
-  var_names <- names(predictor_frame)
-  
-  v <- lapply(terms, function(z){
-    switch(as.character(grepl("\\[", z) && grepl("\\[", z)), 
-           "TRUE" = as.numeric(unlist(strsplit(gsub(".*\\[|\\]","",z),","))),
-           "FALSE" = NULL)
-  })
-  terms <- gsub("\\[.*","",terms)
-  
-  
-  new_data <- expand.grid(lapply(seq_along(predictor_frame), function(i, d, n, v){
-    x <- d[, i]
-    
-    if(names(d)[i] %in% terms){
-      j <- which(terms %in% names(d)[i])
-      
-      if(is.null(v[[j]])){
-        if(is.numeric(x)){
-          x <- seq_interval(x, n[j])
-        } else {
-          x <- unique(x) 
-        }
-      } else {
-        x <- v[[j]]
-      }
-      return(x) 
-    } else {
-      if(is.numeric(x)){
-        x <- mean(x)
-      } else {
-        if(names(d)[i] %in% rand_names){
-          x <- "foooooooooooooooo"
-        } else {
-          x <- unique(x)  
-        }
-      }
-      return(x)
-    }
-  }, 
-  d = as.data.frame(predictor_frame), 
-  n = n, 
-  v = v))
-  
-  names(new_data) <- names(predictor_frame)
-  
-  return(new_data)
-}
 
 
 
 
+m2
+
+m <- readRDS("invisible/fitted_models/first_diet_m.rds")
 
 
 
+m1_pred2 <- get_pred(m, 
+                         terms = c("cat_wt_log_scale", "center_block_trt","condition_trt"), 
+                         along_n = 100, 
+                     ndraws = 4000)
+
+g <- m1_pred2 %>% 
+  filter(center_block_trt != "y") %>% 
+  filter(resp != "n") %>% 
+  group_by(
+    iter, cat_wt_log_scale, center_block_trt, condition_trt
+  ) %>% 
+  mutate(
+    y_hat = y_hat / sum(y_hat)
+  ) %>% 
+  filter(
+    resp == "l"
+  ) %>% 
+  mutate(
+    condition_trt = ifelse(condition_trt == "h", "Reared on 2 mg/g", "Reared on 0 mg/g")
+  ) %>% 
+  ggplot(aes(x = exp(cat_wt_log_scale), y = y_hat)) +
+  facet_wrap(~ condition_trt) + 
+  tidybayes::stat_lineribbon() + 
+  scale_fill_brewer() + 
+  theme_bw(base_size = 15) + 
+  scale_x_log10(label = fancy_scientificb) + 
+  geom_hline(color = "violetred", yintercept = 0.2, size = 2, linetype = "dashed") + 
+  labs(x = "Pre-weight (g)", y = "First choice is less toxic diet")
+
+
+
+
+ggsave("graphs/first_choice_conditioning.png", g, dpi = 600, width = 8, height = 5)
+
+
+m1_pred2 <- get_pred(m, 
+                     terms = c("cat_wt_log_scale", "center_block_trt","condition_trt"), 
+                     along_n = 50, 
+                     ndraws = 2000)
+
+m1_pred2 %>% 
+  group_by(
+    iter, cat_wt_log_scale, center_block_trt, condition_trt
+  ) %>% 
+  mutate(
+    y_hat = 1 - y_hat / sum(y_hat)
+  ) %>% 
+  filter(
+    resp == "n"
+  ) %>% 
+  mutate(
+    condition_trt = ifelse(condition_trt == "h", "Reared on 2 mg/g", "Reared on 0 mg/g"),
+    center_block_trt = ifelse(center_block_trt == "y", "Has center block", "No center block")
+  ) %>% 
+  group_by(iter, cat_wt_log_scale, center_block_trt) %>% 
+  summarise(
+    y_hat = diff(y_hat)
+  )
+  slice_sample(n = 5000) %>% 
+  ggplot(aes(x = exp(cat_wt_log_scale), y = y_hat)) +
+  facet_grid(center_block_trt ~ condition_trt) + 
+  tidybayes::stat_lineribbon() + 
+  scale_fill_brewer() + 
+  theme_bw(base_size = 15) + 
+  scale_x_log10(label = fancy_scientificb) + 
+  labs(x = "Pre-weight (g)", y = "First choice is less toxic diet")
+
+
+
+
+a <- m1_pred2 %>% 
+  group_by(
+    iter, cat_wt_log_scale, center_block_trt, condition_trt
+  ) %>% 
+  mutate(
+    y_hat = 1 - y_hat / sum(y_hat)
+  ) %>% 
+  filter(
+    resp == "n"
+  ) %>% 
+  mutate(
+    condition_trt = ifelse(condition_trt == "h", "Reared on 2 mg/g", "Reared on 0 mg/g"),
+    center_block_trt = ifelse(center_block_trt == "y", "Has center block", "No center block")
+  ) %>% 
+  group_by(iter, cat_wt_log_scale, center_block_trt) %>% 
+  summarise(
+    y_hat = diff(y_hat)
+  )
+
+
+
+g2 <- a %>% 
+  ggplot(aes(x = exp(cat_wt_log_scale), y = y_hat)) +
+  facet_wrap(~center_block_trt) + 
+  tidybayes::stat_lineribbon() + 
+  scale_fill_brewer() + 
+  theme_bw(base_size = 15) + 
+  scale_x_log10(label = fancy_scientificb) + 
+  geom_hline(color = "violetred", yintercept = 0, size = 2, linetype = "dashed") + 
+  labs(x = "Pre-weight (g)", y = "Difference in rate of leaving (Prop.)")
+
+ggsave("graphs/first_choice_difference_conditioning.png", g2, dpi = 600, width = 8, height = 5)
 
 
 
@@ -436,6 +402,25 @@ g <- m4_pred %>%
 
 
 ggsave("graphs/second_choice.png", g, dpi = 400, width = 7, height = 7, bg = "white")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

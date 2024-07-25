@@ -1,19 +1,28 @@
+#### Set up ####
 source("spat1f/init_analysis.R")
 
 d <- ref_data %>% 
   filter(mean_trt == "1 mg/g") %>%  # Filter only trials with the correct concentration
   mutate(cat_pre_wt_log_scale = as.numeric(scale(log(cat_pre_wt))),
-         cat_pre_wt_log = log(cat_pre_wt))
+         cat_pre_wt_log = log(cat_pre_wt), 
+         binary = ifelse(var_trt == "high_var", 1, 0)
+         ) %>% 
+  rowwise() %>% 
+  mutate(variance = var(c(high_diet_numeric, low_diet_numeric)))
 
+
+#### analysis ####
 # Simple RGR model as before, but dropping beta 
 m <- glmmTMB(
   RGR ~ 
     var_trt * cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) + (1|session_id),
-  data = d
+  data = d 
 ); summary(m)
+
 
 car::Anova(m, type = "III") 
 
+# Compute marginal effects
 emmeans::emmeans(m, 
                  trt.vs.ctrl ~ var_trt | cat_pre_wt_log_scale, 
                  var = "var_trt", 
@@ -46,13 +55,48 @@ emmeans::emmeans(m2,
 
 plot_model(type = "eff", terms = c("cat_pre_wt[all]", "var_trt"))
 
+#### Compare binary toxin (presence/absence) versus variance ####
+
+# Binary model
+m1.1 <- glmmTMB(
+  RGR ~ 
+    binary * (cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2)) + (1|session_id),
+  data = d
+); summary(m1.1)
+
+# Variance model
+m1.2 <- glmmTMB(
+  RGR ~ 
+    variance * (cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2)) + (1|session_id),
+  data = d
+); summary(m1.2)
+
+# AICc
+AICc(m1.1, m1.2)
 
 
+# Binary model
+m2.3 <- glmmTMB(
+  time_to_pupation ~ 
+    binary + cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) + (1|session_id),
+  data = d, 
+  family = Gamma(link = "log"),
+); summary(m2.3)
+
+# Variance model
+m2.4 <- glmmTMB(
+  time_to_pupation ~ 
+    variance + cat_pre_wt_log_scale + I(cat_pre_wt_log_scale^2) + (1|session_id),
+  data = d,
+  family = Gamma(link = "log"),
+); summary(m2.4)
 
 
+# AICc
+AICc(m2.3, m2.4)
 
 
-# Manuscript plot
+#### Manuscript plot ####
 g1 <- marginal_effects(m, terms = c("cat_pre_wt_log_scale","var_trt")) %>% 
   ggplot(aes(x = unscalelog(d$cat_pre_wt_log)(cat_pre_wt_log_scale), y = yhat)) + 
   geom_ribbon(aes(ymax = upper, ymin = lower, fill = var_trt), alpha = 0.2) + 

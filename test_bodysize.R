@@ -70,14 +70,41 @@ z %>%
 
 
 
+res <- b$rep_id %>% 
+  lapply(
+    function(ID){
+      cat(sprintf("%s \r", ID))
+      fetch_events(ID) %>% 
+        clean_events(keep_sus = FALSE) %>%
+        filter(!out_of_frame & size_px > 100) %>% 
+        insert_gaps() %>% 
+        mutate(
+          on_toxic = read_value(head_x, head_y, ref_img = fetch_trt_spec(ID, quiet = TRUE)), 
+          state = c(NA, viterbi(
+            fit_HMM(as.moveData(move_seq(head_x, head_y)))
+          ))
+        )
+    }
+  ) %>% 
+  do.call(
+    "rbind", .
+  )
 
 
 
 
+library(fdapace)
+
+FPCAdata <- MakeFPCAInputs(res$repID, res$rank, log(res$size_px), na.rm = TRUE)
 
 
+fit <- FPCA(FPCAdata$Ly, FPCAdata$Lt, list(plot = TRUE))
+SelectK(fit,criterion = "AIC")
+CreatePathPlot(fit)
 
-
+CreateOutliersPlot(fit,optns=list(K=3,variant='KDE'))
+CreateFuncBoxPlot(fit)
+fit %>% plot()
 
 library(rstan)
 
@@ -219,8 +246,8 @@ out %>%
       cbind(
         "x" = X
       ),
-    aes(x = t, group = 1)
-  )
+    aes(x = t, group = 1, color = as.factor(x))
+  ) +
   coord_cartesian(ylim = c(0.8, 1.15))
 
 
@@ -236,7 +263,7 @@ extract_posterior(fit1)
 
 
 
-ID <- 55
+ID <- sample(fetch_repID(), 1)
 z <- fetch_events(ID) %>% 
   clean_events() %>% 
   mutate(
@@ -246,13 +273,14 @@ z <- fetch_events(ID) %>%
     ))
   )
 
+z %>% 
+  ggplot(aes(x = log(size_px), group = on_toxic, fill = on_toxic)) + 
+  tidybayes::stat_slab(alpha = 0.2)
+
 
 
 z %>% 
   ggplot(aes(x = head_x, y = head_y)) + 
   geom_path()
-
-
-
 
 
