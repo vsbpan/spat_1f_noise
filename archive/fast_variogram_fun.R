@@ -10,7 +10,7 @@ variogram <- function(X, summarise = TRUE, na.rm = TRUE, max_eval = 5000, res = 
     Z <- Z[sample(seq_len(nr), size = max_eval, replace = FALSE),]
   }
   
-  variogram_calc(Z[,(names(Z)!= "val")], Z$val, ...)
+  variogram_calc(Z[,(names(Z)!= "val"), drop = FALSE], Z$val, ...)
 }
 
 

@@ -1,7 +1,7 @@
 Package: spat1f
 Type: Package
 Title: INTERN 1/f noise project library
-Version: 0.0.1
+Version: 0.0.2
 Date: 2023-12-13
 Authors@R: 
     person("Vincent", "Pan", email = "vsbpan@gmail.com",
@@ -14,6 +14,7 @@ Depends:
     extraDistr,
     tidyverse,
     herbivar,
+    doParallel,
     R (>= 2.10)
 Imports:
     doSNOW,

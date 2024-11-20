@@ -14,7 +14,7 @@ This repository hosts code and data used in the manuscript titled *Large Differe
 
 ## Description <a name="Description"></a>
 
-* `spat_1f_noise.zip`: Contains the raw data, intermediary data products (Mask-R-CNN predictions, movement tracks, etc), code for data processing, code for analysis, and a custom R package *spat1f*. See the `README.md` file in the zip folder for a description of the files in the folder. Dependent packages and their versions are reported in section 6 of the file `spat_1f_noise/statistical_analyses/spat1f_MS1_final_analysis.html`. You can also run `spat_1f_noise/Package_installation.R` to install package dependencies automatically.  
+* `spat_1f_noise.zip`: Contains the raw data, intermediary data products (Mask-R-CNN predictions, movement tracks, etc), code for data processing, code for analysis, and a custom R package *spat1f*. See the `README.md` file in the zip folder for a description of the files in the folder. Dependent packages and their versions are reported in section 6 of the file `spat_1f_noise/statistical_analyses/spat1f_MS1_final_analysis.html`. You can also run `spat_1f_noise/Package_installation.R` to install package dependencies automatically. The code and data for the two supplemental experiments (conditioning experiment, Appendix 14 & constant toxin experiment, Appendix 13) are also included in this zipped folder. 
 * `herbivar_0.2.1.tar.gz` A custom R package which the R package *spat1f* is dependent on. You can run `install.packages("herbivar_0.2.1.tar.gz", repos = NULL, type = "source")` to install this version of the package. 
 * `ref_data_for_Dryad_July_11_2024.csv` is a spreadsheet of cleaned data used in the statistical analyses. 
 

@@ -499,6 +499,13 @@ loghist <- function(x, nclass = 50, log.p = FALSE, log.x = TRUE, geom = c("line"
     )
   }
   
+  if(log.p){
+    d <- d %>% 
+      filter(
+        p > 0
+      )
+  }
+  
   g <- d %>% 
     ggplot(aes(x = x, y = p)) + 
     theme_bw(base_size = 15) + 

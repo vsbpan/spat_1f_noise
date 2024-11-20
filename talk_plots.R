@@ -425,3 +425,12 @@ imager::make.video(fps = 20,
                    dname = abs_path("invisible/test_video_overlay"), 
                    fname = abs_path(paste0("simulated_track_select",".mp4")), 
                    verbose = TRUE)
+
+
+
+
+
+
+s
+
+

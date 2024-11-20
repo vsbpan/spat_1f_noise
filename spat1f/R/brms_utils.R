@@ -25,7 +25,7 @@ check_brms <- function(model, integer = NULL, plot = TRUE, asFactor = FALSE, ...
   
   if(insight::get_family(model)$family %in% c("categorical")){
     levels <- unique(get_y(model))
-    y <- apply(levels,1,function(x){as.numeric(get_y(model) == x)})
+    y <- apply(levels,1,function(x){as.numeric(brms::get_y(model) == x)})
     resp <- brms::posterior_predict(model, ndraws = 1000)
     resp <- array(do.call("c", lapply(levels,function(x){as.numeric(resp == x)})), 
                   dim = c(1000, nrow(y), length(levels)))
