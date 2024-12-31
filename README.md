@@ -14,6 +14,10 @@
 
 This repo hosts code for image processing and data analysis for an INTERN funded project, examining the consequences of spatial autocorrelation and variance in fine-scale plant toxin distribution on caterpillar outcomes. 
 
+Manuscript 1 is now published:  
+Pan, V.S., Ghosh, E., Ode, P.J., Wetzel, W.C., Gilbert, K.J. & Pearse, I.S. (2025). Large Differences in Herbivore Performance Emerge From Simple Herbivore Behaviours and Fine-Scale Spatial Heterogeneity in Phytochemistry. Ecology Letters, 28, e70044. [link](https://onlinelibrary.wiley.com/doi/abs/10.1111/ele.70044)
+
+
 
 ![**Manuscript 1 methods figure**](demo/methods_figure.jpg)
 
